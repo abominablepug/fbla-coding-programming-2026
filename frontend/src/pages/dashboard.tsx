@@ -55,7 +55,7 @@ const Dashboard=()=>{
                     <div className="absolute lg:top-[-520px] top-[-420px] w-full h-full bg-linear-to-b from-cyan-700/40 via-cyan-500/40 to-purple-400/40 blur-[120px] rounded-full" />
                 </motion.div>
             </div>
-            <Navbar page="Profile">
+            <Navbar page="Dashboard">
                 <Links link="map">
                     Map <MapPin size={22}/>
                 </Links>

@@ -12,7 +12,7 @@ const Login = () => {
 	const navigate = useNavigate();
 
 	return (
-		<div className="min-h-screen bg-neutral-900 relative w-full overscroll-none items-center">
+		<div className="min-h-screen bg-neutral-900 relative w-full overscroll-none flex flex-col items-center justify-center">
 			<div className="fixed backdrop-blur-[1000px] inset-0 bg-neutral-900 pointer-events-none w-full z-0 flex items-center justify-center overscroll-none">
 				<motion.div initial={{ opacity: 0.4, y: 0 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 2.0 }} className="fixed lg:w-[1200px] h-[500px] w-[600px] -z-0 rounded-full">
 					<div className="absolute bottom-[-500px] w-full h-full bg-linear-to-t from-cyan-700/70 via-cyan-500/70 to-purple-400/70 blur-[160px] rounded-full" />
@@ -23,12 +23,12 @@ const Login = () => {
 			</div>
 
 			<Navbar page="Login">
-                <Links link="">
+                <Links link="/">
                     Back →
                 </Links>
             </Navbar>
 
-			<Card className="max-w-2xl pt-48 translate-x-100" title="FBLA 25-26 Cod/Prog" titleClassName='text-center text-cyan-500'>
+			<Card className="max-w-2xl w-full mx-4 z-10" title="BIZMATCH" titleClassName='text-center text-cyan-500'>
 				<div className="text-center">
 					<h1 className="text-gray-400 text-3xl font-bold">Login</h1>
 				</div>
