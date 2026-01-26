@@ -5,7 +5,7 @@ import Home from "./pages/home";
 import Map from "./pages/map";
 import Register from "./pages/register";
 import Dashboard from "./pages/dashboard";
-
+import TinderPage from "./pages/tinder";
 
 
 function App() {
@@ -18,6 +18,7 @@ function App() {
 				<Route path="/" element={<Home />} />
 				<Route path="/map" element={<Map />} />
 				<Route path="/dashboard" element={<Dashboard />} />
+				<Route path="/tinder" element={<TinderPage/>} />
 			</Routes>
 		</BrowserRouter>
 	);
