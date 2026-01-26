@@ -46,7 +46,7 @@ const Home = () => {
 					transition={{ duration: 0.8, ease: "easeOut" }}
 				>
 					<h1 className="text-6xl md:text-9xl font-extrabold bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent mb-6 tracking-tighter drop-shadow-2xl animate-pulse">
-						BIZMATCH
+						BizMatch
 					</h1>
 				</motion.div>
 
