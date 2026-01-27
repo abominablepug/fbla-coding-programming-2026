@@ -38,35 +38,20 @@ const Home = () => {
 				</Links>
 			</Navbar>
 
-			{/* Hero Section - First View */}
-			<div className="relative z-10 flex flex-col items-center justify-center min-h-screen text-center px-4 pt-20">
-				<motion.div
-					initial={{ opacity: 0, y: 30 }}
-					animate={{ opacity: 1, y: 0 }}
-					transition={{ duration: 0.8, ease: "easeOut" }}
-				>
+			<div className="relative z-10 flex flex-col items-center justify-center min-h-screen text-center px-4 pt-20 transition-transform">
+				<motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease: "easeOut" }} >
 					<h1 className="text-6xl md:text-9xl font-extrabold bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent mb-6 tracking-tighter drop-shadow-2xl animate-pulse">
 						BizMatch
 					</h1>
 				</motion.div>
 
-				<motion.p
-					initial={{ opacity: 0 }}
-					animate={{ opacity: 1 }}
-					transition={{ delay: 0.3, duration: 0.8 }}
-					className="text-xl md:text-2xl text-neutral-300 max-w-3xl mb-12 leading-relaxed font-light"
-				>
+				<motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3, duration: 0.8 }} className="text-xl md:text-2xl text-neutral-300 max-w-3xl mb-12 leading-relaxed font-light">
 					Where Opportunity Meets Location.
 					<br />
 					<span className="text-cyan-400 font-normal">Swipe. Match. Succeed.</span>
 				</motion.p>
 
-				<motion.div
-					initial={{ opacity: 0, scale: 0.9 }}
-					animate={{ opacity: 1, scale: 1 }}
-					transition={{ delay: 0.6, duration: 0.5 }}
-					className="flex gap-8"
-				>
+				<motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.6, duration: 0.5 }} className="flex gap-8" >
 					<Link to="/register" className="group inline-flex items-center gap-3 px-6 py-4 bg-sky-500 text-white rounded-lg font-semibold text-lg transition-all hover:bg-sky-400 shadow-lg">
 						Get Started
 						<ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -77,18 +62,12 @@ const Home = () => {
 					</Link>
 				</motion.div>
 
-				<motion.div
-					initial={{ opacity: 0 }}
-					animate={{ opacity: 1 }}
-					transition={{ delay: 1.2, duration: 1 }}
-					className="absolute bottom-10 animate-bounce text-neutral-500 flex flex-col items-center gap-2"
-				>
+				<motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.2, duration: 1 }} className="absolute bottom-10 animate-bounce text-neutral-500 flex flex-col items-center gap-2" >
 					<span className="text-sm uppercase tracking-widest">Scroll to Explore</span>
 					<ArrowRight className="w-4 h-4 rotate-90" />
 				</motion.div>
 			</div>
 
-			{/* Features Section */}
 			<div className="relative z-10 flex flex-col items-center gap-24 py-32 px-4">
 				<div className="text-center max-w-3xl">
 					<h2 className="text-4xl md:text-5xl font-bold text-white mb-6">Revolutionizing Location Scouting</h2>
@@ -97,7 +76,6 @@ const Home = () => {
 					</p>
 				</div>
 
-				{/* Feature 1: Swipe Matching */}
 				<motion.div 
 					initial={{ opacity: 0, y: 50 }}
 					whileInView={{ opacity: 1, y: 0 }}
@@ -129,7 +107,6 @@ const Home = () => {
 							</ul>
 						</div>
 						<div className="relative h-80 bg-neutral-900 rounded-2xl border border-white/10 overflow-hidden group shadow-2xl">
-							{/* Placeholder Image */}
 							<div className="absolute inset-0 flex flex-col items-center justify-center bg-neutral-800/50 text-center p-6">
 								<div className="w-48 h-64 bg-neutral-700 rounded-xl shadow-xl border border-white/5 flex items-center justify-center mb-4 relative transform group-hover:scale-105 transition-transform duration-500">
 									<span className="text-neutral-500 text-xs">[Location Card Image]</span>
@@ -145,7 +122,6 @@ const Home = () => {
 				</Card>
 				</motion.div>
 
-				{/* Feature 2: Interactive Map */}
 				<motion.div 
 					initial={{ opacity: 0, y: 50 }}
 					whileInView={{ opacity: 1, y: 0 }}
@@ -156,7 +132,6 @@ const Home = () => {
 				<Card className="max-w-6xl" cardClassName="hover:shadow-purple-500/20 hover:shadow-2xl transition-all duration-500" title="Interactive Mapping" titleClassName="text-purple-400">
 					<div className="grid md:grid-cols-2 gap-12 items-center">
 						<div className="order-2 md:order-1 relative h-80 bg-neutral-900 rounded-2xl border border-white/10 overflow-hidden shadow-2xl">
-							{/* Placeholder Image */}
 							<div className="absolute inset-0 flex flex-col items-center justify-center bg-neutral-800/50 text-center p-6">
 								<Map className="w-16 h-16 text-purple-500/50 mb-4" />
 								<p className="text-xs text-purple-500 font-mono">PLACEHOLDER: Map View Screenshot</p>
@@ -182,7 +157,6 @@ const Home = () => {
 				</Card>
 				</motion.div>
 
-				{/* Feature 3: Dashboard */}
 				<motion.div 
 					initial={{ opacity: 0, y: 50 }}
 					whileInView={{ opacity: 1, y: 0 }}
@@ -202,7 +176,6 @@ const Home = () => {
 							</div>
 						</div>
 						<div className="relative h-64 bg-neutral-900 rounded-2xl border border-white/10 overflow-hidden shadow-2xl">
-							{/* Placeholder Image */}
 							<div className="absolute inset-0 flex flex-col items-center justify-center bg-neutral-800/50 text-center p-6">
 								<div className="w-full max-w-xs p-4 bg-neutral-800 rounded border border-white/5">
 									<div className="h-4 w-1/3 bg-neutral-600 rounded mb-4"></div>
@@ -219,7 +192,6 @@ const Home = () => {
 				</motion.div>
 			</div>
 
-			{/* Tech Stack Section */}
 			<div className="relative z-10 py-24 bg-neutral-900/80 border-t border-white/5 backdrop-blur-sm">
 				<div className="max-w-7xl mx-auto px-6">
 					<div className="text-center mb-16">
@@ -262,7 +234,6 @@ const Home = () => {
 				</div>
 			</div>
 
-			{/* Footer */}
 			<div className="relative z-10 py-12 border-t border-white/5 text-center">
 				<p className="text-neutral-600 font-mono text-sm">
 					FBLA Coding & Programming 2025-26 • BIZMATCH Project
