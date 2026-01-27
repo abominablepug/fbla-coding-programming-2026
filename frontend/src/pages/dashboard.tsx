@@ -4,7 +4,7 @@ import Card from "../components/card";
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/navbar';
 import Links from '../components/links';
-import {MapPin} from 'lucide-react';
+import {Heart, MapPin} from 'lucide-react';
 
 const Dashboard=()=>{
     const [user, setUser] = useState<{uid: string, username: string} | null>(null);
@@ -13,7 +13,7 @@ const Dashboard=()=>{
     useEffect(() => {
         const fetchProfile = async () => {
             try {
-                const response = await fetch('http://localhost:5174/auth/dashboard', {
+                const response = await fetch('http://localhost:5173/auth/dashboard', {
                     credentials: 'include'
                 });
                 if (response.ok) {
@@ -33,7 +33,7 @@ const Dashboard=()=>{
     const handleLogout = async (e: React.MouseEvent) => {
         e.preventDefault();
         try {
-            await fetch('http://localhost:5174/auth/logout', {
+            await fetch('http://localhost:5173/auth/logout', {
                 credentials: 'include'
             });
             navigate('/');
@@ -58,6 +58,9 @@ const Dashboard=()=>{
             <Navbar page="Dashboard">
                 <Links link="map">
                     Map <MapPin size={22}/>
+                </Links>
+                <Links link="tinder">
+                    Tinder <Heart size={22}/>
                 </Links>
                 <Links link="/" onClick={handleLogout}>
                     Logout →

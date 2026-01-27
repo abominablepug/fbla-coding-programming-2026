@@ -3,7 +3,7 @@ import tt from '@tomtom-international/web-sdk-maps';
 import { services } from '@tomtom-international/web-sdk-services';
 import '@tomtom-international/web-sdk-maps/dist/maps.css';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import Navbar from '../components/navbar';
 import Links from '../components/links';
 import {House} from 'lucide-react';
@@ -144,11 +144,24 @@ const Map = () => {
   const [mapError, setMapError] = useState<string | null>(null);
   const [isPoiDropdownOpen, setIsPoiDropdownOpen] = useState(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    const lat = searchParams.get('lat');
+    const lon = searchParams.get('lon');
+    if (lat && lon && mapLoaded) {
+      const destLat = parseFloat(lat);
+      const destLng = parseFloat(lon);
+      if (!isNaN(destLat) && !isNaN(destLng)) {
+        calculateRoute(destLat, destLng, 'Destination');
+      }
+    }
+  }, [searchParams, mapLoaded]);
 
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const response = await fetch('http://localhost:5174/auth/dashboard', {
+        const response = await fetch('http://localhost:5173/auth/dashboard', {
           credentials: 'include'
         });
         if (response.ok) {
