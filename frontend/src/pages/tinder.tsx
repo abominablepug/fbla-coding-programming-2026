@@ -157,91 +157,51 @@ const TinderPage = () => {
                     </motion.div>
                 </div>
 
-                <div style={{ marginTop:"0px",alignItems: 'center',justifyContent:"center"}} className="from-cyan-700/70 via-cyan-500/70 to-purple-400/70 relative z-10 pt-20 pb-8 overflow-y-auto h-screen flex items-center justify-center">
+                <div className="from-cyan-700/70 via-cyan-500/70 to-purple-400/70 relative z-10 pt-20 pb-32 h-screen flex items-center justify-center">
                     <AnimatePresence>
                         {currentBusiness && (
                             <motion.div
                                 key={currentIndex}
-                                initial={{ x: 0, opacity: 2 }}
+                                initial={{ x: 0, opacity: 1 }}
                                 animate={{
-                                    x: swipeDirection === 'left' ? -800 : swipeDirection === 'right' ? 800 : 0,
+                                    x: swipeDirection === 'left' ? -1000 : swipeDirection === 'right' ? 1000 : 0,
                                     opacity: swipeDirection ? 0 : 1
                                 }}
                                 exit={{ opacity: 0 }}
                                 transition={{ duration: 0.5 }}
                                 onAnimationComplete={handleAnimationComplete}
-                                className="mb-8"
+                                className="w-full max-w-2xl px-4"
                             >
-                                <div style={{display:"flex",justifyContent:"space-around"}}>
-                                    <div style={{marginLeft:"1200px",marginRight:"600px"}}>
-                                    <Card
-                                    title={currentBusiness.name || 'Unknown Business'}
-                                    className="flex justify-center "
-                                    
-                                >
-
-                                    {currentBusiness.imageUrl && (
-                                        <div style={{marginTop:'10px', marginBottom:'10px'}}>
-                                            <img src={currentBusiness.imageUrl} alt="Business" style={{width:'100%', height:'200px', objectFit:'cover', borderRadius:'12px'}} />
-                                        </div>
-                                    )}
-                                    <div style={{marginTop:'10px',backgroundColor:'rgba(255, 255, 255, 0.1)',padding:'10px',borderRadius:'12px'}}>
-                                        <p style={{color:'white'}}><strong>Address:</strong> {currentBusiness.address || 'N/A'}</p>
-                                    </div>
-                                    <div style={{marginTop:'10px',backgroundColor:'rgba(255, 255, 255, 0.1)',padding:'10px',borderRadius:'12px'}}>
-                                        <p style={{color:'white'}}><strong>Distance:</strong> {(currentBusiness.distance_meters / 1609.34).toFixed(2)} miles</p>
-                                    </div>
-                                    <div style={{marginTop:'10px',backgroundColor:'rgba(255, 255, 255, 0.1)',padding:'10px',borderRadius:'12px'}}>
-                                        <p style={{color:'white'}}><strong>Categories:</strong> {currentBusiness.category?.map(category => titleCase(category)).join(', ') || 'N/A'}</p>
-                                    </div>
-                                </Card>
-
-                                    </div>
-
-
-
-
-                                    
-
-
-
                                 <Card
-                                    title={nextBusiness.name || 'Unknown Business'}
-                                    className="flex justify-center"
+                                    title={currentBusiness.name || 'Unknown Business'}
+                                    image={currentBusiness.imageUrl}
+                                    imageHeight="1000px"
+                                    cardClassName="w-full"
+                                    bgcolor="#016786ff"
+                                    titleClassName='text-white'
                                 >
-                                    
-                                    <div style={{marginTop:'10px',backgroundColor:'rgba(255, 255, 255, 0.1)',padding:'10px',borderRadius:'12px'}}>
-                                        <p style={{color:'white'}}><strong>Address:</strong> {nextBusiness.address || 'N/A'}</p>
-                                    </div>
-                                    <div style={{marginTop:'10px',backgroundColor:'rgba(255, 255, 255, 0.1)',padding:'10px',borderRadius:'12px'}}>
-                                        <p style={{color:'white'}}><strong>Distance:</strong> {(nextBusiness.distance_meters / 1609.34).toFixed(2)} miles</p>
-                                    </div>
-                                    <div style={{marginTop:'10px',backgroundColor:'rgba(255, 255, 255, 0.1)',padding:'10px',borderRadius:'12px'}}>
-                                         <p style={{color:'white'}}><strong>Categories:</strong> {nextBusiness.category?.map(category => titleCase(category)).join(', ') || 'N/A'}</p>
-                                    </div>
-                                    {/*{nextBusiness.imageUrl && (
-                                        <div style={{marginTop:'10px', marginBottom:'10px'}}>
-                                            <img src={nextBusiness.imageUrl} alt="Business" style={{width:'100%', height:'200px', objectFit:'cover', borderRadius:'12px'}} />
+                                    <div className="space-y-4">
+                                        <div className="bg-white/10 p-4 rounded-lg">
+                                            <p className="text-white"><strong>Address:</strong> {currentBusiness.address || 'N/A'}</p>
                                         </div>
-                                    )}*/}
+                                        <div className="bg-white/10 p-4 rounded-lg">
+                                            <p className="text-white"><strong>Distance:</strong> {(currentBusiness.distance_meters / 1609.34).toFixed(2)} miles</p>
+                                        </div>
+                                        <div className="bg-white/10 p-4 rounded-lg">
+                                            <p className="text-white"><strong>Categories:</strong> {currentBusiness.category?.map(category => titleCase(category)).join(', ') || 'N/A'}</p>
+                                        </div>
+                                        
+                                    </div>
                                 </Card>
-
-                                </div>
-
-                                
-             
-                                
                             </motion.div>
                         )}
-
                     </AnimatePresence>
-                    {error ? <p style={{color: 'red'}}>{error}</p> : businesses.length === 0 && <p>Loading...</p>}
+                    {error ? <p className="text-red-400 text-center mt-8">{error}</p> : businesses.length === 0 && currentBusiness === undefined && <p className="text-white text-center">Loading...</p>}
                 </div>
 
-                <div style={{marginBottom:260,display:"flex",justifyItems:"space-between",gap:750,alignItems:"center"}} className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50"> 
-    
-
-                    <motion.div
+                <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 flex items-center justify-center gap-32"> 
+                    <motion.button
+                        onClick={() => setSwipeDirection('left')}
                         animate={{
                             scale: swipeDirection === 'left' ? [1, 1.3, 1] : 1
                         }}
@@ -250,18 +210,17 @@ const TinderPage = () => {
                             repeat: swipeDirection === 'left' ? 1 : 0,
                             ease: "easeInOut"
                         }}
+                        className="cursor-pointer hover:scale-110 transition active:scale-125 focus:outline-none"
+                        aria-label="Dislike"
                     >
                         <X
-                            size={400}
-                            style={{ color: "rgba(240, 0, 0, 0.8)" }}
-                            className="cursor-pointer hover:scale-110 transition"
+                            size={150}
+                            className="text-red-500 drop-shadow-lg"
                         />
-                    </motion.div>
+                    </motion.button>
 
-
-
-
-                    <motion.div
+                    <motion.button
+                        onClick={() => setSwipeDirection('right')}
                         animate={{
                             scale: swipeDirection === 'right' ? [1, 1.3, 1] : 1
                         }}
@@ -270,17 +229,14 @@ const TinderPage = () => {
                             repeat: swipeDirection === 'right' ? 1 : 0,
                             ease: "easeInOut"
                         }}
+                        className="cursor-pointer hover:scale-110 transition active:scale-125 focus:outline-none"
+                        aria-label="Like"
                     >
                         <HeartPlus
-                            size={300}
-                            style={{ color: "rgba(1, 255, 47, 0.8)" }}
-                            className="cursor-pointer hover:scale-110 transition"
+                            size={120}
+                            className="text-green-500 drop-shadow-lg"
                         />
-                    </motion.div>
-
-
-
-
+                    </motion.button>
                 </div>
 
                 <AnimatePresence>
