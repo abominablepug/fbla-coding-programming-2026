@@ -67,9 +67,9 @@ const Dashboard=()=>{
                 </Links> 
             </Navbar>
             <div className="w-full relative grid gap-8 pt-28">
-                <Card title={`Welcome ${user.username}`} titleClassName=' text-cyan-500'>
+                <Card title={`Welcome ${user.username}`} titleClassName='text-cyan-500' cardClassName='w-[95%]'>
                     <h1 className="text-gray-400 text-2xl">Your account infomation is below:</h1>
-                    <div className="grid gap-2 grid-cols-2 mt-8 max:[gap-y-1">
+                    <div className="grid gap-2 grid-cols-2 mt-8 max:gap-y-1">
                     <p className="text-gray-400 text-lg">Username: {user.username}</p>
                     <p className="text-gray-400 text-lg">User ID: {user.uid}</p>
                     </div>

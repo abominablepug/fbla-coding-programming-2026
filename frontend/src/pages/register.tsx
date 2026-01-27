@@ -70,12 +70,8 @@ const Register = () => {
                 </Links>
             </Navbar>
 
-			<Card className="max-w-2xl w-full mx-4 z-10"  bgcolor='rgba(26, 101, 136, 1)' cardClassName="w-full" title="BIZMATCH" titleClassName='text-center text-cyan-500'>
-				<div className="text-center">
-					<h1 className="text-3xl font-bold text-white-400">Register</h1>
-				</div>
-
-				<form className="mt-8 space-y-6" onSubmit={handleRegister}>
+			<Card className="max-w-2xl w-full mt-15 z-10" cardClassName="w-full" title="Register" titleClassName='text-cyan-500'>
+				<form className="space-y-6" onSubmit={handleRegister}>
 					<div>
 						<label className="block text-sm font-medium text-white-400">Username:</label>
 						<input

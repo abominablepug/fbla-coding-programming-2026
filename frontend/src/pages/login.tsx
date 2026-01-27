@@ -28,12 +28,8 @@ const Login = () => {
                 </Links>
             </Navbar>
 
-			<Card className="max-w-2xl w-full mx-4 z-10" bgcolor='rgba(26, 101, 136, 1)' cardClassName="w-full" title="BIZMATCH" titleClassName='text-center text-cyan-500'>
-				<div className="text-center">
-					<h1 className="text-white-400 text-3xl font-bold">Login</h1>
-				</div>
-
-				<form className="mt-8 space-y-6"
+			<Card className="max-w-2xl w-full mt-15 z-10" cardClassName="w-full" title="Login" titleClassName='text-cyan-500'>
+				<form className="space-y-6"
 					onSubmit={async (e) => {
 						e.preventDefault();
 						setSubmitError('');
