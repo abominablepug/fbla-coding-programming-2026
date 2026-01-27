@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import Navbar from '../components/navbar';
 import Links from '../components/links';
-import {House} from 'lucide-react';
+import {House, Heart} from 'lucide-react';
 
 
 
@@ -781,7 +781,10 @@ const Map = () => {
           
           {/*hiding sidebar*/}
           <Navbar page={`Map`}>
-             <Links link="dashboard" className="text-[14px]">
+            <Links link="tinder" className="text-[14px]">
+              Findr <Heart size={22}/>
+            </Links>
+            <Links link="dashboard" className="text-[14px]">
               Dashboard <House size={17} />
             </Links>
           </Navbar>        

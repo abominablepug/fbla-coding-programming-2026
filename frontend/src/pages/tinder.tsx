@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Navbar from '../components/navbar';
 import Card from '../components/card';
-import { HeartPlus } from 'lucide-react';
+import { HeartPlus, MapPin, House} from 'lucide-react';
 import { X } from 'lucide-react';
 import { getCommonsImage } from '../utils/getCommonsImage';
-import { useNavigate } from 'react-router-dom';
+import {useNavigate } from 'react-router-dom';
+import Links from '../components/links';
 
 interface Business {
     name: string;
@@ -146,11 +147,19 @@ const TinderPage = () => {
     return (
         <>
             <div className="min-h-screen bg-neutral-900 relative w-full">
-                <Navbar page="Find Your Match!" />
+                <Navbar page="Find Your Match!">
+                    <Links link="/map">
+                        Map<MapPin size={22}/>
+                    </Links>
+                    <Links link="/dashboard">
+                        Dashboard <House size={17} />
+                    </Links>
+                    
+                </Navbar>
                 
                 <div className="fixed backdrop-blur-[1000px] inset-0 bg-neutral-800 pointer-events-none w-full z-0 flex items-center justify-center">
                     <motion.div initial={{ opacity: 0.4, y: 0 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 2.0 }} className="fixed lg:w-[1200px] h-[500px] w-[600px] -z-0 rounded-full">
-                        <div className="absolute bottom-[-500px] w-full h-full bg-linear-to-t from-cyan-700/70 via-cyan-800/70 to-purple-400/70 blur-[160px] rounded-full" />
+                        <div className="absolute bottom-[-500px] w-full h-full bg-linear-to-t from-cyan-700/70 via-cyan-500/70 to-purple-400/70 blur-[160px] rounded-full" />
                     </motion.div>
                     <motion.div initial={{ opacity: 0.3, y: 0 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 2.0 }} className="fixed lg:w-[900px] h-[500px] w-[500px] -z-0 rounded-full">
                         <div className="absolute lg:top-[-520px] top-[-420px] w-full h-full bg-linear-to-b from-cyan-50/40 via-cyan-100/40 blur-[120px] rounded-full" />
