@@ -25,7 +25,7 @@ const Navbar: React.FC<NavBarProps> = ({ page, children, className = ""}) => {
                         BizMatch
                     </span>
                     <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-                        <span className={`${className ? className : "text-slate-400"} font-bold tracking-widest text-sm md:text-lg`}>
+                        <span className={`${className ? className : "text-neutral-400"} font-bold tracking-widest text-md md:text-xl`}>
                             {page}
                         </span>
                     </div>

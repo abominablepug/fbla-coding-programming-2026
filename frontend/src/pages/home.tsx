@@ -38,14 +38,14 @@ const Home = () => {
 				</Links>
 			</Navbar>
 
-			<div className="relative z-10 flex flex-col items-center justify-center min-h-screen text-center px-4 pt-20 transition-transform">
-				<motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease: "easeOut" }} >
-					<h1 className="text-6xl md:text-9xl font-extrabold bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent mb-6 tracking-tighter drop-shadow-2xl animate-pulse">
+			<div className="relative z-10 flex flex-col items-center justify-center min-h-screen text-center px-4 transition-transform">
+				<motion.div initial={{ opacity: 0.5, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease: "easeOut" }} >
+					<h1 className="text-6xl md:text-9xl font-extrabold bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent mb-6 tracking-tighter drop-shadow-2xl">
 						BizMatch
 					</h1>
 				</motion.div>
 
-				<motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3, duration: 0.8 }} className="text-xl md:text-2xl text-neutral-300 max-w-3xl mb-12 leading-relaxed font-light">
+				<motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3, duration: 0.8 }} className="text-xl md:text-2xl text-neutral-400 max-w-3xl mb-12 leading-relaxed font-light">
 					Where Opportunity Meets Location.
 					<br />
 					<span className="text-cyan-400 font-normal">Swipe. Match. Succeed.</span>
@@ -62,7 +62,7 @@ const Home = () => {
 					</Link>
 				</motion.div>
 
-				<motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.2, duration: 1 }} className="absolute bottom-10 animate-bounce text-neutral-500 flex flex-col items-center gap-2" >
+				<motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.2, duration: 1 }} className="absolute bottom-10 animate-bounce text-neutral-400 flex flex-col items-center gap-2" >
 					<span className="text-sm uppercase tracking-widest">Scroll to Explore</span>
 					<ArrowRight className="w-4 h-4 rotate-90" />
 				</motion.div>
@@ -83,11 +83,11 @@ const Home = () => {
 					transition={{ duration: 0.8 }}
 					className="w-full flex justify-center"
 				>
-				<Card className="max-w-6xl" cardClassName="hover:shadow-cyan-500/20 hover:shadow-2xl transition-all duration-500" title="Smart Location Matching" titleClassName="text-cyan-400">
+				<Card className="max-w-6xl" cardClassName="hover:shadow-cyan-500/20 hover:shadow-2xl hover:scale-102 transition-all duration-500" title="Smart Location Matching" titleClassName="text-cyan-400">
 					<div className="grid md:grid-cols-2 gap-12 items-center">
 						<div className="space-y-6">
 							<p className="text-lg text-neutral-300 leading-relaxed">
-								Finding a location shouldn't be a chore. Our <span className="text-cyan-400 font-bold">Tinder-style interface</span> allows you to rapidly browse through potential spots.
+								Finding a location shouldn't be a chore. Our <span className="text-cyan-400 font-bold">Biz Matching Interface</span> allows you to rapidly browse through potential spots.
 							</p>
 							<ul className="space-y-4">
 								<li className="flex items-start gap-3">
@@ -129,7 +129,7 @@ const Home = () => {
 					transition={{ duration: 0.8, delay: 0.2 }}
 					className="w-full flex justify-center"
 				>
-				<Card className="max-w-6xl" cardClassName="hover:shadow-purple-500/20 hover:shadow-2xl transition-all duration-500" title="Interactive Mapping" titleClassName="text-purple-400">
+				<Card className="max-w-6xl" cardClassName="hover:shadow-purple-500/20 hover:shadow-2xl hover:scale-102 transition-all duration-500" title="Interactive Mapping" titleClassName="text-purple-400">
 					<div className="grid md:grid-cols-2 gap-12 items-center">
 						<div className="order-2 md:order-1 relative h-80 bg-neutral-900 rounded-2xl border border-white/10 overflow-hidden shadow-2xl">
 							<div className="absolute inset-0 flex flex-col items-center justify-center bg-neutral-800/50 text-center p-6">
@@ -164,14 +164,14 @@ const Home = () => {
 					transition={{ duration: 0.8, delay: 0.4 }}
 					className="w-full flex justify-center"
 				>
-				<Card className="max-w-6xl" cardClassName="hover:shadow-blue-500/20 hover:shadow-2xl transition-all duration-500" title="Comprehensive Dashboard" titleClassName="text-blue-400">
+				<Card className="max-w-6xl" cardClassName="hover:shadow-cyan-500/20 hover:shadow-2xl hover:scale-102 transition-all duration-500" title="Comprehensive Dashboard" titleClassName="text-cyan-400">
 					<div className="grid md:grid-cols-2 gap-12 items-center">
 						<div className="space-y-6">
 							<p className="text-lg text-neutral-300 leading-relaxed">
 								Your command center. Manage your profile, view your saved "liked" locations, and access detailed analytics about your choices.
 							</p>
 							<div className="flex items-center gap-4 text-neutral-400">
-								<LayoutDashboard className="text-blue-400" />
+								<LayoutDashboard className="text-cyan-400" />
 								<span>Centralized control for all your data</span>
 							</div>
 						</div>
@@ -184,7 +184,7 @@ const Home = () => {
 										<div className="h-2 w-5/6 bg-neutral-700 rounded"></div>
 									</div>
 								</div>
-								<p className="text-xs text-blue-500 font-mono mt-4">PLACEHOLDER: Dashboard Screenshot</p>
+								<p className="text-xs text-cyan-400 font-mono mt-4">PLACEHOLDER: Dashboard Screenshot</p>
 							</div>
 						</div>
 					</div>
@@ -196,7 +196,7 @@ const Home = () => {
 				<div className="max-w-7xl mx-auto px-6">
 					<div className="text-center mb-16">
 						<h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Built With Modern Tech</h2>
-						<p className="text-neutral-500">Leveraging the best tools for performance and scalability.</p>
+						<p className="text-neutral-400">Leveraging the best tools for performance and scalability.</p>
 					</div>
 
 					<div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -222,12 +222,12 @@ const Home = () => {
 						</div>
 
 						<div className="bg-neutral-800/30 p-8 rounded-3xl border border-white/5 hover:bg-neutral-800/50 transition-all duration-300 group">
-							<div className="w-12 h-12 bg-blue-500/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-								<Globe className="w-6 h-6 text-blue-400" />
+							<div className="w-12 h-12 bg-cyan-500/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+								<Globe className="w-6 h-6 text-cyan-400" />
 							</div>
 							<h3 className="text-xl font-bold text-white mb-3">Maps & Data</h3>
 							<p className="text-neutral-400 leading-relaxed">
-								Integrated <span className="text-blue-300">TomTom API</span> for world-class mapping, geocoding, and traffic data visualization.
+								Integrated <span className="text-cyan-400">TomTom API</span> for world-class mapping, geocoding, and traffic data visualization.
 							</p>
 						</div>
 					</div>
@@ -235,7 +235,7 @@ const Home = () => {
 			</div>
 
 			<div className="relative z-10 py-12 border-t border-white/5 text-center">
-				<p className="text-neutral-600 font-mono text-sm">
+				<p className="text-neutral-400 font-mono text-sm">
 					FBLA Coding & Programming 2025-26 • BIZMATCH Project
 				</p>
 			</div>
