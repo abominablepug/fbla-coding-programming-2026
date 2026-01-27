@@ -4,6 +4,7 @@ import Links from '../components/links';
 import Navbar from '../components/navbar';
 import Card from '../components/card';
 import { ArrowRight, Map, ThumbsUp, LayoutDashboard, Code, Database, Globe } from 'lucide-react';
+import mapDisp from '../assets/mapdisp.png'; 
 
 
 const Home = () => {
@@ -63,12 +64,12 @@ const Home = () => {
 				</motion.div>
 
 				<motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.2, duration: 1 }} className="absolute bottom-10 animate-bounce text-neutral-400 flex flex-col items-center gap-2" >
-					<span className="text-sm uppercase tracking-widest">Scroll to Explore</span>
+					<span onClick={()=>{document.getElementById("details")?.scrollIntoView({behavior:'smooth'});}} className="text-sm uppercase tracking-widest">Scroll to Explore</span>
 					<ArrowRight className="w-4 h-4 rotate-90" />
 				</motion.div>
 			</div>
 
-			<div className="relative z-10 flex flex-col items-center gap-24 py-32 px-4">
+			<div id="details" className="relative z-10 flex flex-col items-center gap-24 py-32 px-4">
 				<div className="text-center max-w-3xl">
 					<h2 className="text-4xl md:text-5xl font-bold text-white mb-6">Revolutionizing Location Scouting</h2>
 					<p className="text-neutral-400 text-lg">
@@ -132,10 +133,8 @@ const Home = () => {
 				<Card className="max-w-6xl" cardClassName="hover:shadow-purple-500/20 hover:shadow-2xl hover:scale-102 transition-all duration-500" title="Interactive Mapping" titleClassName="text-purple-400">
 					<div className="grid md:grid-cols-2 gap-12 items-center">
 						<div className="order-2 md:order-1 relative h-80 bg-neutral-900 rounded-2xl border border-white/10 overflow-hidden shadow-2xl">
-							<div className="absolute inset-0 flex flex-col items-center justify-center bg-neutral-800/50 text-center p-6">
-								<Map className="w-16 h-16 text-purple-500/50 mb-4" />
-								<p className="text-xs text-purple-500 font-mono">PLACEHOLDER: Map View Screenshot</p>
-								<p className="text-xs text-neutral-500 mt-2">Showing pins, clusters, and traffic layers</p>
+							<div className="absolute flex flex-col items-center justify-center bg-neutral-800/50 text-center">
+								<img src={mapDisp}/>
 							</div>
 						</div>
 						<div className="order-1 md:order-2 space-y-6">
