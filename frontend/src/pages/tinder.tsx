@@ -1,26 +1,21 @@
 import { useEffect, useState } from 'react';
-import { services } from '@tomtom-international/web-sdk-services';
-import '@tomtom-international/web-sdk-maps/dist/maps.css';
-import { motion, AnimatePresence, color } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import Navbar from '../components/navbar';
 import Card from '../components/card';
-import {HeartPlus} from 'lucide-react';
+import { HeartPlus } from 'lucide-react';
 import { X } from 'lucide-react';
 import { getCommonsImage } from '../utils/getCommonsImage';
-
-
-const API_KEY = import.meta.env.VITE_TOMTOM_API_KEY
+import { useNavigate } from 'react-router-dom';
 
 interface Business {
-    poi?: {
-        name?: string;
-        phone?: string;
-        categories?: string[];
-        id?: string;
-    };
-    address?: {
-        freeformAddress?: string;
-    };
+    name: string;
+    address: string;
+    latitude: number;
+    longitude: number;
+    distance_meters: number;
+    category: string[];
+    score: number;
+    classifications: any[];
     imageUrl?: string;
 }
 
@@ -28,43 +23,55 @@ const TinderPage = () => {
     const [businesses, setBusinesses] = useState<Business[]>([]);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
+    const [swipeCount, setSwipeCount] = useState(0);
+    const [error, setError] = useState<string | null>(null);
+    const [likedLocations, setLikedLocations] = useState<Business[]>([]);
+    const [userLoc, setUserLoc] = useState({ lat: 34.0731, lng: -118.4016 });
+    const [showSidebar, setShowSidebar] = useState(false);
+    const navigate = useNavigate();
 
+    const fetchBusinesses = async () => {
+        setError(null);
+
+        try {
+            const response = await fetch('http://localhost:5173/recc/ranked', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    latitude: userLoc.lat,
+                    longitude: userLoc.lng,
+                    radius_mi: 20,
+                    limit: 10
+                })
+            });
+            if (response.ok) {
+                const data = await response.json();
+                const businessesWithImages = await Promise.all(
+                    data.ranked_locations.map(async (result: Business) => {
+                        let imageUrl = '';
+                        const name = result.name;
+                        const address = result.address;
+                        if (name && address) {
+                            imageUrl = (await getCommonsImage(`${name} ${address}`)) || '';
+                        }
+                        return { ...result, imageUrl };
+                    })
+                );
+                setBusinesses(businessesWithImages);
+                setCurrentIndex(0);
+            } else {
+                setError('Failed to fetch ranked locations. Please ensure you are logged in.');
+            }
+        } catch (error) {
+            console.error('Error fetching businesses:', error);
+            setError('Error fetching businesses. Check console for details.');
+        }
+    };
 
     useEffect(() => {
-        const fetchBusinesses = async () => {
-            try {
-                const response = await services.fuzzySearch({
-                    key: API_KEY,
-                    query: 'restaurant',
-                    center: [-74.0060, 40.7128], 
-                    limit: 10
-                });
-                const results = response.results || [];
-                const businessesWithImages = await Promise.all(
-                results.map(async (result) => {
-                    let imageUrl = '';
-
-                    const name = result.poi?.name;
-                    const address = result.address?.freeformAddress;
-
-                    if (name && address) {
-                    imageUrl =
-                        (await getCommonsImage(`${name} ${address}`)) ||
-                        '';
-                    }
-
-                    return { ...result, imageUrl };
-                })
-                );
-
-                setBusinesses(businessesWithImages);
-            } catch (error) {
-                console.error('Error fetching businesses:', error);
-            }
-        };
         fetchBusinesses();
-    }, []
-);
+    }, []);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -79,15 +86,46 @@ const TinderPage = () => {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [currentIndex, businesses.length]);
 
-    async function handleAnimationComplete() {
-        if (swipeDirection=='left'){
-            //save in database as interested location
+    const updatePreferences = async (action: string, poi: any) => {
+        try {
+            await fetch('http://localhost:5173/recc/update_preferences', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ action, poi })
+            });
+        } catch (error) {
+            console.error('Error updating preferences:', error);
+        }
+    };
 
+    async function handleAnimationComplete() {
+        if (swipeDirection === 'left') {
+            await updatePreferences('dislike', { classifications: businesses[currentIndex].classifications });
+        } else if (swipeDirection === 'right') {
+            await updatePreferences('like', { classifications: businesses[currentIndex].classifications });
+            setLikedLocations(prev => {
+                const isAlreadyLiked = prev.some(loc => 
+                    loc.name === businesses[currentIndex].name && 
+                    loc.address === businesses[currentIndex].address
+                );
+                if (!isAlreadyLiked) {
+                    return [...prev, businesses[currentIndex]];
+                }
+                return prev;
+            });
+            console.log(likedLocations);
+            setShowSidebar(true);
         }
 
         if (swipeDirection) {
             setCurrentIndex(currentIndex + 1);
             setSwipeDirection(null);
+            const newSwipeCount = swipeCount + 1;
+            setSwipeCount(newSwipeCount);
+            if (newSwipeCount % 5 === 0) {
+                fetchBusinesses();
+            }
         }
     };
 
@@ -136,27 +174,27 @@ const TinderPage = () => {
                             >
                                 <div style={{display:"flex",justifyContent:"space-around"}}>
                                     <div style={{marginLeft:"1200px",marginRight:"600px"}}>
-                                            <Card
-                                        title={currentBusiness.poi?.name || 'Unknown Business'}
-                                        className="flex justify-center "
-                                        
-                                    >
+                                    <Card
+                                    title={currentBusiness.name || 'Unknown Business'}
+                                    className="flex justify-center "
+                                    
+                                >
 
-                                        {currentBusiness.imageUrl && (
-                                            <div style={{marginTop:'10px', marginBottom:'10px'}}>
-                                                <img src={currentBusiness.imageUrl} alt="Business" style={{width:'100%', height:'200px', objectFit:'cover', borderRadius:'12px'}} />
-                                            </div>
-                                        )}
-                                        <div style={{marginTop:'10px',backgroundColor:'rgba(255, 255, 255, 0.1)',padding:'10px',borderRadius:'12px'}}>
-                                            <p style={{color:'white'}}><strong>Address:</strong> {currentBusiness.address?.freeformAddress || 'N/A'}</p>
+                                    {currentBusiness.imageUrl && (
+                                        <div style={{marginTop:'10px', marginBottom:'10px'}}>
+                                            <img src={currentBusiness.imageUrl} alt="Business" style={{width:'100%', height:'200px', objectFit:'cover', borderRadius:'12px'}} />
                                         </div>
-                                        <div style={{marginTop:'10px',backgroundColor:'rgba(255, 255, 255, 0.1)',padding:'10px',borderRadius:'12px'}}>
-                                            <p style={{color:'white'}}><strong>Phone:</strong> {currentBusiness.poi?.phone || 'N/A'}</p>
-                                        </div>
-                                        <div style={{marginTop:'10px',backgroundColor:'rgba(255, 255, 255, 0.1)',padding:'10px',borderRadius:'12px'}}>
-                                            <p style={{color:'white'}}><strong>Categories:</strong> {currentBusiness.poi?.categories?.map(category => titleCase(category)).join(', ') || 'N/A'}</p>
-                                        </div>
-                                    </Card>
+                                    )}
+                                    <div style={{marginTop:'10px',backgroundColor:'rgba(255, 255, 255, 0.1)',padding:'10px',borderRadius:'12px'}}>
+                                        <p style={{color:'white'}}><strong>Address:</strong> {currentBusiness.address || 'N/A'}</p>
+                                    </div>
+                                    <div style={{marginTop:'10px',backgroundColor:'rgba(255, 255, 255, 0.1)',padding:'10px',borderRadius:'12px'}}>
+                                        <p style={{color:'white'}}><strong>Distance:</strong> {(currentBusiness.distance_meters / 1609.34).toFixed(2)} miles</p>
+                                    </div>
+                                    <div style={{marginTop:'10px',backgroundColor:'rgba(255, 255, 255, 0.1)',padding:'10px',borderRadius:'12px'}}>
+                                        <p style={{color:'white'}}><strong>Categories:</strong> {currentBusiness.category?.map(category => titleCase(category)).join(', ') || 'N/A'}</p>
+                                    </div>
+                                </Card>
 
                                     </div>
 
@@ -168,23 +206,24 @@ const TinderPage = () => {
 
 
                                 <Card
-                                    title={nextBusiness.poi?.name || 'Unknown Business'}
+                                    title={nextBusiness.name || 'Unknown Business'}
                                     className="flex justify-center"
                                 >
-                                    {nextBusiness.imageUrl && (
+                                    
+                                    <div style={{marginTop:'10px',backgroundColor:'rgba(255, 255, 255, 0.1)',padding:'10px',borderRadius:'12px'}}>
+                                        <p style={{color:'white'}}><strong>Address:</strong> {nextBusiness.address || 'N/A'}</p>
+                                    </div>
+                                    <div style={{marginTop:'10px',backgroundColor:'rgba(255, 255, 255, 0.1)',padding:'10px',borderRadius:'12px'}}>
+                                        <p style={{color:'white'}}><strong>Distance:</strong> {(nextBusiness.distance_meters / 1609.34).toFixed(2)} miles</p>
+                                    </div>
+                                    <div style={{marginTop:'10px',backgroundColor:'rgba(255, 255, 255, 0.1)',padding:'10px',borderRadius:'12px'}}>
+                                         <p style={{color:'white'}}><strong>Categories:</strong> {nextBusiness.category?.map(category => titleCase(category)).join(', ') || 'N/A'}</p>
+                                    </div>
+                                    {/*{nextBusiness.imageUrl && (
                                         <div style={{marginTop:'10px', marginBottom:'10px'}}>
                                             <img src={nextBusiness.imageUrl} alt="Business" style={{width:'100%', height:'200px', objectFit:'cover', borderRadius:'12px'}} />
                                         </div>
-                                    )}
-                                    <div style={{marginTop:'10px',backgroundColor:'rgba(255, 255, 255, 0.1)',padding:'10px',borderRadius:'12px'}}>
-                                        <p style={{color:'white'}}><strong>Address:</strong> {nextBusiness.address?.freeformAddress || 'N/A'}</p>
-                                    </div>
-                                    <div style={{marginTop:'10px',backgroundColor:'rgba(255, 255, 255, 0.1)',padding:'10px',borderRadius:'12px'}}>
-                                        <p style={{color:'white'}}><strong>Phone:</strong> {nextBusiness.poi?.phone || 'N/A'}</p>
-                                    </div>
-                                    <div style={{marginTop:'10px',backgroundColor:'rgba(255, 255, 255, 0.1)',padding:'10px',borderRadius:'12px'}}>
-                                         <p style={{color:'white'}}><strong>Categories:</strong> {nextBusiness.poi?.categories?.map(category => titleCase(category)).join(', ') || 'N/A'}</p>
-                                    </div>
+                                    )}*/}
                                 </Card>
 
                                 </div>
@@ -196,28 +235,88 @@ const TinderPage = () => {
                         )}
 
                     </AnimatePresence>
-                    {businesses.length === 0 && <p>Loading...</p>}
+                    {error ? <p style={{color: 'red'}}>{error}</p> : businesses.length === 0 && <p>Loading...</p>}
                 </div>
 
-                <div style={{marginBottom:260,display:"flex",justifyItems:"space-between",gap:800,alignItems:"center"}} className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50"> 
-                    <div>
-                        <HeartPlus
-                            size={250}
-                            style={{ color: "rgba(1, 255, 47, 0.8)" }}
-                            className="cursor-pointer hover:scale-110 transition"
-                        />
-                    </div>
+                <div style={{marginBottom:260,display:"flex",justifyItems:"space-between",gap:750,alignItems:"center"}} className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50"> 
+    
 
-
-                    <div>
+                    <motion.div
+                        animate={{
+                            scale: swipeDirection === 'left' ? [1, 1.3, 1] : 1
+                        }}
+                        transition={{
+                            duration: 0.6,
+                            repeat: swipeDirection === 'left' ? 1 : 0,
+                            ease: "easeInOut"
+                        }}
+                    >
                         <X
-                            size={300}
+                            size={400}
                             style={{ color: "rgba(240, 0, 0, 0.8)" }}
                             className="cursor-pointer hover:scale-110 transition"
                         />
-                    </div>
+                    </motion.div>
+
+
+
+
+                    <motion.div
+                        animate={{
+                            scale: swipeDirection === 'right' ? [1, 1.3, 1] : 1
+                        }}
+                        transition={{
+                            duration: 0.6,
+                            repeat: swipeDirection === 'right' ? 1 : 0,
+                            ease: "easeInOut"
+                        }}
+                    >
+                        <HeartPlus
+                            size={300}
+                            style={{ color: "rgba(1, 255, 47, 0.8)" }}
+                            className="cursor-pointer hover:scale-110 transition"
+                        />
+                    </motion.div>
+
+
+
 
                 </div>
+
+                <AnimatePresence>
+                    {showSidebar && (
+                        <motion.div
+                            initial={{ x: '100%' }}
+                            animate={{ x: 0 }}
+                            exit={{ x: '100%' }}
+                            transition={{ duration: 0.3 }}
+                            className="fixed top-0 right-0 h-full w-80 bg-white shadow-lg z-50 flex flex-col"
+                        >
+                            <div className="flex justify-between items-center p-4 border-b">
+                                <h2 className="text-xl font-bold">Liked Locations</h2>
+                                <button
+                                    onClick={() => setShowSidebar(false)}
+                                    className="text-gray-500 hover:text-gray-700"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+                            <div className="flex-1 overflow-y-auto p-4">
+                                {likedLocations.map((loc, index) => (
+                                    
+                                    <div
+                                        key={index}
+                                        className="mb-4 p-3 border rounded cursor-pointer hover:bg-gray-100"
+                                        onClick={() => navigate(`/map?lat=${loc.latitude}&lon=${loc.longitude}`)}
+                                    >
+                                        <h3 className="font-semibold">{loc.name}</h3>
+                                        <p className="text-sm text-gray-600">{loc.address}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
         </>
     );

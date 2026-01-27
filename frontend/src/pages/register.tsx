@@ -18,7 +18,7 @@ const Register = () => {
 	const handleRegister = async (e: React.FormEvent) => {
 		e.preventDefault();
 		setSubmitError('');
-		const url = 'http://localhost:5174/auth/register';
+		const url = 'http://localhost:5173/auth/register';
 		if (!doPasswordsMatch) {
 			return;
 		}

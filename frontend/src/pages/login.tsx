@@ -43,7 +43,7 @@ const Login = () => {
 						formData.append('password', password);
 
 						try {
-							const res = await fetch("http://localhost:5174/auth/login", { 
+							const res = await fetch("http://localhost:5173/auth/login", { 
 								method: "POST",
 								credentials: 'include',
 								body: formData 
