@@ -25,7 +25,7 @@ const Card: React.FC<CardProps> = ({
     style = "",
     image = "",
     imageHeight = "200px",
-    bgcolor = "#1E293B",
+    bgcolor = "",
 }) => {
     return (
         <div className={`relative z-10 flex justify-center w-full ${className}`}>

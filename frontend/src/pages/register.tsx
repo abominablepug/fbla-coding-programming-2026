@@ -70,17 +70,17 @@ const Register = () => {
                 </Links>
             </Navbar>
 
-			<Card className="max-w-2xl w-full mx-4 z-10" title="BIZMATCH" titleClassName='text-center text-cyan-500'>
+			<Card className="max-w-2xl w-full mx-4 z-10"  bgcolor='rgba(26, 101, 136, 1)' cardClassName="w-full" title="BIZMATCH" titleClassName='text-center text-cyan-500'>
 				<div className="text-center">
-					<h1 className="text-3xl font-bold text-slate-400">Register</h1>
+					<h1 className="text-3xl font-bold text-white-400">Register</h1>
 				</div>
 
 				<form className="mt-8 space-y-6" onSubmit={handleRegister}>
 					<div>
-						<label className="block text-sm font-medium text-slate-400">Username:</label>
+						<label className="block text-sm font-medium text-white-400">Username:</label>
 						<input
 							type="text"
-							className="mt-1 w-full rounded-lg bg-white/10 border border-white/20 p-3 text-slate-300 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-400 transition-all"
+							className="mt-1 w-full rounded-lg bg-white/10 border border-white/20 p-3 text-white-300 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-400 transition-all"
 							placeholder="username"
 							value={username}
 							onChange={(e) => setUsername(e.target.value)}
@@ -88,7 +88,7 @@ const Register = () => {
 					</div>
 
 					<div>
-						<label className="block text-sm font-medium text-slate-400">Password</label>
+						<label className="block text-sm font-medium text-white-400">Password</label>
 						<input
 							type="password"
 							className="mt-1 w-full rounded-lg bg-white/10 border border-white/20 p-3 text-slate-300 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-400 transition-all"
@@ -103,7 +103,7 @@ const Register = () => {
 						)}
 					</div>
 					<div>
-						<label className="block text-sm font-medium text-slate-400">Confirm Password</label>
+						<label className="block text-sm font-medium text-white-400">Confirm Password</label>
 						<input
 							type="password"
 							className="mt-1 w-full rounded-lg bg-white/10 border border-white/20 p-3 text-slate-300 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-400 transition-all"
