@@ -60,7 +60,7 @@ const Dashboard=()=>{
                     Map <MapPin size={22}/>
                 </Links>
                 <Links link="tinder">
-                    Tinder <Heart size={22}/>
+                    Findr <Heart size={22}/>
                 </Links>
                 <Links link="/" onClick={handleLogout}>
                     Logout →
