@@ -63,8 +63,8 @@ const Home = () => {
 					</Link>
 				</motion.div>
 
-				<motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.2, duration: 1 }} className="absolute bottom-10 animate-bounce text-neutral-400 flex flex-col items-center gap-2" >
-					<span onClick={()=>{document.getElementById("details")?.scrollIntoView({behavior:'smooth'});}} className="text-sm uppercase tracking-widest">Scroll to Explore</span>
+				<motion.div onClick={()=>{document.getElementById("details")?.scrollIntoView({behavior:'smooth'});}} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.2, duration: 1 }} className="absolute bottom-10 animate-bounce text-neutral-400 flex flex-col items-center gap-2" >
+					<span className="text-sm uppercase tracking-widest">Scroll to Explore</span>
 					<ArrowRight className="w-4 h-4 rotate-90" />
 				</motion.div>
 			</div>
