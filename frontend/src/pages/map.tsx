@@ -781,7 +781,7 @@ const Map = () => {
           
           {/*hiding sidebar*/}
           <Navbar page={`Map`}>
-             <Links link="dashboard">
+             <Links link="dashboard" className="text-[14px]">
               Dashboard <House size={17} />
             </Links>
           </Navbar>        
