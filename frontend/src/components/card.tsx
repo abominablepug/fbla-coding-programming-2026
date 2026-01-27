@@ -26,7 +26,7 @@ const Card: React.FC<CardProps> = ({ title, children, className = "", cardClassN
                         )}
                     </div>
                 )}
-                <div className={`text-neutral-400 text-lg leading-relaxed ${contentClassName}`}>
+                <div className={`text-neutral-400 min:text-lg leading-relaxed ${contentClassName}`}>
                     {children}
                 </div>
             </div>

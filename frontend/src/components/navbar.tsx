@@ -18,13 +18,18 @@ const Navbar: React.FC<NavBarProps> = ({ page, children, className = ""}) => {
 	const bgColor = useTransform(scrollY, [0, 100], ["rgba(23, 23, 23, 1)", "rgba(30, 30, 30, 0.7)"]);
 
     return (
-        <div className="fixed z-50 min-w-screen pointer-events-none flex justify-center">
+        <div className="fixed z-50 w-full top-0 pointer-events-none flex justify-center">
             <motion.div style={{ width, borderRadius, marginTop, backgroundColor: bgColor }} className="px-8 flex items-center justify-between shadow-neutral-700 backdrop-blur-md pointer-events-auto shadow-md">
-                <nav className="py-5 px-5 w-full flex justify-between items-center">
-                    <span className={`${className ? className : "bg-linear-to-l from-cyan-700 via-cyan-500 to-purple-400 bg-clip-text text-transparent"} font-bold tracking-widest text-sm md:text-lg`}>
-                        {page}
+                <nav className="py-5 px-5 w-full flex items-center relative">
+                    <span className="bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent font-bold tracking-widest text-lg md:text-xl">
+                        BizMatch
                     </span>
-                    <div className="flex space-x-2">
+                    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+                        <span className={`${className ? className : "text-slate-400"} font-bold tracking-widest text-sm md:text-lg`}>
+                            {page}
+                        </span>
+                    </div>
+                    <div className="flex space-x-2 ml-auto">
                         {children}
                     </div>
                 </nav>

@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
-import { ShaderGradientCanvas, ShaderGradient } from '@shadergradient/react';
+import { motion, AnimatePresence } from 'framer-motion';
+import Card from '../components/card';
+import Links from '../components/links';
+import Navbar from '../components/navbar';
 import { Link, useNavigate } from 'react-router-dom';
 
 const Login = () => {
@@ -9,30 +12,25 @@ const Login = () => {
 	const navigate = useNavigate();
 
 	return (
-		<div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden">
-			<div className="fixed inset-0 backdrop-blur-[400px] -z-10">
-				<ShaderGradientCanvas
-					pixelDensity={10}
-					style={{ width: '100%', height: '100%' }}
-				>
-					<ShaderGradient
-						animate="on"
-						grain="off"
-						uSpeed={0.1}
-						uStrength={1.1}
-						uDensity={0.8}
-						color2="#06b6d4"
-						color3="#c084fc"
-						cDistance={2.0}
-						type="waterPlane"
-					/>
-				</ShaderGradientCanvas>
+		<div className="min-h-screen bg-neutral-900 relative w-full overscroll-none flex flex-col items-center justify-center">
+			<div className="fixed backdrop-blur-[1000px] inset-0 bg-neutral-900 pointer-events-none w-full z-0 flex items-center justify-center overscroll-none">
+				<motion.div initial={{ opacity: 0.4, y: 0 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 2.0 }} className="fixed lg:w-[1200px] h-[500px] w-[600px] -z-0 rounded-full">
+					<div className="absolute bottom-[-500px] w-full h-full bg-linear-to-t from-cyan-700/70 via-cyan-500/70 to-purple-400/70 blur-[160px] rounded-full" />
+				</motion.div>
+				<motion.div initial={{ opacity: 0.3, y: 0 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 2.0 }} className="fixed lg:w-[900px] h-[500px] w-[500px] -z-0 rounded-full">
+					<div className="absolute lg:top-[-520px] top-[-420px] w-full h-full bg-linear-to-b from-cyan-700/40 via-cyan-500/40 to-purple-400/40 blur-[120px] rounded-full" />
+				</motion.div>
 			</div>
 
-			<div className="w-full max-w-md rounded-2xl bg-neutral-800/80 backdrop-blur-x1 p-10 shadow-10x1 border border-blue-900 mx-7">
+			<Navbar page="Login">
+                <Links link="/">
+                    Back →
+                </Links>
+            </Navbar>
+
+			<Card className="max-w-2xl w-full mx-4 z-10" title="BIZMATCH" titleClassName='text-center text-cyan-500'>
 				<div className="text-center">
-					<h1 className="text-3xl font-bold text-white">FBLA 25-26 Cod/Prog</h1>
-					<p className="mt-2 text-slate-200">Login</p>
+					<h1 className="text-gray-400 text-3xl font-bold">Login</h1>
 				</div>
 
 				<form className="mt-8 space-y-6"
@@ -67,7 +65,7 @@ const Login = () => {
 						<label className="block text-sm font-medium text-white">Username:</label>
 						<input
 							type="text"
-							className="mt-1 w-full rounded-lg bg-white/10 border border-white/20 p-3 text-white placeholder-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-400 transition-all"
+							className="mt-1 w-full rounded-lg bg-white/10 border border-white/20 p-3 text-gray-300 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-400 transition-all"
 							placeholder="username"
 							value={username}
 							onChange={(e) => setUsername(e.target.value)}
@@ -78,7 +76,7 @@ const Login = () => {
 						<label className="block text-sm font-medium text-white">Password</label>
 						<input
 							type="password"
-							className="mt-1 w-full rounded-lg bg-white/10 border border-white/20 p-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-400 transition-all"
+							className="mt-1 w-full rounded-lg bg-white/10 border border-white/20 p-3 text-gray-300 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-400 transition-all"
 							placeholder="••••••••"
 							value={password}
 							onChange={(e) => setPassword(e.target.value)}
@@ -87,17 +85,12 @@ const Login = () => {
 					{submitError && <p className="text-red-400 text-sm text-center">{submitError}</p>}
 					<button
 						type="submit"
-						className="w-full rounded-lg bg-sky-500 py-3 font-semibold text-white hover:bg-sky-400 active:scale-[0.98] transition-all shadow-lg mb-3"
+						className="w-full rounded-lg bg-sky-500 py-3 font-semibold text-white hover:bg-sky-400 active:scale-[0.98] transition-all shadow-lg"
 					>
 						Sign In
 					</button>
-					<Link to="/">
-						<button type="button" className="w-full rounded-lg bg-sky-500 py-3 font-semibold text-white hover:bg-sky-400 active:scale-[0.98] transition-all shadow-lg">
-							← Back
-						</button>
-					</Link>
 				</form>
-			</div>
+			</Card>
 		</div>
 	);
 };

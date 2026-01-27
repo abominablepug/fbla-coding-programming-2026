@@ -107,18 +107,19 @@ def rank_locations(user_profile, locations):
 
         relevance = calculate_relevance(user_vector, location_vector)
         popularity = place.get('score', 1.0) / 100.0
-        distance = place.get('distance_meters', 0) / 1609.34
-        distance_factor = math.exp(-distance / (decay_constant)) * 10.0
-
+        distance_mi = place.get('distance_meters', 0) / 1609.34
+        distance_factor = math.exp(-distance_mi / (decay_constant))
         final_score = ((relevance * relevance_weight) + (popularity * popularity_weight)) * distance_factor
 
         ranked_list.append({
-            "name": place['name'],
-            "score": final_score,
-            "relevance": relevance,
-            "popularity": popularity,
-            "distance_factor": distance_factor,
-            "distance_mi": distance
+            'name': place.get('name'),
+            'address': place.get('address'),
+            'latitude': place.get('latitude'),
+            'longitude': place.get('longitude'),
+            'distance_meters': place.get('distance_meters'),
+            'category': place.get('category'),
+            'score': final_score,
+            'classifications': place.get('classifications')
         })
 
     return sorted(ranked_list, key=lambda x: x['score'], reverse=True)

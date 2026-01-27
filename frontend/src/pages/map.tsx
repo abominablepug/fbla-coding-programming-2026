@@ -127,7 +127,7 @@ const Map = () => {
   const markersRef = useRef<any[]>([]);
   const poiMarkersRef = useRef<any[]>([]);
   const userMarkerRef = useRef<any>(null);
-  const [userLoc, setUserLoc] = useState({ lat: 40.32988, lng: -74.37149 });
+  const [userLoc, setUserLoc] = useState({ lat: 34.0731, lng: -118.4016 });
   const [inputValue, setInputValue] = useState('');
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [stats, setStats] = useState<RouteInfo | null>(null);
@@ -339,11 +339,11 @@ const Map = () => {
   }, [inputValue, userLoc]);
 
   const clearMap = (preservePoi = false) => {
-    // Remove all destination markers
+
     markersRef.current.forEach(m => m.remove());
     markersRef.current = [];
     
-    // Always clear route layers and source
+
     if (mapRef.current && mapRef.current.getLayer('route-arrows')) {
       try { mapRef.current.removeLayer('route-arrows'); } catch (e) {}
     }

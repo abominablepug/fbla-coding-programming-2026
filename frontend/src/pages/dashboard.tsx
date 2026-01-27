@@ -55,7 +55,7 @@ const Dashboard=()=>{
                     <div className="absolute lg:top-[-520px] top-[-420px] w-full h-full bg-linear-to-b from-cyan-700/40 via-cyan-500/40 to-purple-400/40 blur-[120px] rounded-full" />
                 </motion.div>
             </div>
-            <Navbar page="Profile">
+            <Navbar page="Dashboard">
                 <Links link="map">
                     Map <MapPin size={22}/>
                 </Links>
@@ -68,7 +68,7 @@ const Dashboard=()=>{
                     <h1 className="text-gray-400 text-2xl">Your account infomation is below:</h1>
                     <div className="grid gap-2 grid-cols-2 mt-8 max:[gap-y-1">
                     <p className="text-gray-400 text-lg">Username: {user.username}</p>
-                    <p className="text-gray-400 text-lg">Email: {user.uid}</p>
+                    <p className="text-gray-400 text-lg">User ID: {user.uid}</p>
                     </div>
                 </Card>
             </div>

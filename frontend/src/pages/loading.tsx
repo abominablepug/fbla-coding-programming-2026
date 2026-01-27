@@ -25,7 +25,7 @@ const Landing = () => {
 						</h1>
 					</motion.div>
 					<Link
-						to="/home"
+						to="/"
 						className="px-8 py-3 lg:scale-[1.0] scale-[0.8] rounded-lg bg-blue-400 text-orange-50 font-semibold shadow-lg shadow-blue-800 hover:bg-sky-400 hover:shadow-blue-500/85 transition-all duration-200 
                     hover:shadow-2xl hover:scale-[0.87] lg:hover:scale-[1.1]"
 					>
