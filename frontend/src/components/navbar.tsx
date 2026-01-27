@@ -1,5 +1,6 @@
 import React from 'react';
 import {motion, useScroll, useTransform} from "framer-motion";
+import { Link } from 'react-router-dom';
 
 interface NavBarProps {
     page?: React.ReactNode;
@@ -22,7 +23,9 @@ const Navbar: React.FC<NavBarProps> = ({ page, children, className = ""}) => {
             <motion.div style={{ width, borderRadius, marginTop, backgroundColor: bgColor }} className="px-8 flex items-center justify-between shadow-neutral-700 backdrop-blur-md pointer-events-auto shadow-md">
                 <nav className="py-5 px-5 w-full flex items-center relative">
                     <span className="bg-linear-to-r from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent font-bold tracking-widest text-lg md:text-xl">
-                        BizMatch
+                        <Link to="/">
+                            BizMatch
+                        </Link>
                     </span>
                     <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
                         <span className={`${className ? className : "text-neutral-400"} font-bold tracking-widest text-md md:text-xl`}>
