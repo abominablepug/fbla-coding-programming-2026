@@ -627,5 +627,9 @@ CATEGORY_MAPPING = {
     "HARDWARE": "shopping",
     "ELECTRICAL, OFFICE IT: OFFICE EQUIPMENT": "shopping",
     "CONVENIENCE STORES": "shopping",
-    "MOTORCYCLE": "shopping"
+    "MOTORCYCLE": "shopping",
+    "IMPORTANT TOURIST ATTRACTION": ["arts_and_culture", "activities"],
+    "FOOD DRINKS: GROCERS": "food",
+    "ELECTRIC VEHICLE STATION": "transportation_utilities",
+    "TRAVEL AGENTS": "proffesional_services"
 }
