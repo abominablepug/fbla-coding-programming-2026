@@ -3,8 +3,10 @@ import { motion } from 'framer-motion';
 import Links from '../components/links';
 import Navbar from '../components/navbar';
 import Card from '../components/card';
-import { ArrowRight, Map, ThumbsUp, LayoutDashboard, Code, Database, Globe } from 'lucide-react';
+import { ArrowRight, HeartPlus, ThumbsUp, LayoutDashboard, Code, Database, Globe, X } from 'lucide-react';
 import mapDisp from '../assets/mapdisp.png'; 
+import findr from '../assets/findr.png'; 
+import dashboard from '../assets/dashboard.png'; 
 
 
 const Home = () => {
@@ -92,14 +94,14 @@ const Home = () => {
 							</p>
 							<ul className="space-y-4">
 								<li className="flex items-start gap-3">
-									<div className="p-2 bg-green-500/10 rounded-lg text-green-400"><ThumbsUp size={20} /></div>
+									<div className="p-2 bg-green-500/10 rounded-lg text-green-400"><HeartPlus size={20} /></div>
 									<div>
 										<h4 className="font-bold text-white">Swipe Right to Like</h4>
 										<p className="text-sm text-neutral-400">Save locations you're interested in to your dashboard.</p>
 									</div>
 								</li>
 								<li className="flex items-start gap-3">
-									<div className="p-2 bg-red-500/10 rounded-lg text-red-400"><ArrowRight size={20} className="rotate-180" /></div>
+									<div className="p-2 bg-red-500/10 rounded-lg text-red-400"><X size={20} className="rotate-180" /></div>
 									<div>
 										<h4 className="font-bold text-white">Swipe Left to Pass</h4>
 										<p className="text-sm text-neutral-400">Skip locations that don't meet your criteria.</p>
@@ -109,14 +111,7 @@ const Home = () => {
 						</div>
 						<div className="relative h-80 bg-neutral-900 rounded-2xl border border-white/10 overflow-hidden group shadow-2xl">
 							<div className="absolute inset-0 flex flex-col items-center justify-center bg-neutral-800/50 text-center p-6">
-								<div className="w-48 h-64 bg-neutral-700 rounded-xl shadow-xl border border-white/5 flex items-center justify-center mb-4 relative transform group-hover:scale-105 transition-transform duration-500">
-									<span className="text-neutral-500 text-xs">[Location Card Image]</span>
-									<div className="absolute bottom-4 flex gap-4">
-										<div className="w-8 h-8 rounded-full bg-red-500/20 border border-red-500/50 flex items-center justify-center text-red-500">✕</div>
-										<div className="w-8 h-8 rounded-full bg-green-500/20 border border-green-500/50 flex items-center justify-center text-green-500">♥</div>
-									</div>
-								</div>
-								<p className="text-xs text-cyan-500 font-mono mt-2">PLACEHOLDER: Swipe Interface Screenshot</p>
+								<img className="h-80"src={findr}/>
 							</div>
 						</div>
 					</div>
@@ -174,16 +169,9 @@ const Home = () => {
 								<span>Centralized control for all your data</span>
 							</div>
 						</div>
-						<div className="relative h-64 bg-neutral-900 rounded-2xl border border-white/10 overflow-hidden shadow-2xl">
-							<div className="absolute inset-0 flex flex-col items-center justify-center bg-neutral-800/50 text-center p-6">
-								<div className="w-full max-w-xs p-4 bg-neutral-800 rounded border border-white/5">
-									<div className="h-4 w-1/3 bg-neutral-600 rounded mb-4"></div>
-									<div className="space-y-2">
-										<div className="h-2 w-full bg-neutral-700 rounded"></div>
-										<div className="h-2 w-5/6 bg-neutral-700 rounded"></div>
-									</div>
-								</div>
-								<p className="text-xs text-cyan-400 font-mono mt-4">PLACEHOLDER: Dashboard Screenshot</p>
+						<div className="relative h-80 w-130 bg-neutral-900 rounded-2xl border border-white/10 overflow-hidden shadow-2xl">
+							<div className="absolute inset-0 flex flex-col items-center justify-center bg-neutral-800/50 text-center">
+								<img src={dashboard}/>
 							</div>
 						</div>
 					</div>
@@ -206,7 +194,7 @@ const Home = () => {
 							<h3 className="text-xl font-bold text-white mb-3">Frontend</h3>
 							<p className="text-neutral-400 leading-relaxed">
 								Crafted with <span className="text-cyan-300">React 19</span> and <span className="text-cyan-300">TypeScript</span>.
-								Animations powered by <span className="text-cyan-300">Framer Motion</span> for a fluid user experience.
+								Animations powered by <span className="text-cyan-300">Framer Motion</span> for a fluid user experience. Integrating <span className="text-cyan-300">Tailwind CSS</span> library for high customizability.
 							</p>
 						</div>
 
