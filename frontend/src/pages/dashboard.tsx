@@ -5,10 +5,33 @@ import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/navbar';
 import Links from '../components/links';
 import {Heart, MapPin} from 'lucide-react';
+import pfp from "/Users/patelb/fbla25-project/backend/static/profile_pictures/default_profile_picture.png";
 
 const Dashboard=()=>{
     const [user, setUser] = useState<{uid: string, username: string} | null>(null);
     const navigate = useNavigate();
+    const favoriteLocations = [
+        {
+            name: "Public Art 'Iron Root'",
+            address: "North Crescent Drive, Beverly Hills, CA 90210",
+            time: "10:15 AM"
+        },
+        {
+            name: "Public Art 'Sitting Figure on A Short Bench'",
+            address: "Santa Monica Boulevard & North Beverly Drive, Beverly Hills, CA 90210",
+            time: "12:15 PM"
+        },
+        {
+            name: "Beverly Gardens Park",
+            address: "Santa Monica Boulevard, Beverly Hills, CA 90210",
+            time: "12:20 PM"
+        },
+        {
+            name: "Picsil",
+            address: "Santa Monica Boulevard, Beverly Hills, CA 90210",
+            time: "4:15 PM"
+        }
+    ];
 
     useEffect(() => {
         const fetchProfile = async () => {
@@ -66,13 +89,39 @@ const Dashboard=()=>{
                     Logout →
                 </Links> 
             </Navbar>
-            <div className="w-full relative grid gap-8 pt-28">
-                <Card title={`Welcome ${user.username}`} titleClassName='text-cyan-500' cardClassName='w-[95%]'>
-                    <h1 className="text-gray-400 text-2xl">Your account infomation is below:</h1>
-                    <div className="grid gap-2 grid-cols-2 mt-8 max:gap-y-1">
-                    <p className="text-gray-400 text-lg">Username: {user.username}</p>
-                    <p className="text-gray-400 text-lg">User ID: {user.uid}</p>
+            <div className="w-full relative grid gap-11 pt-28">
+                <Card title={`Welcome ${user.username}`}  titleClassName='text-cyan-500' cardClassName='w-[95%]'>
+                    <p>Scroll Down to view your Account Details and Favorite Locations!</p>
+                </Card>
+                <Card title='Account Info:' cardClassName='w-[75%] ease-in-out hover:shadow-cyan-500/20 hover:shadow-2xl hover:scale-102 transition-all duration-500'>
+                <div className="grid grid-cols-1 gap-y-3 place-items-center text-center">
+                    <img className="rounded-full border-4 w-32 h-32 object-cover shadow-w-auto border-cyan-600 hover:border-cyan-700 transition-transform" src={pfp} alt="Profile"/>
+                    <p className="text-gray-400 text-xl">User ID: {user.uid}</p>
+                    <p className="text-gray-400 text-xl">Username: {user.username}</p>
+                    <div className="flex flex-wrap justify-center gap-4 mt-4 w-full">
+                        <button className="px-6 py-4 bg-sky-500 text-white rounded-lg font-semibold text-lg transition-all hover:bg-sky-400 shadow-lg">
+                            Change Profile Picture
+                        </button>
+                        <button className="px-6 py-4 bg-sky-500 text-white rounded-lg font-semibold text-lg transition-all hover:bg-sky-400 shadow-lg">
+                            Change Password
+                        </button>
                     </div>
+                </div>
+                </Card>
+                <Card title='Favorite Locations:' cardClassName='w-[75%] ease-in-out hover:shadow-cyan-500/20 hover:shadow-2xl hover:scale-102 transition-all duration-500'>
+                <div className="flex flex-col gap-4 w-full">
+                    {favoriteLocations.map((loc, i) => (
+                        <div key={i} className="bg-neutral-800/50 p-4 rounded-xl border border-white/10 flex flex-col md:flex-row justify-between items-start md:items-center hover:bg-neutral-800/80 transition-colors">
+                            <div>
+                                <h3 className="text-lg font-bold text-cyan-400">{loc.name}</h3>
+                                <p className="text-sm text-gray-400">{loc.address}</p>
+                            </div>
+                            <div className="mt-2 md:mt-0 text-right">
+                                <p className="text-sm text-gray-300 font-mono">Added: {loc.time}</p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
                 </Card>
             </div>
         </div>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import Navbar from '../components/navbar';
 import Card from '../components/card';
 import { HeartPlus, MapPin, House} from 'lucide-react';
@@ -30,6 +30,13 @@ const TinderPage = () => {
     const [userLoc, setUserLoc] = useState({ lat: 34.0731, lng: -118.4016 });
     const [showSidebar, setShowSidebar] = useState(false);
     const navigate = useNavigate();
+
+    const { scrollY } = useScroll();
+	const marginTop = useTransform(scrollY, [0, 100], ["0px", "12px"]);
+    const marginBottom = useTransform(scrollY, [0, 100], ["0px", "12px"]);
+	const borderRadius = useTransform(scrollY, [0, 100], ["0px", "24px"]);
+	const right = useTransform(scrollY, [0, 100], ["0px", "1%"]);
+	const bgColor = useTransform(scrollY, [0, 100], ["rgba(23, 23, 23, 1)", "rgba(30, 30, 30, 0.7)"]);
 
     const fetchBusinesses = async () => {
         setError(null);
@@ -147,7 +154,7 @@ const TinderPage = () => {
     return (
         <>
             <div className="min-h-screen bg-neutral-900 relative w-full">
-                <Navbar page="Find Your Match!">
+                <Navbar page="Findr">
                     <Links link="/map">
                         Map<MapPin size={22}/>
                     </Links>
@@ -255,13 +262,21 @@ const TinderPage = () => {
                             animate={{ x: 0 }}
                             exit={{ x: '100%' }}
                             transition={{ duration: 0.3 }}
-                            className="fixed top-0 right-0 h-full w-80 bg-white shadow-lg z-50 flex flex-col"
+                            style={{
+                                marginTop,
+                                marginBottom,
+                                right,
+                                backgroundColor: bgColor,
+                                borderTopLeftRadius: borderRadius,
+                                borderBottomLeftRadius: borderRadius,
+                            }}
+                            className="fixed top-19 bottom-0 w-80 shadow-lg z-40 flex flex-col backdrop-blur-md"
                         >
-                            <div className="flex justify-between items-center p-4 border-b">
-                                <h2 className="text-xl font-bold">Liked Locations</h2>
+                            <div className="flex justify-between items-center p-4 border-b border-white/10">
+                                <h2 className="text-xl font-bold text-white">Liked Locations</h2>
                                 <button
                                     onClick={() => setShowSidebar(false)}
-                                    className="text-gray-500 hover:text-gray-700"
+                                    className="text-neutral-400 hover:text-white transition-colors"
                                 >
                                     ✕
                                 </button>
@@ -271,11 +286,11 @@ const TinderPage = () => {
                                     
                                     <div
                                         key={index}
-                                        className="mb-4 p-3 border rounded cursor-pointer hover:bg-gray-100"
+                                        className="mb-4 p-3 bg-neutral-800/50 border border-white/10 rounded-xl cursor-pointer hover:bg-neutral-800/80 transition-colors"
                                         onClick={() => navigate(`/map?lat=${loc.latitude}&lon=${loc.longitude}`)}
                                     >
-                                        <h3 className="font-semibold">{loc.name}</h3>
-                                        <p className="text-sm text-gray-600">{loc.address}</p>
+                                        <h3 className="font-bold text-cyan-400">{loc.name}</h3>
+                                        <p className="text-sm text-neutral-400">{loc.address}</p>
                                     </div>
                                 ))}
                             </div>
