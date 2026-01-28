@@ -273,7 +273,7 @@ const TinderPage = () => {
                             className="fixed top-19 bottom-0 w-80 shadow-lg z-40 flex flex-col backdrop-blur-md"
                         >
                             <div className="flex justify-between items-center p-4 border-b border-white/10">
-                                <h2 className="text-xl font-bold text-white">Liked Locations</h2>
+                                <h2 className="text-xl font-bold text-neutral-400">Liked Locations</h2>
                                 <button
                                     onClick={() => setShowSidebar(false)}
                                     className="text-neutral-400 hover:text-white transition-colors"

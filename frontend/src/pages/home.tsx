@@ -110,8 +110,8 @@ const Home = () => {
 							</ul>
 						</div>
 						<div className="relative h-80 bg-neutral-900 rounded-2xl border border-white/10 overflow-hidden group shadow-2xl">
-							<div className="absolute inset-0 flex flex-col items-center justify-center bg-neutral-800/50 text-center p-6">
-								<img className="h-80"src={findr}/>
+							<div className="absolute inset-0 flex flex-col items-center justify-center bg-neutral-800/50 text-center">
+								<img className="h-500 -translate-y-1.5"src={findr}/>
 							</div>
 						</div>
 					</div>
@@ -129,7 +129,7 @@ const Home = () => {
 					<div className="grid md:grid-cols-2 gap-12 items-center">
 						<div className="order-2 md:order-1 relative h-80 bg-neutral-900 rounded-2xl border border-white/10 overflow-hidden shadow-2xl">
 							<div className="absolute flex flex-col items-center justify-center bg-neutral-800/50 text-center">
-								<img src={mapDisp}/>
+								<img className="-translate-y-2" src={mapDisp}/>
 							</div>
 						</div>
 						<div className="order-1 md:order-2 space-y-6">
@@ -155,7 +155,7 @@ const Home = () => {
 					initial={{ opacity: 0, y: 50 }}
 					whileInView={{ opacity: 1, y: 0 }}
 					viewport={{ once: true }}
-					transition={{ duration: 0.8, delay: 0.4 }}
+					transition={{ duration: 0.8, delay: 0.2 }}
 					className="w-full flex justify-center"
 				>
 				<Card className="max-w-6xl" cardClassName="hover:shadow-cyan-500/20 hover:shadow-2xl hover:scale-102 transition-all duration-500" title="Comprehensive Dashboard" titleClassName="text-cyan-400">

@@ -90,10 +90,10 @@ const Dashboard=()=>{
                 </Links> 
             </Navbar>
             <div className="w-full relative grid gap-11 pt-28">
-                <Card title={`Welcome ${user.username}`}  titleClassName='text-cyan-500' cardClassName='w-[95%]'>
+                <Card title={`Welcome ${user.username}`}  cardClassName='w-[95%]'>
                     <p>Scroll Down to view your Account Details and Favorite Locations!</p>
                 </Card>
-                <Card title='Account Info:' cardClassName='w-[75%] ease-in-out hover:shadow-cyan-500/20 hover:shadow-2xl hover:scale-102 transition-all duration-500'>
+                <Card title='Account Info:' titleClassName="text-cyan-500" cardClassName='w-[75%] ease-in-out hover:shadow-cyan-500/20 hover:shadow-2xl hover:scale-102 transition-all duration-500'>
                 <div className="grid grid-cols-1 gap-y-3 place-items-center text-center">
                     <img className="rounded-full border-4 w-32 h-32 object-cover shadow-w-auto border-cyan-600 hover:border-cyan-700 transition-transform" src={pfp} alt="Profile"/>
                     <p className="text-gray-400 text-xl">User ID: {user.uid}</p>
@@ -108,7 +108,7 @@ const Dashboard=()=>{
                     </div>
                 </div>
                 </Card>
-                <Card title='Favorite Locations:' cardClassName='w-[75%] ease-in-out hover:shadow-cyan-500/20 hover:shadow-2xl hover:scale-102 transition-all duration-500'>
+                <Card title='Favorite Locations:' titleClassName="text-purple-500" cardClassName='w-[75%] ease-in-out hover:shadow-purple-500/20 hover:shadow-2xl hover:scale-102 transition-all duration-500'>
                 <div className="flex flex-col gap-4 w-full">
                     {favoriteLocations.map((loc, i) => (
                         <div key={i} className="bg-neutral-800/50 p-4 rounded-xl border border-white/10 flex flex-col md:flex-row justify-between items-start md:items-center hover:bg-neutral-800/80 transition-colors">
