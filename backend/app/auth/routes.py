@@ -69,3 +69,23 @@ def profile():
         'profile_picture': current_user.profile_picture,
         'preferences': current_user.preferences
     }), 200
+
+@auth_bp.route('/change_picture', methods=['POST'])
+@login_required
+def change_picture():
+    image = request.form.get('image')
+
+    if not image:
+        return jsonify({'message': 'No image provided'}), 400
+
+    ext = os.path.splitext(image)[1]
+    random_filename = f"{os.urandom(16).hex()}{ext}"
+    
+    image_path = os.path.join('static/profile_pictures', random_filename)
+    with open(image_path, 'wb') as f:
+        f.write(image.encode('latin1'))
+
+    current_user.profile_picture = random_filename
+    db.session.commit()
+
+    return jsonify({'message': 'Profile picture updated successfully'}), 200
