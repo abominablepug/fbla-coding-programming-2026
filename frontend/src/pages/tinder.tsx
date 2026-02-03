@@ -219,7 +219,7 @@ const TinderPage = () => {
                     <motion.button
                         onClick={() => setSwipeDirection('left')}
                         animate={{
-                            scale: swipeDirection === 'left' ? [1, 1.3, 1] : 1
+                            scale: swipeDirection === 'left' ? [1, 3, 1] : 1
                         }}
                         transition={{
                             duration: 0.6,
@@ -238,14 +238,14 @@ const TinderPage = () => {
                     <motion.button
                         onClick={() => setSwipeDirection('right')}
                         animate={{
-                            scale: swipeDirection === 'right' ? [1, 1.3, 1] : 1
+                            scale: swipeDirection === 'right' ? [1, 3, 1] : 1
                         }}
                         transition={{
                             duration: 0.6,
                             repeat: swipeDirection === 'right' ? 1 : 0,
                             ease: "easeInOut"
                         }}
-                        className="cursor-pointer hover:scale-110 transition active:scale-125 focus:outline-none"
+                        className="cursor-pointer hover:scale-110 transition active:scale-150 focus:outline-none"
                         aria-label="Like"
                     >
                         <HeartPlus

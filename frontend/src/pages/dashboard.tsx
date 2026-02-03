@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect,  useState } from 'react';
 import {motion} from "framer-motion";
 import Card from "../components/card";
 import { useNavigate } from 'react-router-dom';
@@ -10,6 +10,7 @@ import pfp from "/Users/patelb/fbla25-project/backend/static/profile_pictures/de
 const Dashboard=()=>{
     const [user, setUser] = useState<{uid: string, username: string} | null>(null);
     const navigate = useNavigate();
+    const [openForm, setOpenForm] = useState(false);
     const favoriteLocations = [
         {
             name: "Public Art 'Iron Root'",
@@ -93,13 +94,13 @@ const Dashboard=()=>{
                 <Card title={`Welcome ${user.username}`}  cardClassName='w-[95%]'>
                     <p>Scroll Down to view your Account Details and Favorite Locations!</p>
                 </Card>
-                <Card title='Account Info:' titleClassName="text-cyan-500" cardClassName='w-[75%] ease-in-out hover:shadow-cyan-500/20 hover:shadow-2xl hover:scale-102 transition-all duration-500'>
+                <Card title='Account Info:' titleClassName="text-cyan-500/80" cardClassName='w-[75%] ease-in-out hover:shadow-cyan-500/20 hover:shadow-2xl hover:scale-102 transition-all duration-500'>
                 <div className="grid grid-cols-1 gap-y-3 place-items-center text-center">
                     <img className="rounded-full border-4 w-32 h-32 object-cover shadow-w-auto border-cyan-600 hover:border-cyan-700 transition-transform" src={pfp} alt="Profile"/>
                     <p className="text-gray-400 text-xl">User ID: {user.uid}</p>
                     <p className="text-gray-400 text-xl">Username: {user.username}</p>
                     <div className="flex flex-wrap justify-center gap-4 mt-4 w-full">
-                        <button className="px-6 py-4 bg-sky-500 text-white rounded-lg font-semibold text-lg transition-all hover:bg-sky-400 shadow-lg">
+                        <button className="px-6 py-4 bg-sky-500 text-white rounded-lg font-semibold text-lg transition-all hover:bg-sky-400 shadow-lg" onClick={()=>setOpenForm(true)}>
                             Change Profile Picture
                         </button>
                         <button className="px-6 py-4 bg-sky-500 text-white rounded-lg font-semibold text-lg transition-all hover:bg-sky-400 shadow-lg">
@@ -108,12 +109,20 @@ const Dashboard=()=>{
                     </div>
                 </div>
                 </Card>
-                <Card title='Favorite Locations:' titleClassName="text-purple-500" cardClassName='w-[75%] ease-in-out hover:shadow-purple-500/20 hover:shadow-2xl hover:scale-102 transition-all duration-500'>
+                {openForm&&
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md">
+                    <Card title="Change Profile Image" contentClassName='flex flex-col gap-4'>
+                        <input className="bg-neutral-800 py-3 px-5 rounded-2xl hover:bg-neutral-800/90 hover:scale-102 transition-transform duration-50 " type="file" accept='image/png, image/jpeg'/>
+                        <button className="left-50 px-3 py-1 rounded-full bg-sky-500 text-white max-w-fit text-md transition-all hover:bg-sky-400 shadow-lg" onClick={()=>setOpenForm(false)}>Close X</button>
+                    </Card>
+                </div>
+                }
+                <Card title='Favorite Locations:' titleClassName="text-purple-400/80" cardClassName='w-[75%] ease-in-out hover:shadow-purple-500/20 hover:shadow-2xl hover:scale-102 transition-all duration-500'>
                 <div className="flex flex-col gap-4 w-full">
                     {favoriteLocations.map((loc, i) => (
                         <div key={i} className="bg-neutral-800/50 p-4 rounded-xl border border-white/10 flex flex-col md:flex-row justify-between items-start md:items-center hover:bg-neutral-800/80 transition-colors">
                             <div>
-                                <h3 className="text-lg font-bold text-cyan-400">{loc.name}</h3>
+                                <h3 className="text-lg font-bold text-cyan-400/80">{loc.name}</h3>
                                 <p className="text-sm text-gray-400">{loc.address}</p>
                             </div>
                             <div className="mt-2 md:mt-0 text-right">

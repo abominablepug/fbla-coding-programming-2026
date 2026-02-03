@@ -44,14 +44,6 @@ const POI_GROUPS = [
     ]
   },
   {
-    name: 'Financial',
-    color: 'bg-emerald-600',
-    items: [
-      { id: '7328', type: 'BANK', label: 'Bank', icon: '🏦' },
-      { id: '7397', type: 'ATM', label: 'ATM', icon: '🏧' },
-    ]
-  },
-  {
     name: 'Health',
     color: 'bg-pink-500',
     items: [
@@ -781,10 +773,10 @@ const Map = () => {
           
           {/*hiding sidebar*/}
           <Navbar page={`Map`}>
-            <Links link="tinder" className="text-[14px]">
+            <Links link="tinder" className="text-[16px]">
               Findr <Heart size={22}/>
             </Links>
-            <Links link="dashboard" className="text-[14px]">
+            <Links link="dashboard" className="text-[16px]">
               Dashboard <House size={17} />
             </Links>
           </Navbar>        

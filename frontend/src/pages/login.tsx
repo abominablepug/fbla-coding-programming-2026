@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion} from 'framer-motion';
 import Card from '../components/card';
 import Links from '../components/links';
 import Navbar from '../components/navbar';
-import { Link, useNavigate } from 'react-router-dom';
+import {useNavigate } from 'react-router-dom';
 
 const Login = () => {
 	const [username, setUsername] = useState('');
