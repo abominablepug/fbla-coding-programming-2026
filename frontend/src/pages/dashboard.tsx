@@ -5,7 +5,6 @@ import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/navbar';
 import Links from '../components/links';
 import {Heart, MapPin} from 'lucide-react';
-import pfp from "/Users/patelb/fbla25-project/backend/static/profile_pictures/default_profile_picture.png";
 
 const Dashboard=()=>{
     const [user, setUser] = useState<{uid: string, username: string} | null>(null);
@@ -44,9 +43,7 @@ const Dashboard=()=>{
         });
     }, []);
 
-    const imageSrc = profilePic
-    ? `http://localhost:5173/static/profile_pictures/${profilePic}`
-    : `http://localhost:5173/static/profile_pictures/default_profile_picture.png`;
+    const imageSrc = `http://localhost:5173/static/profile_pictures/${profilePic}`;
 
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files || !e.target.files[0]) return;
@@ -133,7 +130,7 @@ const Dashboard=()=>{
                 </Card>
                 <Card title='Account Info:' titleClassName="text-cyan-500/80" cardClassName='w-[75%] ease-in-out hover:shadow-cyan-500/20 hover:shadow-2xl hover:scale-102 transition-all duration-500'>
                 <div className="grid grid-cols-1 gap-y-3 place-items-center text-center">
-                    <img className="rounded-full border-4 w-32 h-32 object-cover shadow-w-auto border-cyan-600 hover:border-cyan-700 transition-transform" src={pfp} alt="Profile"/>
+                    <img className="rounded-full border-4 w-32 h-32 object-cover shadow-w-auto border-cyan-600 hover:border-cyan-700 transition-transform" src={imageSrc} alt="Profile"/>
                     <p className="text-gray-400 text-xl">User ID: {user.uid}</p>
                     <p className="text-gray-400 text-xl">Username: {user.username}</p>
                     
