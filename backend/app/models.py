@@ -11,8 +11,6 @@ class FavoriteLocation(db.Model):
 class User(db.Model, UserMixin):
     uid = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(150), unique=True, nullable=False)
-    email = db.Column(db.String(150), unique=True, nullable=False)
-    is_verified = db.Column(db.Boolean, default=False)
     password_hash = db.Column(db.String(256), nullable=False)
     profile_picture = db.Column(db.String(256), nullable=True)
 
