@@ -39,7 +39,7 @@ const Card: React.FC<CardProps> = ({
                     {title && (
                         <div className="mb-6 border-b border-white/10 pb-4">
                             {typeof title === 'string' ? (
-                                <h1 className={`text-2xl md:text-3xl font-bold text-[#406386] line-clamp-2 ${titleClassName}`}>
+                                <h1 className={`text-3xl font-bold text-[#406386] line-clamp-2 ${titleClassName}`}>
                                     {title}
                                 </h1>
                             ) : (

@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import Links from '../components/links';
 import Navbar from '../components/navbar';
 import Card from '../components/card';
-import { ArrowRight, HeartPlus, ThumbsUp, LayoutDashboard, Code, Database, Globe, X } from 'lucide-react';
+import { ArrowRight, HeartPlus, LayoutDashboard, Code, Database, Globe, X } from 'lucide-react';
 import mapDisp from '../assets/mapdisp.png'; 
 import findr from '../assets/findr.png'; 
 import dashboard from '../assets/dashboard.png'; 

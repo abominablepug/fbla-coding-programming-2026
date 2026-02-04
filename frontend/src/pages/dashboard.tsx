@@ -54,6 +54,14 @@ const Dashboard=()=>{
         fetchProfile();
     }, [navigate]);
 
+    useEffect(() => {
+        document.body.style.overflow = openForm ? 'hidden' : 'auto'
+      
+        return () => {
+          document.body.style.overflow = 'auto'
+        };
+      }, [openForm]);
+
     const handleLogout = async (e: React.MouseEvent) => {
         e.preventDefault();
         try {
@@ -70,7 +78,7 @@ const Dashboard=()=>{
     if (!user) return <div className="min-h-screen bg-neutral-900 text-white flex items-center justify-center">Loading...</div>;
 
     return(
-        <div className="min-h-screen bg-neutral-900 relative w-full overscroll-none">
+        <div className='min-h-screen bg-neutral-900 relative w-full overscroll-none'>
             <div className=" min-h-screen w-full fixed bg-neutral-900 backdrop-blur-[400px] flex items-center justify-center overflow-hidden">
                 <motion.div initial={{ opacity: 0.4, y: 0 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 2.0 }} className="fixed lg:w-[1200px] h-[500px] w-[600px] -z-0 rounded-full">
                     <div className="absolute bottom-[-500px] w-full h-full bg-linear-to-t from-cyan-700/70 via-cyan-500/70 to-purple-400/70 blur-[160px] rounded-full" />
@@ -91,8 +99,8 @@ const Dashboard=()=>{
                 </Links> 
             </Navbar>
             <div className="w-full relative grid gap-11 pt-28">
-                <Card title={`Welcome ${user.username}`}  cardClassName='w-[95%]'>
-                    <p>Scroll Down to view your Account Details and Favorite Locations!</p>
+                <Card title={`Welcome ${user.username}...`}  cardClassName='w-[95%]' titleClassName='md:text-5xl tracking-wider'>
+                    <p className='text-lg'>Scroll Down to view your Account Details and Favorite Locations!</p>
                 </Card>
                 <Card title='Account Info:' titleClassName="text-cyan-500/80" cardClassName='w-[75%] ease-in-out hover:shadow-cyan-500/20 hover:shadow-2xl hover:scale-102 transition-all duration-500'>
                 <div className="grid grid-cols-1 gap-y-3 place-items-center text-center">
@@ -110,7 +118,7 @@ const Dashboard=()=>{
                 </div>
                 </Card>
                 {openForm&&
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-lg overflow-hidden overscroll-none">
                     <Card title="Change Profile Image" contentClassName='flex flex-col gap-4'>
                         <input className="bg-neutral-800 py-3 px-5 rounded-2xl hover:bg-neutral-800/90 hover:scale-102 transition-transform duration-50 " type="file" accept='image/png, image/jpeg'/>
                         <button className="left-50 px-3 py-1 rounded-full bg-sky-500 text-white max-w-fit text-md transition-all hover:bg-sky-400 shadow-lg" onClick={()=>setOpenForm(false)}>Close X</button>
