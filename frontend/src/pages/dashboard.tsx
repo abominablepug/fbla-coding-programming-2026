@@ -11,6 +11,7 @@ const Dashboard=()=>{
     const [user, setUser] = useState<{uid: string, username: string} | null>(null);
     const navigate = useNavigate();
     const [openForm, setOpenForm] = useState(false);
+    const [profilePic, setProfilePic] = useState<{profilePic:string} | null>(null);
     const favoriteLocations = [
         {
             name: "Public Art 'Iron Root'",
@@ -33,6 +34,42 @@ const Dashboard=()=>{
             time: "4:15 PM"
         }
     ];
+    useEffect(()=>{
+        fetch('/dashboard',{
+            credentials:'include',
+        })
+        .then(res=>res.json())
+        .then(data=>{
+            setProfilePic(data.profile_picture);
+        });
+    }, []);
+
+    const imageSrc = profilePic
+    ? `http://localhost:5173/static/profile_pictures/${profilePic}`
+    : `http://localhost:5173/static/profile_pictures/default_profile_picture.png`;
+
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files || !e.target.files[0]) return;
+      
+        const formData = new FormData();
+        formData.append("image", e.target.files[0]);
+      
+        const res = await fetch("/change_picture", {
+          method: "POST",
+          body: formData,
+          credentials: "include",
+        });
+      
+        if (res.ok) {
+          const updated = await fetch("/dashboard", {
+            credentials: "include",
+          }).then(r => r.json());
+
+          setProfilePic(updated.profile_picture);
+        }
+      };
+      
+
 
     useEffect(() => {
         const fetchProfile = async () => {
@@ -53,14 +90,6 @@ const Dashboard=()=>{
         };
         fetchProfile();
     }, [navigate]);
-
-    useEffect(() => {
-        document.body.style.overflow = openForm ? 'hidden' : 'auto'
-      
-        return () => {
-          document.body.style.overflow = 'auto'
-        };
-      }, [openForm]);
 
     const handleLogout = async (e: React.MouseEvent) => {
         e.preventDefault();
@@ -107,24 +136,24 @@ const Dashboard=()=>{
                     <img className="rounded-full border-4 w-32 h-32 object-cover shadow-w-auto border-cyan-600 hover:border-cyan-700 transition-transform" src={pfp} alt="Profile"/>
                     <p className="text-gray-400 text-xl">User ID: {user.uid}</p>
                     <p className="text-gray-400 text-xl">Username: {user.username}</p>
-                    <div className="flex flex-wrap justify-center gap-4 mt-4 w-full">
-                        <button className="px-6 py-4 bg-sky-500 text-white rounded-lg font-semibold text-lg transition-all hover:bg-sky-400 shadow-lg" onClick={()=>setOpenForm(true)}>
+                    
+                        
+                        {openForm?
+                        <div className={`flex flex-col justify-center gap-4 mt-4 w-full`}>
+                <div className="flex flex-col gap-4 max-w-fit justify-center">
+                        <input className="bg-neutral-800 py-3 px-5 rounded-2xl hover:bg-neutral-800/90 hover:scale-102 transition-transform duration-50 " type="file" accept='image/png' onChange={handleFileChange}/>
+                        <button className="left-50 px-3 py-1 rounded-full bg-sky-500 text-white max-w-fit text-md transition-all hover:bg-sky-400 shadow-lg" onClick={()=>setOpenForm(false)}>Close X</button>
+                </div></div>:<div className={`flex flex-wrap justify-center gap-4 mt-4 w-full`}><button className="px-6 py-4 bg-sky-500 text-white rounded-lg font-semibold text-lg transition-all hover:bg-sky-400 shadow-lg" onClick={()=>setOpenForm(true)}>
                             Change Profile Picture
                         </button>
                         <button className="px-6 py-4 bg-sky-500 text-white rounded-lg font-semibold text-lg transition-all hover:bg-sky-400 shadow-lg">
                             Change Password
-                        </button>
-                    </div>
+                        </button> </div>
+                }
+                        
+                    
                 </div>
                 </Card>
-                {openForm&&
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-lg overflow-hidden overscroll-none">
-                    <Card title="Change Profile Image" contentClassName='flex flex-col gap-4'>
-                        <input className="bg-neutral-800 py-3 px-5 rounded-2xl hover:bg-neutral-800/90 hover:scale-102 transition-transform duration-50 " type="file" accept='image/png, image/jpeg'/>
-                        <button className="left-50 px-3 py-1 rounded-full bg-sky-500 text-white max-w-fit text-md transition-all hover:bg-sky-400 shadow-lg" onClick={()=>setOpenForm(false)}>Close X</button>
-                    </Card>
-                </div>
-                }
                 <Card title='Favorite Locations:' titleClassName="text-purple-400/80" cardClassName='w-[75%] ease-in-out hover:shadow-purple-500/20 hover:shadow-2xl hover:scale-102 transition-all duration-500'>
                 <div className="flex flex-col gap-4 w-full">
                     {favoriteLocations.map((loc, i) => (
