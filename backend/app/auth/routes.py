@@ -89,3 +89,18 @@ def change_picture():
     db.session.commit()
 
     return jsonify({'message': 'Profile picture updated successfully'}), 200
+
+@auth_bp.route('/change_password', methods=['POST'])
+@login_required
+def change_password():
+    current_password = request.form.get('current_password')
+    new_password = request.form.get('new_password')
+
+    if not bcrypt.check_password_hash(current_user.password_hash, current_password):
+        return jsonify({'message': 'Current password is incorrect'}), 401
+
+    new_password_hash = bcrypt.generate_password_hash(new_password).decode('utf-8')
+    current_user.password_hash = new_password_hash
+    db.session.commit()
+
+    return jsonify({'message': 'Password updated successfully'}), 200
