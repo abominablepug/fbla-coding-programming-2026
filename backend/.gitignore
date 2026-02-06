@@ -11,5 +11,5 @@ logs/
 migrations/
 instance/
 *.sqlite3
-static/profile_pictures/*
-!static/profile_pictures/default_profile_picture.png
+app/static/profile_pictures/*
+!app/static/profile_pictures/default_profile_picture.png

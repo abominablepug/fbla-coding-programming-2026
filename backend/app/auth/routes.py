@@ -73,22 +73,34 @@ def profile():
 @auth_bp.route('/change_picture', methods=['POST'])
 @login_required
 def change_picture():
-    image = request.form.get('image')
+    if 'image' not in request.files:
+        return jsonify({'message': 'No image file provided'}), 400
 
-    if not image:
-        return jsonify({'message': 'No image provided'}), 400
+    image = request.files['image']
 
-    ext = os.path.splitext(image)[1]
-    random_filename = f"{os.urandom(16).hex()}{ext}"
-    
-    image_path = os.path.join('static/profile_pictures', random_filename)
-    with open(image_path, 'wb') as f:
-        f.write(image.encode('latin1'))
+    if image.filename == '':
+        return jsonify({'message': 'No selected file'}), 400
 
-    current_user.profile_picture = random_filename
-    db.session.commit()
+    if image:
+        ext = os.path.splitext(image.filename)[1]
+        
+        random_filename = f"{os.urandom(16).hex()}{ext}"
+        
+        upload_path = os.path.join(auth_bp.root_path, '..', 'static', 'profile_pictures')
+        if not os.path.exists(upload_path):
+            os.makedirs(upload_path)
+            
+        file_path = os.path.join(upload_path, random_filename)
+        
+        image.save(file_path)
 
-    return jsonify({'message': 'Profile picture updated successfully'}), 200
+        current_user.profile_picture = random_filename
+        db.session.commit()
+
+        return jsonify({
+            'message': 'Profile picture updated successfully', 
+            'profile_picture': random_filename
+        }), 200
 
 @auth_bp.route('/change_password', methods=['POST'])
 @login_required
