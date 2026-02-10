@@ -2,6 +2,7 @@ from flask import Flask
 from flask_cors import CORS
 from flask_migrate import Migrate
 from flask_login import LoginManager
+from flask_mail import Mail
 from app.extensions import db, bcrypt
 import os
 from dotenv import load_dotenv
@@ -11,20 +12,31 @@ load_dotenv()
 def create_app():
     app = Flask(__name__)
     CORS(app, supports_credentials=True)
-    from app.models import User
-    app.config['SECRET_KEY'] = os.getenv('BACKEND_SECRET_KEY', 'default_secret_key')
     
     basedir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
     instance_path = os.path.join(basedir, 'instance')
     if not os.path.exists(instance_path):
         os.makedirs(instance_path)
+
+    app.config['SECRET_KEY'] = os.getenv('BACKEND_SECRET_KEY', 'default_secret_key')
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(instance_path, 'db.sqlite3')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
     app.config['SESSION_COOKIE_SECURE'] = False
+    app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+    app.config['MAIL_PORT'] = 587
+    app.config['MAIL_USE_TLS'] = True
+    app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
+    app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
+    app.config['MAIL_DEFAULT_SENDER'] = 'sender@gmail.com'
+
+    mail = Mail(app)
 
     db.init_app(app)
     bcrypt.init_app(app)
+    mail.init_app(app)
+
+    from app.models import User
 
     login_manager = LoginManager()
     login_manager.init_app(app)
