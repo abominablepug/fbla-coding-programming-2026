@@ -82,16 +82,15 @@ const Dashboard = () => {
 				credentials: 'include'
 			});
 			if (response.ok) {
-				setPwSubmitError('Password changed successfully!');
 				setOpenForm(false);
 				setPassword('');
 				setConfirmPassword('');
 				setCurrentPassword('');
+				setPwSubmitError('');
 			}else {
 				const errorData = await response.json();
 				if (errorData.message === 'Current password is incorrect') {
 					setPwSubmitError('Current password is incorrect');
-					setCurrentPassword('');
 				} else {
 					console.error('Failed to change password. Try again.');
 					setPassword('');
@@ -140,6 +139,7 @@ const Dashboard = () => {
 					placeholder="••••••••"
 					value={currentPassword}
 					name = "current_password"
+					onChange={(e) => setCurrentPassword(e.target.value)}
 				/>
 				</div>
 				<div>
