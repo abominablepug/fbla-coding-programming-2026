@@ -13,9 +13,9 @@ class User(db.Model, UserMixin):
     username = db.Column(db.String(150), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
     profile_picture = db.Column(db.String(256), nullable=True)
-
-    reviews = db.relationship('Review', back_populates='user', lazy=True)
-    favorite_locations = db.relationship('Location', secondary=FavoriteLocation.__table__, back_populates='favorited_by', lazy=True)
+    last_updated = db.Column(db.DateTime, default=datetime.utcnow)
+    email = db.Column(db.String(150), unique=True, nullable=False)
+    is_verified = db.Column(db.Boolean, default=False)
 
     preferences = db.Column(db.JSON, default=lambda: {
         "food": 0.0, "activities": 0.0,
@@ -27,7 +27,8 @@ class User(db.Model, UserMixin):
         "business_industrial": 0.0, "religion_community": 0.0
     })
 
-    last_updated = db.Column(db.DateTime, default=datetime.utcnow)
+    reviews = db.relationship('Review', back_populates='user', lazy=True)
+    favorite_locations = db.relationship('Location', secondary=FavoriteLocation.__table__, back_populates='favorited_by', lazy=True)
 
     def update_preferences(self, category, weight=0.1):
         current_preferences = self.preferences
