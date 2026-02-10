@@ -13,6 +13,7 @@ const Dashboard = () => {
 	const [profilePic, setProfilePic] = useState<string>();
 	const [pfpChange, setPfpChange] = useState(false);
 	const [password, setPassword] = useState('');
+	const [currentPassword, setCurrentPassword] = useState('');
 	const [pwSubmitError, setPwSubmitError] = useState('');
 	const [confirmPassword, setConfirmPassword] = useState('');
 	const favoriteLocations = [
@@ -83,9 +84,20 @@ const Dashboard = () => {
 			if (response.ok) {
 				setPwSubmitError('Password changed successfully!');
 				setOpenForm(false);
-			} else {
-				console.error('Failed to change password');
-			}
+				setPassword('');
+				setConfirmPassword('');
+				setCurrentPassword('');
+			}else {
+				const errorData = await response.json();
+				if (errorData.message === 'Current password is incorrect') {
+					setPwSubmitError('Current password is incorrect');
+					setCurrentPassword('');
+				} else {
+					console.error('Failed to change password. Try again.');
+					setPassword('');
+					setConfirmPassword('');
+					setCurrentPassword('');
+				}}
 		} catch (error) {
 			console.error('Error changing password:', error);
 		}
@@ -126,6 +138,7 @@ const Dashboard = () => {
 					type="password"
 					className="mt-1 w-fit rounded-lg bg-white/10 border border-white/20 p-3 text-slate-300 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-400 transition-all"
 					placeholder="••••••••"
+					value={currentPassword}
 					name = "current_password"
 				/>
 				</div>
