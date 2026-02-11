@@ -128,3 +128,20 @@ def change_password():
     db.session.commit()
 
     return jsonify({'message': 'Password updated successfully'}), 200
+
+@auth_bp.route('/confirm_email/<token>', methods=['GET'])
+def confirm_email(token):
+    token_serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+    try:
+        email = token_serializer.loads(token, salt='email-confirmation-salt', max_age=3600)
+    except Exception as e:
+        return jsonify({'message': 'Invalid or expired token'}), 400
+
+    user = User.query.filter_by(email=email).first()
+    if not user:
+        return jsonify({'message': 'User not found'}), 404
+
+    user.is_verified = True
+    db.session.commit()
+
+    return jsonify({'message': 'Email confirmed successfully'}), 200
