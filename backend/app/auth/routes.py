@@ -1,9 +1,11 @@
-from flask import request, jsonify, render_template, url_for, redirect
 from . import auth_bp
+from flask import request, jsonify, render_template, url_for, redirect, current_app
+from flask_login import login_user, logout_user, current_user, login_required
+from flask_mail import Message
+from app import db
 from app.models import User
 from app.extensions import bcrypt
-from app import db
-from flask_login import login_user, logout_user, current_user, login_required
+from itsdangerous import URLSafeTimedSerializer
 import os
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
@@ -12,6 +14,7 @@ def register():
         username = request.form.get('username')
         password = request.form.get('password')
         image = request.form.get('image')
+        email = request.form.get('email')
 
         if User.query.filter_by(username=username).first():
             return jsonify({'message': 'Username already exists'}), 400
@@ -28,6 +31,15 @@ def register():
                 f.write(image.encode('latin1'))
         else:
             profile_picture = 'default_profile_picture.png'
+
+        token_serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+        token = token_serializer.dumps(email, salt='email-confirmation-salt')
+
+        msg = Message('Confirm Your Email', recipients=[email])
+        confirm_url = url_for('auth.confirm_email', token=token, _external=True)
+        msg.body = f'Please click the link to confirm your email: {confirm_url}'
+        mail = current_app.extensions['mail']
+        mail.send(msg)
 
         password_hash = bcrypt.generate_password_hash(password).decode('utf-8')
         new_user = User(username=username, password_hash=password_hash, profile_picture=profile_picture)
@@ -116,3 +128,20 @@ def change_password():
     db.session.commit()
 
     return jsonify({'message': 'Password updated successfully'}), 200
+
+@auth_bp.route('/confirm_email/<token>', methods=['GET'])
+def confirm_email(token):
+    token_serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+    try:
+        email = token_serializer.loads(token, salt='email-confirmation-salt', max_age=3600)
+    except Exception as e:
+        return jsonify({'message': 'Invalid or expired token'}), 400
+
+    user = User.query.filter_by(email=email).first()
+    if not user:
+        return jsonify({'message': 'User not found'}), 404
+
+    user.is_verified = True
+    db.session.commit()
+
+    return jsonify({'message': 'Email confirmed successfully'}), 200
