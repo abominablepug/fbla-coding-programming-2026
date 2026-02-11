@@ -1,22 +1,17 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import Body from '../components/body';
 
 const Landing = () => {
 	return (
-		<div className=" min-h-screen w-full fixed bg-neutral-900 backdrop-blur-[400px] flex items-center justify-center overflow-hidden">
-			<motion.div initial={{ opacity: 0.4, y: 0 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 2.0 }} className="fixed lg:w-[1200px] h-[500px] w-[600px] -z-0 rounded-full">
-				<div className="absolute bottom-[-500px] w-full h-full bg-linear-to-t from-cyan-700/70 via-cyan-500/70 to-purple-400/70 blur-[160px] rounded-full" />
-			</motion.div>
-			<motion.div initial={{ opacity: 0.3, y: 0 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 2.0 }} className="fixed lg:w-[900px] h-[500px] w-[500px] -z-0 rounded-full">
-				<div className="absolute lg:top-[-520px] top-[-420px] w-full h-full bg-linear-to-b from-cyan-700/40 via-cyan-500/40 to-purple-400/40 blur-[120px] rounded-full" />
-			</motion.div>
+		<Body className="fixed backdrop-blur-[400px] flex items-center justify-center overflow-hidden">
 			<motion.div
 				initial={{ opacity: 0.1, y: 100 }}
 				animate={{ opacity: 1, y: 0 }}
 				transition={{ duration: 1.5 }}
 				className="flex-col">
 				<div className="p-16  bg-transparent flex flex-col items-center gap-4 lg:gap-8">
-					<h1 className="text-7xl tracking-wider lg:text-8xl font-bold bg-gradient-to-l from-cyan-700 via-cyan-500 to-purple-400 bg-clip-text text-transparent">
+					<h1 className="text-7xl z-100 tracking-wider lg:text-8xl font-bold bg-gradient-to-l from-cyan-700 via-cyan-500 to-purple-400 bg-clip-text text-transparent">
 						Welcome
 					</h1>
 					<motion.div animate={{ opacity: [0.2, 1.1, 0.2] }} transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}>
@@ -33,8 +28,7 @@ const Landing = () => {
 					</Link>
 				</div>
 			</motion.div>
-		</div>
-
+		</Body>
 	);
 };
 

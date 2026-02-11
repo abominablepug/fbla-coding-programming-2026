@@ -4,6 +4,7 @@ import Card from '../components/card';
 import Links from '../components/links';
 import Navbar from '../components/navbar';
 import {useNavigate } from 'react-router-dom';
+import Body from '../components/body';
 
 const Login = () => {
 	const [username, setUsername] = useState('');
@@ -12,16 +13,7 @@ const Login = () => {
 	const navigate = useNavigate();
 
 	return (
-		<div className="min-h-screen bg-neutral-900 relative w-full overscroll-none flex flex-col items-center justify-center">
-			<div className="fixed backdrop-blur-[1000px] inset-0 bg-neutral-900 pointer-events-none w-full z-0 flex items-center justify-center overscroll-none">
-				<motion.div initial={{ opacity: 0.4, y: 0 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 2.0 }} className="fixed lg:w-[1200px] h-[500px] w-[600px] -z-0 rounded-full">
-					<div className="absolute bottom-[-500px] w-full h-full bg-linear-to-t from-cyan-700/70 via-cyan-500/70 to-purple-400/70 blur-[160px] rounded-full" />
-				</motion.div>
-				<motion.div initial={{ opacity: 0.3, y: 0 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 2.0 }} className="fixed lg:w-[900px] h-[500px] w-[500px] -z-0 rounded-full">
-					<div className="absolute lg:top-[-520px] top-[-420px] w-full h-full bg-linear-to-b from-cyan-700/40 via-cyan-500/40 to-purple-400/40 blur-[120px] rounded-full" />
-				</motion.div>
-			</div>
-
+		<Body className="flex flex-col items-center justify-center">
 			<Navbar page="Login">
                 <Links link="/">
                     Back →
@@ -87,7 +79,7 @@ const Login = () => {
 					</button>
 				</form>
 			</Card>
-		</div>
+		</Body>
 	);
 };
 

@@ -7,31 +7,12 @@ import { ArrowRight, HeartPlus, LayoutDashboard, Code, Database, Globe, X } from
 import mapDisp from '../assets/mapdisp.png'; 
 import findr from '../assets/findr.png'; 
 import dashboard from '../assets/dashboard.png'; 
+import Body from '../components/body';
 
 
 const Home = () => {
 	return (
-		<div className="min-h-screen bg-neutral-900 relative w-full overscroll-none">
-
-			<div className="fixed backdrop-blur-[1000px] inset-0 bg-neutral-900 pointer-events-none w-full z-0 flex items-center justify-center overscroll-none">
-				<motion.div 
-					initial={{ opacity: 0.4, scale: 0.8 }} 
-					animate={{ opacity: [0.4, 0.6, 0.4], scale: [0.8, 1, 0.8] }} 
-					transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }} 
-					className="fixed lg:w-[1200px] h-[500px] w-[600px] -z-0 rounded-full"
-				>
-					<div className="absolute bottom-[-500px] w-full h-full bg-linear-to-t from-cyan-700/70 via-cyan-500/70 to-purple-400/70 blur-[160px] rounded-full" />
-				</motion.div>
-				<motion.div 
-					initial={{ opacity: 0.3, scale: 0.8 }} 
-					animate={{ opacity: [0.3, 0.5, 0.3], scale: [0.8, 1.1, 0.8] }} 
-					transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 1 }} 
-					className="fixed lg:w-[900px] h-[500px] w-[500px] -z-0 rounded-full"
-				>
-					<div className="absolute lg:top-[-520px] top-[-420px] w-full h-full bg-linear-to-b from-cyan-700/40 via-cyan-500/40 to-purple-400/40 blur-[120px] rounded-full" />
-				</motion.div>
-			</div>
-
+		<Body>
 			<Navbar page="Home">
 				<Links link="/login">
 					Login →
@@ -226,7 +207,7 @@ const Home = () => {
 					FBLA Coding & Programming 2025-26 • BIZMATCH Project
 				</p>
 			</div>
-		</div>
+		</Body>
 	);
 };
 

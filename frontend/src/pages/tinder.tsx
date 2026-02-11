@@ -7,6 +7,7 @@ import { X } from 'lucide-react';
 import { getCommonsImage } from '../utils/getCommonsImage';
 import {useNavigate } from 'react-router-dom';
 import Links from '../components/links';
+import Body from '../components/body';
 
 interface Business {
     name: string;
@@ -152,7 +153,7 @@ const TinderPage = () => {
     const nextBusiness = businesses[Math.min(currentIndex + 1, businesses.length - 1)];
 
     return (
-            <div className="min-h-screen bg-neutral-900 relative w-full">
+            <Body className="overscroll-none">
                 <Navbar page="Findr">
                     <Links link="/map">
                         Map<MapPin size={22}/>
@@ -162,17 +163,8 @@ const TinderPage = () => {
                     </Links>
                     
                 </Navbar>
-                
-                <div className="fixed backdrop-blur-[1000px] inset-0 bg-neutral-800 pointer-events-none w-full z-0 flex items-center justify-center">
-                    <motion.div initial={{ opacity: 0.4, y: 0 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 2.0 }} className="fixed lg:w-[1200px] h-[500px] w-[600px] -z-0 rounded-full">
-                        <div className="absolute bottom-[-500px] w-full h-full bg-linear-to-t from-cyan-700/70 via-cyan-500/70 to-purple-400/70 blur-[160px] rounded-full" />
-                    </motion.div>
-                    <motion.div initial={{ opacity: 0.3, y: 0 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 2.0 }} className="fixed lg:w-[900px] h-[500px] w-[500px] -z-0 rounded-full">
-                        <div className="absolute lg:top-[-520px] top-[-420px] w-full h-full bg-linear-to-b from-cyan-50/40 via-cyan-100/40 blur-[120px] rounded-full" />
-                    </motion.div>
-                </div>
 
-                <div className="from-cyan-700/70 via-cyan-500/70 to-purple-400/70 relative z-10 pt-20 pb-32 h-screen flex items-center justify-center">
+                <div className="from-cyan-700/70 via-cyan-500/70 to-purple-400/70 z-10 pt-20 pb-32 h-screen flex items-center justify-center">
                     <AnimatePresence>
                         {currentBusiness && (
                             <motion.div
@@ -296,7 +288,7 @@ const TinderPage = () => {
                         </motion.div>
                     )}
                 </AnimatePresence>
-            </div>
+            </Body>
     );
 }
 

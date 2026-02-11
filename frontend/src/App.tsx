@@ -6,6 +6,7 @@ import Map from "./pages/map";
 import Register from "./pages/register";
 import Dashboard from "./pages/dashboard";
 import TinderPage from "./pages/tinder";
+import Coupons from "./pages/coupons";
 
 
 function App() {
@@ -19,6 +20,8 @@ function App() {
 				<Route path="/map" element={<Map />} />
 				<Route path="/dashboard" element={<Dashboard />} />
 				<Route path="/tinder" element={<TinderPage/>} />
+				<Route path="/welcome" element={<Landing/>} />
+				<Route path="/discount" element={<Coupons/>} />
 			</Routes>
 		</BrowserRouter>
 	);
