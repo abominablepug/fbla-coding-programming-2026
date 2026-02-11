@@ -11,28 +11,42 @@ const Dashboard = () => {
 	const navigate = useNavigate();
 	const [openForm, setOpenForm] = useState(false);
 	const [profilePic, setProfilePic] = useState<string>();
+	const [pfpChange, setPfpChange] = useState(false);
+	const [password, setPassword] = useState('');
+	const [currentPassword, setCurrentPassword] = useState('');
+	const [pwSubmitError, setPwSubmitError] = useState('');
+	const [confirmPassword, setConfirmPassword] = useState('');
 	const favoriteLocations = [
-		{
-			name: "Public Art 'Iron Root'",
-			address: "North Crescent Drive, Beverly Hills, CA 90210",
-			time: "10:15 AM"
-		},
-		{
-			name: "Public Art 'Sitting Figure on A Short Bench'",
-			address: "Santa Monica Boulevard & North Beverly Drive, Beverly Hills, CA 90210",
-			time: "12:15 PM"
-		},
-		{
-			name: "Beverly Gardens Park",
-			address: "Santa Monica Boulevard, Beverly Hills, CA 90210",
-			time: "12:20 PM"
-		},
-		{
-			name: "Picsil",
-			address: "Santa Monica Boulevard, Beverly Hills, CA 90210",
-			time: "4:15 PM"
-		}
-	];
+        {
+            name: "Public Art 'Iron Root'",
+            address: "North Crescent Drive, Beverly Hills, CA 90210",
+            latitude: "34.0731",
+            longitude: "-118.4014",
+            time: "10:15 AM"
+        },
+        {
+            name: "Public Art 'Sitting Figure on A Short Bench'",
+            address: "Santa Monica Boulevard & North Beverly Drive, Beverly Hills, CA 90210",
+            latitude: "34.07334",
+            longitude: "-118.40169",
+            time: "12:15 PM"
+        },
+        {
+            name: "Beverly Gardens Park",
+            address: "Santa Monica Boulevard, Beverly Hills, CA 90210",
+            latitude: "34.073208",
+            longitude: "-118.402092",
+            time: "12:20 PM"
+        },
+        {
+            name: "Picsil",
+            address: "Santa Monica Boulevard, Beverly Hills, CA 90210",
+            latitude: "34.0729",
+            longitude: "-118.40165",
+            
+            time: "4:15 PM"
+        }
+    ];
 
 	const imageSrc = `http://localhost:5173/static/profile_pictures/${profilePic}`;
 
@@ -55,7 +69,120 @@ const Dashboard = () => {
 		}
 	};
 
+	const handlePwChange = async (formData: FormData) => {
+		try {
+			setPwSubmitError('');
+			if (!password || !confirmPassword) {
+				setPwSubmitError('Please fill in all fields.');
+				return;
+			}
+			const response = await fetch('http://localhost:5173/auth/change_password', {
+				method: 'POST',
+				body: formData,
+				credentials: 'include'
+			});
+			if (response.ok) {
+				setOpenForm(false);
+				setPassword('');
+				setConfirmPassword('');
+				setCurrentPassword('');
+				setPwSubmitError('');
+			}else {
+				const errorData = await response.json();
+				if (errorData.message === 'Current password is incorrect') {
+					setPwSubmitError('Current password is incorrect');
+				} else {
+					console.error('Failed to change password. Try again.');
+					setPassword('');
+					setConfirmPassword('');
+					setCurrentPassword('');
+				}}
+		} catch (error) {
+			console.error('Error changing password:', error);
+		}
+	};
 
+	const isPasswordValid = password.length >= 8 && /\d/.test(password) && /[a-zA-Z]/.test(password);
+	const doPasswordsMatch = password === confirmPassword;
+	let content;
+
+	if (pfpChange) {
+		content = (
+		<div className="flex flex-col items-center gap-4 max-w-fit">
+			<form className="flex flex-col items-center gap-4" onSubmit={(e) => {
+			e.preventDefault();
+			const formData = new FormData(e.currentTarget);
+			handleFileChange(formData);
+			}}>
+				<input className="mt-1 w-full rounded-lg bg-white/10 border border-white/20 p-3 text-slate-300 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-400 transition-all" type="file" accept='image/png' id="image" name="image"/>
+				<div className="flex justify-center gap-2">
+					<button className="px-3 py-1 rounded-full bg-sky-500 text-white max-w-fit text-md transition-all hover:bg-sky-400 shadow-lg" type="submit">
+						Upload New Picture
+					</button>
+					<button className="px-3 py-1 rounded-full bg-sky-500 text-white max-w-fit text-md transition-all hover:bg-sky-400 shadow-lg" onClick={() => {setOpenForm(false); setPwSubmitError('');}}>Close X</button>
+				</div>
+			</form>
+		</div>);
+	}else{
+		content = (
+		<div className="flex flex-col items-center gap-4 max-w-fit">
+			<form className="flex flex-col items-center gap-4" onSubmit={(e) => {
+			   e.preventDefault();
+			   const formData = new FormData(e.currentTarget);
+			   handlePwChange(formData);
+		   	}}>
+				<div>
+				<label className="block text-sm font-medium text-white-400">Current Password</label>
+				<input
+					type="password"
+					className="mt-1 w-fit rounded-lg bg-white/10 border border-white/20 p-3 text-slate-300 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-400 transition-all"
+					placeholder="••••••••"
+					value={currentPassword}
+					name = "current_password"
+					onChange={(e) => setCurrentPassword(e.target.value)}
+				/>
+				</div>
+				<div>
+				<label className="block text-sm font-medium text-white-400">New Password</label>
+				<input
+					type="password"
+					className="mt-1 w-fit rounded-lg bg-white/10 border border-white/20 p-3 text-slate-300 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-400 transition-all"
+					placeholder="••••••••"
+					value={password}
+					name = "new_password"
+					onChange={(e) => setPassword(e.target.value)}
+				/>
+				{password && (
+					<p className={`text-xs mt-1 ${isPasswordValid ? 'text-green-400' : 'text-red-400'}`}>
+						{isPasswordValid ? 'Strong password' : 'Password must be at least 8 characters long and contain both letters and numbers.'}
+					</p>
+				)}
+				</div>
+				<div>
+					<label className="block text-sm font-medium text-white-400">Confirm Password</label>
+					<input
+						type="password"
+						className="mt-1 w-full rounded-lg bg-white/10 border border-white/20 p-3 text-slate-300 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-400 transition-all"
+						placeholder="••••••••"
+						value={confirmPassword}
+						onChange={(e) => setConfirmPassword(e.target.value)}
+					/>
+					{confirmPassword && (
+						<p className={`text-xs mt-1 ${doPasswordsMatch ? 'text-green-400' : 'text-red-400'}`}>
+							{doPasswordsMatch ? 'Passwords match' : 'Passwords do not match'}
+						</p>
+					)}
+				</div>
+				{pwSubmitError && <p className="text-red-400 text-sm text-center">{pwSubmitError}</p>}
+			   <div className="flex justify-center gap-2">
+				   <button className="px-3 py-1 rounded-full bg-sky-500 text-white max-w-fit text-md transition-all hover:bg-sky-400 shadow-lg" type="submit">
+					   Change Password
+				   </button>
+				   <button className="px-3 py-1 rounded-full bg-sky-500 text-white max-w-fit text-md transition-all hover:bg-sky-400 shadow-lg" onClick={() => {setOpenForm(false); setPwSubmitError('');}}>Close X</button>
+			   </div>
+			</form>
+		</div>);
+	}
 
 	useEffect(() => {
 		const fetchProfile = async () => {
@@ -125,46 +252,39 @@ const Dashboard = () => {
 						<p className="text-gray-400 text-xl">Username: {user.username}</p>
 
 
-						{openForm ?
-							<div className={`flex flex-col justify-center gap-4 mt-4 w-full`}>
-								<div className="flex flex-col gap-4 max-w-fit justify-center">
-									<form className="flex flex-col gap-4" onSubmit={(e) => {
-										e.preventDefault();
-										const formData = new FormData(e.currentTarget);
-										handleFileChange(formData);
-									}}>
-										<input className="bg-neutral-800 py-3 px-5 rounded-2xl hover:bg-neutral-800/90 hover:scale-102 transition-transform duration-50 " type="file" accept='image/png' id="image" name="image" required />
-										<button className="px-6 py-3 bg-green-500 text-white rounded-lg font-semibold text-lg transition-all hover:bg-green-400 shadow-lg" type="submit">
-											Upload New Picture
-										</button>
-									</form>
-									<button className="left-50 px-3 py-1 rounded-full bg-sky-500 text-white max-w-fit text-md transition-all hover:bg-sky-400 shadow-lg" onClick={() => setOpenForm(false)}>Close X</button>
-								</div></div> : <div className={`flex flex-wrap justify-center gap-4 mt-4 w-full`}><button className="px-6 py-4 bg-sky-500 text-white rounded-lg font-semibold text-lg transition-all hover:bg-sky-400 shadow-lg" onClick={() => setOpenForm(true)}>
+						{!openForm ?
+							<div className={`flex flex-wrap justify-center gap-4 mt-4 w-full`}>
+								<button className="px-6 py-4 bg-sky-500 text-white rounded-lg font-semibold text-lg transition-all hover:bg-sky-400 shadow-lg" onClick={() => {setOpenForm(true); setPfpChange(true)}}>
 									Change Profile Picture
 								</button>
-								<button className="px-6 py-4 bg-sky-500 text-white rounded-lg font-semibold text-lg transition-all hover:bg-sky-400 shadow-lg">
+								<button className="px-6 py-4 bg-sky-500 text-white rounded-lg font-semibold text-lg transition-all hover:bg-sky-400 shadow-lg" onClick={() => {{setOpenForm(true); setPfpChange(false)}}}>
 									Change Password
-								</button> </div>
+								</button>
+							</div>
+							 : 
+							<div className={`flex flex-col items-center justify-center gap-4 mt-4 w-full`}>
+							 	{content}
+							</div>
 						}
 
 
 					</div>
 				</Card>
-				<Card title='Favorite Locations:' titleClassName="text-purple-400/80" cardClassName='w-[75%] ease-in-out hover:shadow-purple-500/20 hover:shadow-2xl hover:scale-102 transition-all duration-500'>
-					<div className="flex flex-col gap-4 w-full">
-						{favoriteLocations.map((loc, i) => (
-							<div key={i} className="bg-neutral-800/50 p-4 rounded-xl border border-white/10 flex flex-col md:flex-row justify-between items-start md:items-center hover:bg-neutral-800/80 transition-colors">
-								<div>
-									<h3 className="text-lg font-bold text-cyan-400/80">{loc.name}</h3>
-									<p className="text-sm text-gray-400">{loc.address}</p>
-								</div>
-								<div className="mt-2 md:mt-0 text-right">
-									<p className="text-sm text-gray-300 font-mono">Added: {loc.time}</p>
-								</div>
-							</div>
-						))}
-					</div>
-				</Card>
+				<Card title='Favorite Locations:' cardClassName='w-[75%] ease-in-out hover:shadow-cyan-500/20 hover:shadow-2xl hover:scale-102 transition-all duration-500'>
+                    <div className="flex flex-col gap-4 w-full">
+                        {favoriteLocations.map((loc, i) => (
+                            <div key={i} onClick={() => navigate(`/map?lat=${loc.latitude}&lon=${loc.longitude}`)} className="bg-neutral-800/50 p-4 rounded-xl border border-white/10 flex flex-col md:flex-row justify-between items-start md:items-center hover:bg-neutral-800/80 transition-colors">
+                                <div>
+                                    <h3 className="text-lg font-bold text-cyan-400/80">{loc.name}</h3>
+                                    <p className="text-sm text-gray-400">{loc.address}</p>
+                                </div>
+                                <div className="mt-2 md:mt-0 text-right">
+                                    <p className="text-sm text-gray-300 font-mono">Added: {loc.time}</p>
+                                </div>
+                            </div> 
+                        ))}
+                    </div>
+                </Card>
 			</div>
 		</div>
 	)

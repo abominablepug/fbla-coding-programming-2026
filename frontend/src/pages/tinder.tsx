@@ -152,7 +152,6 @@ const TinderPage = () => {
     const nextBusiness = businesses[Math.min(currentIndex + 1, businesses.length - 1)];
 
     return (
-        <>
             <div className="min-h-screen bg-neutral-900 relative w-full">
                 <Navbar page="Findr">
                     <Links link="/map">
@@ -298,7 +297,6 @@ const TinderPage = () => {
                     )}
                 </AnimatePresence>
             </div>
-        </>
     );
 }
 
