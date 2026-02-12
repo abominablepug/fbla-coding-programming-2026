@@ -42,7 +42,7 @@ def register():
         mail.send(msg)
 
         password_hash = bcrypt.generate_password_hash(password).decode('utf-8')
-        new_user = User(username=username, password_hash=password_hash, profile_picture=profile_picture)
+        new_user = User(username=username, password_hash=password_hash, profile_picture=profile_picture, email=email, is_verified=False)
         db.session.add(new_user)
         db.session.commit()
 

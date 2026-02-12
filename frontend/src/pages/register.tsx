@@ -9,6 +9,7 @@ import Body from '../components/body';
 const Register = () => {
 	const [username, setUsername] = useState('');
 	const [password, setPassword] = useState('');
+	const [email, setEmail] = useState('');
 	const [confirmPassword, setConfirmPassword] = useState('');
 	const [submitError, setSubmitError] = useState('');
 	const navigate = useNavigate();
@@ -23,7 +24,7 @@ const Register = () => {
 		if (!doPasswordsMatch) {
 			return;
 		}
-		
+
 		// Password strength check
 		if (!isPasswordValid) {
 			return;
@@ -32,6 +33,7 @@ const Register = () => {
 		const formData = new FormData();
 		formData.append('username', username);
 		formData.append('password', password);
+		formData.append('email', email);
 
 		try {
 			const response = await fetch(url, {
@@ -58,10 +60,10 @@ const Register = () => {
 		<Body className="flex flex-col items-center justify-center">
 
 			<Navbar page="Register">
-                <Links link="/">
-                    Back →
-                </Links>
-            </Navbar>
+				<Links link="/">
+					Back →
+				</Links>
+			</Navbar>
 
 			<Card className="max-w-2xl w-full mt-15 z-10" cardClassName="w-full" title="Register" titleClassName='text-cyan-500'>
 				<form className="space-y-6" onSubmit={handleRegister}>
@@ -73,6 +75,17 @@ const Register = () => {
 							placeholder="username"
 							value={username}
 							onChange={(e) => setUsername(e.target.value)}
+						/>
+					</div>
+
+					<div>
+						<label className="block text-sm font-medium text-white-400">Email:</label>
+						<input
+							type="text"
+							className="mt-1 w-full rounded-lg bg-white/10 border border-white/20 p-3 text-white-300 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-400 transition-all"
+							placeholder="email@email.com"
+							value={email}
+							onChange={(e) => setEmail(e.target.value)}
 						/>
 					</div>
 
