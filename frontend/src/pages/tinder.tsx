@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import Navbar from '../components/navbar';
 import Card from '../components/card';
@@ -19,6 +19,7 @@ interface Business {
     score: number;
     classifications: any[];
     imageUrl?: string;
+    lid?: number;
 }
 
 const TinderPage = () => {
@@ -30,6 +31,7 @@ const TinderPage = () => {
     const [likedLocations, setLikedLocations] = useState<Business[]>([]);
     const [userLoc, setUserLoc] = useState({ lat: 34.0731, lng: -118.4016 });
     const [showSidebar, setShowSidebar] = useState(false);
+    const isSavingRef = useRef(false);
     const navigate = useNavigate();
 
     const { scrollY } = useScroll();
@@ -108,11 +110,56 @@ const TinderPage = () => {
         }
     };
 
+    const addToFavorites = async (business: Business) => {
+        if (isSavingRef.current) return;
+        isSavingRef.current = true;
+        
+        try {
+            const createResponse = await fetch('http://localhost:5173/loc/add', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    name: business.name,
+                    address: business.address,
+                    longitude: business.longitude,
+                    latitude: business.latitude,
+                    type: 1,
+                    categories: business.category,
+                })
+            });
+
+            if (createResponse.ok) {
+                const locationData = await createResponse.json();
+                const locationId = locationData.location_id;
+                const favoriteResponse = await fetch(`http://localhost:5173/loc/${locationId}/favorite`, {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+
+                if (favoriteResponse.ok) {
+                    console.log('Location added to favorites');
+                } else {
+                    console.error('Failed to add to favorites');
+                }
+            } else {
+                console.error('Failed to create location');
+            }
+        } catch (error) {
+            console.error('Error adding to favorites:', error);
+        } finally {
+            isSavingRef.current = false;
+        }
+    };
+
     async function handleAnimationComplete() {
         if (swipeDirection === 'left') {
             await updatePreferences('dislike', { classifications: businesses[currentIndex].classifications });
         } else if (swipeDirection === 'right') {
             await updatePreferences('like', { classifications: businesses[currentIndex].classifications });
+            
+            await addToFavorites(businesses[currentIndex]);
+            
             setLikedLocations(prev => {
                 const isAlreadyLiked = prev.some(loc => 
                     loc.name === businesses[currentIndex].name && 

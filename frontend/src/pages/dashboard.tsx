@@ -7,6 +7,17 @@ import Links from '../components/links';
 import { Heart, MapPin } from 'lucide-react';
 import Body from '../components/body';
 
+interface Location {
+	lid: number;
+	name: string;
+	longitude: number;
+	latitude: number;
+	type: number;
+	address?: string;
+	categories?: string[];
+	time?: string;
+}
+
 const Dashboard = () => {
 	const [user, setUser] = useState<{ uid: string, username: string } | null>(null);
 	const navigate = useNavigate();
@@ -17,39 +28,46 @@ const Dashboard = () => {
 	const [currentPassword, setCurrentPassword] = useState('');
 	const [pwSubmitError, setPwSubmitError] = useState('');
 	const [confirmPassword, setConfirmPassword] = useState('');
-	const favoriteLocations = [
-        {
-            name: "Public Art 'Iron Root'",
-            address: "North Crescent Drive, Beverly Hills, CA 90210",
-            latitude: "34.0731",
-            longitude: "-118.4014",
-            time: "10:15 AM"
-        },
-        {
-            name: "Public Art 'Sitting Figure on A Short Bench'",
-            address: "Santa Monica Boulevard & North Beverly Drive, Beverly Hills, CA 90210",
-            latitude: "34.07334",
-            longitude: "-118.40169",
-            time: "12:15 PM"
-        },
-        {
-            name: "Beverly Gardens Park",
-            address: "Santa Monica Boulevard, Beverly Hills, CA 90210",
-            latitude: "34.073208",
-            longitude: "-118.402092",
-            time: "12:20 PM"
-        },
-        {
-            name: "Picsil",
-            address: "Santa Monica Boulevard, Beverly Hills, CA 90210",
-            latitude: "34.0729",
-            longitude: "-118.40165",
-            
-            time: "4:15 PM"
-        }
-    ];
-
+	const [favoriteLocations, setFavoriteLocations] = useState<Location[]>([]);
+	const [loadingFavorites, setLoadingFavorites] = useState(false);
 	const imageSrc = `http://localhost:5173/static/profile_pictures/${profilePic}`;
+
+	const fetchFavoriteLocations = async () => {
+		setLoadingFavorites(true);
+		try {
+			const response = await fetch('http://localhost:5173/loc/favorites', {
+				credentials: 'include'
+			});
+			if (response.ok) {
+				const data = await response.json();
+				setFavoriteLocations(data);
+			} else {
+				console.error('Failed to fetch favorite locations');
+				setFavoriteLocations([]);
+			}
+		} catch (error) {
+			console.error('Error fetching favorite locations:', error);
+			setFavoriteLocations([]);
+		} finally {
+			setLoadingFavorites(false);
+		}
+	};
+
+	const handleDeleteFavorite = async (locationId: number) => {
+		try {
+			const response = await fetch(`http://localhost:5173/loc/${locationId}/unfavorite`, {
+				method: 'POST',
+				credentials: 'include'
+			});
+			if (response.ok) {
+				setFavoriteLocations(favoriteLocations.filter(loc => loc.lid !== locationId));
+			} else {
+				console.error('Failed to remove from favorites');
+			}
+		} catch (error) {
+			console.error('Error removing from favorites:', error);
+		}
+	};
 
 	const handleFileChange = async (formData: FormData) => {
 		try {
@@ -206,6 +224,12 @@ const Dashboard = () => {
 		fetchProfile();
 	}, [navigate]);
 
+	useEffect(() => {
+		if (user) {
+			fetchFavoriteLocations();
+		}
+	}, [user]);
+
 	const handleLogout = async (e: React.MouseEvent) => {
 		e.preventDefault();
 		try {
@@ -265,17 +289,30 @@ const Dashboard = () => {
 				</Card>
 				<Card title='Favorite Locations:' cardClassName='w-[75%] ease-in-out hover:shadow-cyan-500/20 hover:shadow-2xl hover:scale-102 transition-all duration-500'>
                     <div className="flex flex-col gap-4 w-full">
-                        {favoriteLocations.map((loc, i) => (
-                            <div key={i} onClick={() => navigate(`/map?lat=${loc.latitude}&lon=${loc.longitude}`)} className="bg-neutral-800/50 p-4 rounded-xl border border-white/10 flex flex-col md:flex-row justify-between items-start md:items-center hover:bg-neutral-800/80 transition-colors">
-                                <div>
-                                    <h3 className="text-lg font-bold text-cyan-400/80">{loc.name}</h3>
-                                    <p className="text-sm text-gray-400">{loc.address}</p>
-                                </div>
-                                <div className="mt-2 md:mt-0 text-right">
-                                    <p className="text-sm text-gray-300 font-mono">Added: {loc.time}</p>
-                                </div>
-                            </div> 
-                        ))}
+                        {loadingFavorites ? (
+                            <p className="text-gray-400 text-center py-4">Loading favorite locations...</p>
+                        ) : favoriteLocations.length === 0 ? (
+                            <p className="text-gray-400 text-center py-4">No favorite locations yet. Visit the map to add some!</p>
+                        ) : (
+                            favoriteLocations.map((loc, i) => (
+                                <div key={i} className="bg-neutral-800/50 p-4 rounded-xl border border-white/10 flex flex-col md:flex-row justify-between items-start md:items-center hover:bg-neutral-800/80 transition-colors">
+                                    <div className="flex-1 cursor-pointer" onClick={() => navigate(`/map?lat=${loc.latitude}&lon=${loc.longitude}`)}>
+                                        <h3 className="text-lg font-bold text-cyan-400/80">{loc.name}</h3>
+										<p className="text-gray-400 text-sm">{loc.address}</p>
+										{loc.categories && loc.categories.length > 0 && (
+											<p className="text-gray-500 text-xs mt-2">
+												{loc.categories.map(cat => cat.charAt(0).toUpperCase() + cat.slice(1)).join(', ')}
+											</p>
+										)}
+                                    </div>
+                                    <div className="mt-2 md:mt-0 flex flex-col items-end gap-2">
+                                        <button  style={{height: '40px',width:"60px",padding:"4px"}}onClick={(e) => { e.stopPropagation(); handleDeleteFavorite(loc.lid); }} className="px-3 py-1 bg-cyan-500 hover:bg-cyan-600 text-white text-sm rounded transition-colors">
+                                            Delete
+                                        </button>
+                                    </div>
+                                </div> 
+                            ))
+                        )}
                     </div>
                 </Card>
 			</div>

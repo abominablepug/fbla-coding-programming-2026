@@ -61,9 +61,11 @@ class Review(db.Model):
 class Location(db.Model):
     lid = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(150), nullable=False)
+    address = db.Column(db.String(255), nullable=True)
     longitude = db.Column(db.Float, nullable=False)
     latitude = db.Column(db.Float, nullable=False)
     type = db.Column(db.Integer, nullable=False)
+    categories = db.Column(db.JSON, nullable=True)
 
     reviews = db.relationship('Review', back_populates='location', lazy=True)
     favorited_by = db.relationship('User', secondary=FavoriteLocation.__table__, back_populates='favorite_locations', lazy=True)
