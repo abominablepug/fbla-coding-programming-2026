@@ -244,12 +244,20 @@ const Map = () => {
               position: [lng, lat]
             });
 
-            const address = reverseGeocode.addresses?.[0]?.address?.freeformAddress || 'Unknown Location';
-
-            const locationDetailsResponse = await fetch(`http://localhost:5173/loc/get_location_details/`);
-            const locationDetails = await locationDetailsResponse.json();
-            const name = locationDetails.name;
-            const category = locationDetails.categories;
+            const response = await fetch(
+              `https://api.tomtom.com/search/2/nearbySearch/.json?key=${API_KEY}&lat=${lat}&lon=${lng}&radius=50`
+            );
+            
+            const data = await response.json();
+            
+            const place = data.results?.[0];
+            
+            if (!place) return;
+            
+            const name = place.poi?.name ?? "Unknown";
+            const category = place.poi?.categories ?? [];
+            const address = place.address?.freeformAddress ?? "";
+            const distance = place.dist ?? 0;
 
             const imageUrl = `https://api.tomtom.com/map/1/staticimage?key=${API_KEY}&layer=basic&style=main&center=${lng},${lat}&zoom=16&width=400&height=200&format=png`;
 
@@ -1023,7 +1031,8 @@ const Map = () => {
                 <p className="m-0 mb-3 text-gray-400 text-sm">{stats.miles} mi • {stats.mins} min</p>
               </div>
               <div className="flex gap-2.5">
-                <button className="flex-[2] bg-[#00d4ff] text-black border-none p-2.5 rounded-lg font-bold cursor-pointer hover:bg-[#00b7db]" onClick={startNavigation}>Start Navigation</button>                <button className="flex-1 bg-neutral-800 text-white border-none p-2.5 rounded-lg cursor-pointer hover:bg-neutral-700" onClick={() => { setStats(null); clearMap(); }}>Close</button>
+                <button className="flex-[2] bg-[#00d4ff] text-black border-none p-2.5 rounded-lg font-bold cursor-pointer hover:bg-[#00b7db]" onClick={startNavigation}>Start Navigation</button>                
+                <button className="flex-1 bg-neutral-800 text-white border-none p-2.5 rounded-lg cursor-pointer hover:bg-neutral-700" onClick={() => { setStats(null); clearMap(); }}>Close</button>
               </div>
             </div>
           )}
