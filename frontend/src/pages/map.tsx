@@ -607,6 +607,24 @@ const Map = () => {
   };
 
   const calculateRoute = async (dLat: number, dLng: number, name: string) => {
+    // whenever a route is calculated we also mark the destination as visited
+    try {
+      await fetch('http://localhost:5173/loc/visit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          name,
+          address: name,
+          longitude: dLng,
+          latitude: dLat,
+          type: 1,
+          categories: []
+        })
+      });
+    } catch (e) {
+      console.error('Error logging visited location:', e);
+    }
     if (!mapRef.current) return;
 
     console.log('calculateRoute called. Current POI markers count:', poiMarkersRef.current.length);
