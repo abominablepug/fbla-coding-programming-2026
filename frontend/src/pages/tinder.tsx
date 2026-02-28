@@ -8,6 +8,7 @@ import { getCommonsImage } from '../utils/getCommonsImage';
 import {useNavigate } from 'react-router-dom';
 import Links from '../components/links';
 import Body from '../components/body';
+import Alerts from '../components/alerts';
 
 interface Business {
     name: string;
@@ -33,13 +34,22 @@ const TinderPage = () => {
     const [showSidebar, setShowSidebar] = useState(false);
     const isSavingRef = useRef(false);
     const navigate = useNavigate();
-
+    const [showToast, setShowToast] = useState(false);
+    const [toastMessage, setToastMessage] = useState("");
     const { scrollY } = useScroll();
 	const marginTop = useTransform(scrollY, [0, 100], ["0px", "12px"]);
     const marginBottom = useTransform(scrollY, [0, 100], ["0px", "12px"]);
 	const borderRadius = useTransform(scrollY, [0, 100], ["0px", "24px"]);
 	const right = useTransform(scrollY, [0, 100], ["0px", "1%"]);
 	const bgColor = useTransform(scrollY, [0, 100], ["rgba(23, 23, 23, 1)", "rgba(30, 30, 30, 0.7)"]);
+    const [edgeGlow, setEdgeGlow] = useState<"left" | "right" | null>(null);
+        const handlePress = (side: "left" | "right") => {
+        setEdgeGlow(side);
+
+        setTimeout(() => {
+            setEdgeGlow(null);
+        }, 600);
+    };
 
     const fetchBusinesses = async () => {
         setError(null);
@@ -139,6 +149,8 @@ const TinderPage = () => {
 
                 if (favoriteResponse.ok) {
                     console.log('Location added to favorites');
+                    setShowToast(true);
+                    setToastMessage("Location Saved to Favorites!")
                 } else {
                     console.error('Failed to add to favorites');
                 }
@@ -151,6 +163,18 @@ const TinderPage = () => {
             isSavingRef.current = false;
         }
     };
+
+    useEffect(() => {
+        if (!swipeDirection) return;
+    
+        setEdgeGlow(swipeDirection);
+    
+        const timeout = setTimeout(() => {
+            setEdgeGlow(null);
+        }, 800);
+    
+        return () => clearTimeout(timeout);
+    }, [swipeDirection]);
 
     async function handleAnimationComplete() {
         if (swipeDirection === 'left') {
@@ -171,7 +195,6 @@ const TinderPage = () => {
                 return prev;
             });
             console.log(likedLocations);
-            setShowSidebar(true);
         }
 
         if (swipeDirection) {
@@ -210,7 +233,51 @@ const TinderPage = () => {
                     </Links>
                     
                 </Navbar>
+                <AnimatePresence>
+                    {edgeGlow === "right" && (
+                        <motion.div
+                            key="right-glow"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: [0, 0.7, 0] }}
+                            transition={{ duration: 0.9, ease: "easeOut" }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-y-0 right-0 w-[350px] pointer-events-none z-30"
+                        >
+                            <div className="absolute right-[-200px] top-1/2 -translate-y-1/2 
+                                w-[600px] h-[800px] 
+                                bg-gradient-to-l from-green-500/40 to-transparent 
+                                blur-[160px] rounded-full"
+                            />
+                        </motion.div>
+                    )}
 
+                    {edgeGlow === "left" && (
+                        <motion.div
+                            key="left-glow"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: [0, 0.7, 0] }}
+                            transition={{ duration: 0.9, ease: "easeOut" }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-y-0 left-0 w-[350px] pointer-events-none z-30"
+                        >
+                            <div className="absolute left-[-200px] top-1/2 -translate-y-1/2 
+                                w-[600px] h-[800px] 
+                                bg-gradient-to-r from-red-500/40 to-transparent 
+                                blur-[160px] rounded-full"
+                            />
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+                {showToast && (
+                    <Alerts
+                    message={toastMessage}
+                    textColor="text-green-400"
+                    onClose={() => setShowToast(false)}
+                    />
+                )}
+                <div>
+
+                </div>
                 <div className="from-cyan-700/70 via-cyan-500/70 to-purple-400/70 z-10 pt-20 pb-32 h-screen flex items-center justify-center">
                     <AnimatePresence>
                         {currentBusiness && (
@@ -222,7 +289,7 @@ const TinderPage = () => {
                                     opacity: swipeDirection ? 0 : 1
                                 }}
                                 exit={{ opacity: 0 }}
-                                transition={{ duration: 0.5 }}
+                                transition={{ duration: 0.70 }}
                                 onAnimationComplete={handleAnimationComplete}
                                 className="w-full max-w-2xl px-4"
                             >
@@ -253,7 +320,7 @@ const TinderPage = () => {
                     {error ? <p className="text-red-400 text-center mt-8">{error}</p> : businesses.length === 0 && currentBusiness === undefined && <p className="text-white text-center">Loading...</p>}
                 </div>
 
-                <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 flex items-center justify-center gap-32"> 
+                <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 flex items-center justify-center gap-16"> 
                     <motion.button
                         onClick={() => setSwipeDirection('left')}
                         animate={{
@@ -272,7 +339,9 @@ const TinderPage = () => {
                             className="text-red-500 drop-shadow-lg"
                         />
                     </motion.button>
-
+                    <button className="px-4 py-4 rounded-full bg-sky-500 text-white max-w-fit text-md transition-all hover:bg-sky-400 shadow-lg" onClick={()=>setShowSidebar(!showSidebar)}>
+                        Show Favorite Locations
+                    </button>
                     <motion.button
                         onClick={() => setSwipeDirection('right')}
                         animate={{

@@ -71,14 +71,21 @@ const Login = () => {
 						/>
 					</div>
 					{submitError && <p className="text-red-400 text-sm text-center">{submitError}</p>}
+					<div className="grid grid-cols-2 flex-col text-center transition-transform gap-6">
 					<button
 						type="submit"
 						className="w-full rounded-lg bg-sky-500 py-3 font-semibold text-white hover:bg-sky-400 active:scale-[0.98] transition-all shadow-lg"
 					>
 						Sign In
 					</button>
+					<button
+						className="w-full rounded-lg bg-sky-500 py-3 font-semibold text-white hover:bg-sky-400 active:scale-[0.98] transition-all shadow-lg"
+					>
+						Forgot Password
+					</button>
+					</div>
 				</form>
-			</Card>
+			</Card> 
 		</Body>
 	);
 };

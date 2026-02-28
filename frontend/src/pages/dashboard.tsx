@@ -6,6 +6,7 @@ import Navbar from '../components/navbar';
 import Links from '../components/links';
 import { Heart, MapPin } from 'lucide-react';
 import Body from '../components/body';
+import Alerts from '../components/alerts'
 
 interface Location {
 	lid: number;
@@ -30,7 +31,10 @@ const Dashboard = () => {
 	const [confirmPassword, setConfirmPassword] = useState('');
 	const [favoriteLocations, setFavoriteLocations] = useState<Location[]>([]);
 	const [loadingFavorites, setLoadingFavorites] = useState(false);
+	const [showNotif, setShowNotif] = useState(false);
+	const [notifMessage, setNotifMessage]= useState("");
 	const imageSrc = `http://localhost:5173/static/profile_pictures/${profilePic}`;
+	
 
 	const fetchFavoriteLocations = async () => {
 		setLoadingFavorites(true);
@@ -61,6 +65,8 @@ const Dashboard = () => {
 			});
 			if (response.ok) {
 				setFavoriteLocations(favoriteLocations.filter(loc => loc.lid !== locationId));
+				setNotifMessage("Removed Location From Favorites!")
+				setShowNotif(true);
 			} else {
 				console.error('Failed to remove from favorites');
 			}
@@ -258,11 +264,18 @@ const Dashboard = () => {
 					Logout →
 				</Links>
 			</Navbar>
+			{showNotif && (
+                    <Alerts
+                    message={notifMessage}
+                    textColor="text-red-400"
+                    onClose={() => setShowNotif(false)}
+                    />
+                )}
 			<div className="w-full relative grid gap-11 pt-28">
 				<Card title={`Welcome ${user.username}...`} cardClassName='w-[95%]' titleClassName='md:text-5xl tracking-wider'>
 					<p className='text-lg'>Scroll Down to view your Account Details and Favorite Locations!</p>
 				</Card>
-				<Card title='Account Info:' titleClassName="text-cyan-500/80" cardClassName='w-[75%] ease-in-out hover:shadow-cyan-500/20 hover:shadow-2xl hover:scale-102 transition-all duration-500'>
+				<Card title='Account Info:' titleClassName="text-cyan-500/80" cardClassName='w-[75%] ease-in-out hover:shadow-cyan-500/20 hover:shadow-2xl hover:scale-101 transition-all duration-500'>
 					<div className="grid grid-cols-1 gap-y-3 place-items-center text-center">
 						<img className="rounded-full border-4 w-32 h-32 object-cover shadow-w-auto border-cyan-600 hover:border-cyan-700 transition-transform" src={imageSrc} alt="Profile" />
 						<p className="text-gray-400 text-xl">User ID: {user.uid}</p>
@@ -287,7 +300,7 @@ const Dashboard = () => {
 
 					</div>
 				</Card>
-				<Card title='Favorite Locations:' cardClassName='w-[75%] ease-in-out hover:shadow-cyan-500/20 hover:shadow-2xl hover:scale-102 transition-all duration-500'>
+				<Card title='Favorite Locations:' cardClassName='w-[75%] ease-in-out hover:shadow-cyan-500/20 hover:shadow-2xl hover:scale-101 transition-all duration-500'>
                     <div className="flex flex-col gap-4 w-full">
                         {loadingFavorites ? (
                             <p className="text-gray-400 text-center py-4">Loading favorite locations...</p>

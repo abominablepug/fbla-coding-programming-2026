@@ -6,11 +6,24 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import Navbar from '../components/navbar';
 import Links from '../components/links';
-import {House, Heart} from 'lucide-react';
+import {House, Heart, HeartPlus} from 'lucide-react';
+import Alerts from '../components/alerts';
 
 
 
 
+interface Business {
+  name: string;
+  address: string;
+  latitude: number;
+  longitude: number;
+  distance_meters: number;
+  category: string[];
+  score: number;
+  classifications: any[];
+  imageUrl?: string;
+  lid?: number;
+}
 
 const API_KEY = import.meta.env.VITE_TOMTOM_API_KEY;
 
@@ -113,6 +126,7 @@ interface RouteInfo {
 }
 
 const Map = () => {
+  const [businesses, setBusinesses] = useState<Business[]>([]);
   const mapElement = useRef<HTMLDivElement>(null);
   const [user, setUser] = useState<{uid: number, username: string} | null>(null);
   const mapRef = useRef<any>(null);
@@ -130,20 +144,24 @@ const Map = () => {
   const [isNavigating, setIsNavigating] = useState(false);
   const [navStep, setNavStep] = useState(0);
   const [showFullDirections, setShowFullDirections] = useState(false);
-  const [selectedLocation, setSelectedLocation] = useState<{lat: number, lng: number, address: string, imageUrl: string} | null>(null);
+  const [selectedLocation, setSelectedLocation] = useState<Business | null>(null);
   const [mapStyle, setMapStyle] = useState<'regular' | 'satellite' | 'dark' | 'hybrid'>('dark');
   const [mapPerspective, setMapPerspective] = useState<'2d' | '3d'>('2d');
   const [mapError, setMapError] = useState<string | null>(null);
   const [isPoiDropdownOpen, setIsPoiDropdownOpen] = useState(false);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const isSavingRef = useRef(false);
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
 
+  
   useEffect(() => {
     const lat = searchParams.get('lat');
     const lon = searchParams.get('lon');
     if (lat && lon && mapLoaded) {
       const destLat = parseFloat(lat);
-      const destLng = parseFloat(lon);
+        const destLng = parseFloat(lon);
       if (!isNaN(destLat) && !isNaN(destLng)) {
         calculateRoute(destLat, destLng, 'Destination');
       }
@@ -220,6 +238,7 @@ const Map = () => {
 
           try {
 
+
             const reverseGeocode = await services.reverseGeocode({
               key: API_KEY,
               position: [lng, lat]
@@ -227,13 +246,30 @@ const Map = () => {
 
             const address = reverseGeocode.addresses?.[0]?.address?.freeformAddress || 'Unknown Location';
 
+            const locationDetailsResponse = await fetch(`http://localhost:5173/loc/get_location_details/`);
+            const locationDetails = await locationDetailsResponse.json();
+            const name = locationDetails.name;
+            const category = locationDetails.categories;
+
             const imageUrl = `https://api.tomtom.com/map/1/staticimage?key=${API_KEY}&layer=basic&style=main&center=${lng},${lat}&zoom=16&width=400&height=200&format=png`;
 
-            setSelectedLocation({ lat, lng, address, imageUrl });
+            setSelectedLocation({
+              name: name,
+              address: address,
+              latitude: lat,
+              longitude: lng,
+              distance_meters: 0,
+              category: category,
+              score: 0,
+              classifications: [],
+              imageUrl: imageUrl
+            });
           } catch (error) {
             console.error('Error fetching location details:', error);
             const imageUrl = `https://api.tomtom.com/map/1/staticimage?key=${API_KEY}&layer=basic&center=${lng},${lat}&zoom=15&width=400&height=200&format=png`;
-            setSelectedLocation({ lat, lng, address: 'Unknown Location', imageUrl });
+
+            setSelectedLocation({ name: 'Selected Location', address: 'Unknown Location', latitude: lat, longitude: lng, distance_meters: 0, category: ['Other'], score: 0, classifications: [], imageUrl: imageUrl });
+
           }
         });
       });
@@ -454,6 +490,50 @@ const Map = () => {
       });
     }
   };
+  
+  const addToFavorites = async (business: Business) => {
+    if (isSavingRef.current) return;
+    isSavingRef.current = true;
+    
+    try {
+        const createResponse = await fetch('http://localhost:5173/loc/add', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({
+                name: business.name,
+                address: business.address,
+                longitude: business.longitude,
+                latitude: business.latitude,
+                type: 1,
+                categories: business.category,
+            })
+        });
+
+        if (createResponse.ok) {
+            const locationData = await createResponse.json();
+            const locationId = locationData.location_id;
+            const favoriteResponse = await fetch(`http://localhost:5173/loc/${locationId}/favorite`, {
+                method: 'POST',
+                credentials: 'include'
+            });
+
+            if (favoriteResponse.ok) {
+                console.log('Location added to favorites');
+                setToastMessage("Location saved to favorites");
+                setShowToast(true);
+            } else {
+                console.error('Failed to add to favorites');
+            }
+        } else {
+            console.error('Failed to create location');
+        }
+    } catch (error) {
+        console.error('Error adding to favorites:', error);
+    } finally {
+        isSavingRef.current = false;
+    }
+};
 
   const searchPoi = async (categoryId: string, type: string, icon: string, colorClass: string) => {
     if (!mapRef.current) return;
@@ -770,9 +850,9 @@ const Map = () => {
   return (
     <div className="fixed inset-0 bg-neutral-900">
         <div ref={mapElement} className="w-full h-full relative [&_.tt-attribution]:hidden">
-          
+
           {/*hiding sidebar*/}
-          <Navbar page={`Map`}>
+          <Navbar page={`Map`}> 
             <Links link="tinder" className="text-[16px]">
               Findr <Heart size={22}/>
             </Links>
@@ -780,7 +860,13 @@ const Map = () => {
               Dashboard <House size={17} />
             </Links>
           </Navbar>        
-         
+          {showToast && (
+            <Alerts
+              message={toastMessage}
+              textColor="text-green-400"
+              onClose={() => setShowToast(false)}
+            />
+          )}
           {/*Animation for loading map*/}
           {!mapLoaded && !mapError && (
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[#00d4ff] text-lg flex flex-col items-center gap-4">
@@ -820,7 +906,7 @@ const Map = () => {
                 <button className="border-none text-[#00d4ff] w-7 h-7 rounded-full cursor-pointer text-sm hover:bg-white/5" onClick={cancelNavigation}>✕</button>
               </div>
 
-              <div className="p-4 bg-gradient-to-br from-[#00d4ff1a] to-[#0096c80d]">
+              <div className="p-4 bg-gradient-to-br from-[#00d4ff1a] to-[#0096c80d]"> 
                 <div className="flex items-center gap-3">
                   <span className="text-[32px]">{getManeuverIcon(stats.instructions[navStep]?.maneuverType || 'straight')}</span>
                   <div className="flex-1">
@@ -937,8 +1023,7 @@ const Map = () => {
                 <p className="m-0 mb-3 text-gray-400 text-sm">{stats.miles} mi • {stats.mins} min</p>
               </div>
               <div className="flex gap-2.5">
-                <button className="flex-[2] bg-[#00d4ff] text-black border-none p-2.5 rounded-lg font-bold cursor-pointer hover:bg-[#00b7db]" onClick={startNavigation}>Start Navigation</button>
-                <button className="flex-1 bg-neutral-800 text-white border-none p-2.5 rounded-lg cursor-pointer hover:bg-neutral-700" onClick={() => { setStats(null); clearMap(); }}>Close</button>
+                <button className="flex-[2] bg-[#00d4ff] text-black border-none p-2.5 rounded-lg font-bold cursor-pointer hover:bg-[#00b7db]" onClick={startNavigation}>Start Navigation</button>                <button className="flex-1 bg-neutral-800 text-white border-none p-2.5 rounded-lg cursor-pointer hover:bg-neutral-700" onClick={() => { setStats(null); clearMap(); }}>Close</button>
               </div>
             </div>
           )}
@@ -947,13 +1032,16 @@ const Map = () => {
           {selectedLocation && (
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-neutral-900/98 border border-neutral-800 rounded-2xl w-80 z-[3000] shadow-2xl max-h-[80vh] overflow-hidden">
               <div className="flex justify-between items-center p-4 border-b border-neutral-800">
-                <h3 className="m-0 text-[#00d4ff] text-lg">Location Details</h3>
-                <button className="bg-neutral-800 border-none text-white w-8 h-8 rounded-full cursor-pointer text-sm hover:bg-neutral-700" onClick={() => setSelectedLocation(null)}>✕</button>
+                <h3 className="m-0 text-[#00d4ff] text-lg">Location Details</h3> 
+                <div className="flex items-center gap-2">
+                <button className="flex items-center justify-center bg-neutral-800 border-none w-8 h-8 text-white rounded-full cursor-pointer text-sm hover:bg-neutral-700" onClick={() => addToFavorites(selectedLocation)}><HeartPlus className="justify-center items-center text-green-500 drop-shadow-lg"/></button>
+                <button className="bg-neutral-800 border-none w-8 h-8 rounded-full cursor-pointer text-sm hover:bg-neutral-700 text-red-500/80" onClick={() => setSelectedLocation(null)}>✕</button>
+                </div>
               </div>
               <div className="p-4">
                 {selectedLocation.imageUrl && (
                   <div className="w-full h-[180px] bg-neutral-900 rounded-lg mb-3 overflow-hidden flex items-center justify-center border border-neutral-800">
-                    <img 
+                    <img
                       src={selectedLocation.imageUrl} 
                       alt="Location" 
                       className="w-full h-full object-cover block"
@@ -965,12 +1053,12 @@ const Map = () => {
                     />
                   </div>
                 )}
-                <p className="text-white text-sm mb-4 leading-relaxed p-2.5 bg-white/5 rounded-lg">📍 {selectedLocation.address}</p>
+                <p className="text-white text-sm mb-4 leading-relaxed p-2.5 bg-white/5 rounded-lg">📍 {selectedLocation?.address}</p>
                 <div className="flex justify-center gap-2.5">
-                  <button className="bg-gradient-to-br from-[#00d4ff] to-[#0099cc] text-black border-none p-3 px-6 rounded-lg font-bold cursor-pointer text-sm flex-1 transition-transform hover:scale-[1.02]" onClick={() => {
-                    calculateRoute(selectedLocation.lat, selectedLocation.lng, selectedLocation.address);
+                  <button className="bg-gradient-to-br from-[#6fe7ff] to-[#0099cc] text-black border-none p-3 px-6 rounded-lg font-bold cursor-pointer text-sm flex-1 transition-transform hover:scale-[1.02]" onClick={() => {
+                    calculateRoute(selectedLocation.latitude, selectedLocation.longitude, selectedLocation.address);
                     setSelectedLocation(null);
-                  }}>🧭 Navigate</button>
+                  }}>Navigate ➤</button>
                 </div>
               </div>
             </div>
@@ -979,7 +1067,7 @@ const Map = () => {
           {/* Side Bar */}
           <div className={`absolute translate-y-92 items-center left-4 flex flex-col gap-3 z-[1000] text-[14px]`}>
             <button 
-              onClick={() => {
+              onClick={() => { 
                 if (!mapRef.current) return;
                 if (trafficOn) {
                   mapRef.current.hideTrafficFlow();
@@ -990,11 +1078,11 @@ const Map = () => {
                 }
                 setTrafficOn(!trafficOn);
               }} 
-              className={`w-[55px] h-[40px] md:w-[60px] md:h-[50px] bg-neutral-900/95 text-white border border-neutral-800 rounded-xl cursor-pointer text-[22px] flex flex-col items-center justify-center shadow-lg transition-all hover:scale-105 hover:border-[#00d4ff] ${trafficOn ? 'border-[#00d4ff] text-[#00d4ff] bg-[#00d4ff1a]' : ''}`}
+              className={`w-[55px] h-[40px] md:w-[60px] md:h-[50px] bg-neutral-900/95 text-white border border-neutral-800 rounded-xl cursor-pointer text-[22px] flex flex-col items-center justify-center shadow-lg transition-all hover:scale-105 hover:border-[#00d4ff] ${trafficOn ? 'border-[#00d4ff] text-[#00d4ff] bg-[#00d4ff1a]' : ''}`} 
               title={trafficOn ? 'Hide Traffic' : 'Show Traffic'}
             >
               🚦
-            </button>
+            </button> 
             <button 
               onClick={() => {
                 if (mapRef.current) {
@@ -1026,7 +1114,7 @@ const Map = () => {
               }}
               className={`w-[55px] h-[40px] md:w-[60px] md:h-[50px] bg-neutral-900/95 text-white border border-neutral-800 rounded-xl cursor-pointer text-sm flex flex-col items-center justify-center shadow-lg transition-all hover:scale-105 hover:border-[#00d4ff] ${mapStyle !== 'regular' ? 'border-[#00d4ff] text-[#00d4ff] bg-[#00d4ff1a]' : ''}`}
               title={`Current: ${mapStyle}`}
-            >
+            > 
               <span className="text-sm font-bold tracking-wide">{mapStyle.charAt(0).toUpperCase() + mapStyle.slice(1)}</span>
             </button>
           </div>
@@ -1034,5 +1122,5 @@ const Map = () => {
       </div>
   );
 };
-
+ 
 export default Map;
