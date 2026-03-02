@@ -2,15 +2,36 @@ import React, { useEffect, useRef, useState } from 'react';
 import tt from '@tomtom-international/web-sdk-maps';
 import { services } from '@tomtom-international/web-sdk-services';
 import '@tomtom-international/web-sdk-maps/dist/maps.css';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import Navbar from '../components/navbar';
 import Links from '../components/links';
-import {House, Heart} from 'lucide-react';
+import {House, Heart, HeartPlus} from 'lucide-react';
+import Alerts from '../components/alerts';
 
+interface Business {
+  name: string;
+  address: string;
+  latitude: number;
+  longitude: number;
+  distance_meters: number;
+  category: string[];
+  score: number;
+  classifications: any[];
+  imageUrl?: string;
+  lid?: number;
+}
 
-
-
+interface Location {
+	lid: number;
+	name: string;
+	longitude: number;
+	latitude: number;
+	type: number;
+	address?: string;
+	categories?: string[];
+	time?: string;
+}
 
 const API_KEY = import.meta.env.VITE_TOMTOM_API_KEY;
 
@@ -112,6 +133,18 @@ interface RouteInfo {
   currentInstruction: number;
 }
 
+interface PoiListItem {
+  id: string;
+  name: string;
+  address: string;
+  lat: number;
+  lng: number;
+  icon: string;
+  type: string;
+  categories: string[];
+  distanceMeters: number;
+}
+
 const Map = () => {
   const mapElement = useRef<HTMLDivElement>(null);
   const [user, setUser] = useState<{uid: number, username: string} | null>(null);
@@ -130,20 +163,55 @@ const Map = () => {
   const [isNavigating, setIsNavigating] = useState(false);
   const [navStep, setNavStep] = useState(0);
   const [showFullDirections, setShowFullDirections] = useState(false);
-  const [selectedLocation, setSelectedLocation] = useState<{lat: number, lng: number, address: string, imageUrl: string} | null>(null);
+  const [selectedLocation, setSelectedLocation] = useState<Business | null>(null);
+  const [routeFavoriteLocation, setRouteFavoriteLocation] = useState<Business | null>(null);
   const [mapStyle, setMapStyle] = useState<'regular' | 'satellite' | 'dark' | 'hybrid'>('dark');
   const [mapPerspective, setMapPerspective] = useState<'2d' | '3d'>('2d');
   const [mapError, setMapError] = useState<string | null>(null);
   const [isPoiDropdownOpen, setIsPoiDropdownOpen] = useState(false);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const isSavingRef = useRef(false);
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+  const [showSidebar, setShowSidebar] = useState(false);
+  const [showPoiSidebar, setShowPoiSidebar] = useState(false);
+  const [poiResults, setPoiResults] = useState<PoiListItem[]>([]);
+  const [poiRadiusFilter, setPoiRadiusFilter] = useState<'5' | '10' | '20'>('20');
+  const poiMarkerEntriesRef = useRef<Array<{ marker: any; distanceMeters: number }>>([]);
+  const {scrollY} = useScroll();
+  const marginTop = useTransform(scrollY, [0, 100], ["0px", "12px"]);
+  const marginBottom = useTransform(scrollY, [0, 100], ["0px", "12px"]);
+	const borderRadius = useTransform(scrollY, [0, 100], ["0px", "24px"]);
+	const right = useTransform(scrollY, [0, 100], ["0px", "1%"]);
+	const bgColor = useTransform(scrollY, [0, 100], ["rgba(23, 23, 23, 1)", "rgba(30, 30, 30, 0.7)"]);
+  const [loadingFavorites, setLoadingFavorites] = useState(false);
+  const [favoriteLocations, setFavoriteLocations] = useState<Location[]>([]);
+  const [likedLocations] = useState<Business[]>([]);
+  const geolocationWatchRef = useRef<number | null>(null);
+  const markerAnimationRef = useRef<number | null>(null);
+  const displayedUserLocRef = useRef<{ lat: number; lng: number } | null>(null);
+  const userHeadingRef = useRef<number>(0);
+  const isNavigatingRef = useRef(false);
+  const activeRouteRef = useRef<RouteInfo | null>(null);
+  const hasSelectedLocationImage = !!selectedLocation?.imageUrl;
+  const showImageLocationPopup = !!selectedLocation && hasSelectedLocationImage && !isNavigating;
+
+  
+  useEffect(() => {
+    isNavigatingRef.current = isNavigating;
+  }, [isNavigating]);
+
+  useEffect(() => {
+    activeRouteRef.current = stats;
+  }, [stats]);
 
   useEffect(() => {
     const lat = searchParams.get('lat');
     const lon = searchParams.get('lon');
     if (lat && lon && mapLoaded) {
       const destLat = parseFloat(lat);
-      const destLng = parseFloat(lon);
+        const destLng = parseFloat(lon);
       if (!isNaN(destLat) && !isNaN(destLng)) {
         calculateRoute(destLat, destLng, 'Destination');
       }
@@ -182,6 +250,75 @@ const Map = () => {
         return { map: '2/basic_street-light', poi: '2/poi_light' };
     }
   };
+  const showToastNotice = (message: string) => {
+    setShowToast(false);
+    setToastMessage(message);
+    window.setTimeout(() => setShowToast(true), 0);
+  };
+  const metersToMiles = (meters: number): number => meters * 0.000621371;
+  const isPoiWithinRadius = (distanceMeters: number): boolean => {
+    const miles = metersToMiles(distanceMeters);
+    if (poiRadiusFilter === '5') return miles <= 5;
+    if (poiRadiusFilter === '10') return miles <= 10;
+    return miles <= 20;
+  };
+  const filteredPoiResults = poiResults.filter((poi) => {
+    return isPoiWithinRadius(poi.distanceMeters);
+  });
+  const applyPoiRadiusToMarkers = () => {
+    poiMarkerEntriesRef.current.forEach(({ marker, distanceMeters }) => {
+      const markerEl = marker?.getElement?.();
+      if (!markerEl) return;
+      markerEl.style.display = isPoiWithinRadius(distanceMeters) ? '' : 'none';
+    });
+  };
+
+  const getDirectionBearing = (route?: RouteInfo): number => {
+    if (userHeadingRef.current > 0 && Number.isFinite(userHeadingRef.current)) {
+      return userHeadingRef.current;
+    }
+
+    const nextPoint = route?.instructions?.[0]?.point;
+    if (nextPoint && Number.isFinite(nextPoint.lat) && Number.isFinite(nextPoint.lng)) {
+      const lat1 = (userLoc.lat * Math.PI) / 180;
+      const lat2 = (nextPoint.lat * Math.PI) / 180;
+      const dLon = ((nextPoint.lng - userLoc.lng) * Math.PI) / 180;
+      const y = Math.sin(dLon) * Math.cos(lat2);
+      const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon);
+      const bearing = (Math.atan2(y, x) * 180) / Math.PI;
+      return (bearing + 360) % 360;
+    }
+
+    return mapRef.current ? mapRef.current.getBearing() : 0;
+  };
+
+const fetchFavoriteLocations = async () => {
+  setLoadingFavorites(true);
+  try {
+    const response = await fetch('http://localhost:5173/loc/favorites', {
+      credentials: 'include'
+    });
+    if (response.ok) {
+      const data = await response.json();
+      setFavoriteLocations(data);
+    } else {
+      console.error('Failed to fetch favorite locations');
+      setFavoriteLocations([]);
+    }
+  } catch (error) {
+    console.error('Error fetching favorite locations:', error);
+    setFavoriteLocations([]);
+  } finally {
+    setLoadingFavorites(false);
+  }
+};
+
+useEffect(() => {
+  if (user) {
+    fetchFavoriteLocations();
+  }
+}, [user]);
+
 
   useEffect(() => {
     if (!mapElement.current) return;
@@ -217,23 +354,45 @@ const Map = () => {
           const lngLat = e.lngLat;
           const lat = lngLat.lat;
           const lng = lngLat.lng;
+          cancelNavigation();
+          setStats(null);
 
           try {
-
-            const reverseGeocode = await services.reverseGeocode({
-              key: API_KEY,
-              position: [lng, lat]
-            });
-
-            const address = reverseGeocode.addresses?.[0]?.address?.freeformAddress || 'Unknown Location';
-
+            const response = await fetch(
+              `https://api.tomtom.com/search/2/nearbySearch/.json?key=${API_KEY}&lat=${lat}&lon=${lng}&radius=50`
+            );
+            const data = await response.json();
+            const place = data.results?.[0];
+            if (!place) return;
+            const name = place.poi?.name ?? "Unknown";
+            const category = place.poi?.categories ?? [];
+            const address = place.address?.freeformAddress ?? "";
             const imageUrl = `https://api.tomtom.com/map/1/staticimage?key=${API_KEY}&layer=basic&style=main&center=${lng},${lat}&zoom=16&width=400&height=200&format=png`;
-
-            setSelectedLocation({ lat, lng, address, imageUrl });
+            const location: Business = {
+              name: name,
+              address: address,
+              latitude: lat,
+              longitude: lng,
+              distance_meters: 0,
+              category: category,
+              score: 0,
+              classifications: [],
+              imageUrl: imageUrl
+            };
+            setSelectedLocation(location);
           } catch (error) {
             console.error('Error fetching location details:', error);
-            const imageUrl = `https://api.tomtom.com/map/1/staticimage?key=${API_KEY}&layer=basic&center=${lng},${lat}&zoom=15&width=400&height=200&format=png`;
-            setSelectedLocation({ lat, lng, address: 'Unknown Location', imageUrl });
+            setSelectedLocation({
+              name: 'Selected Location',
+              address: 'Unknown Location',
+              latitude: lat,
+              longitude: lng,
+              distance_meters: 0,
+              category: ['Other'],
+              score: 0,
+              classifications: []
+            });
+
           }
         });
       });
@@ -278,6 +437,31 @@ const Map = () => {
     userMarkerRef.current = new tt.Marker({ element: el })
       .setLngLat([loc.lng, loc.lat])
       .addTo(mapRef.current);
+    displayedUserLocRef.current = loc;
+  };
+
+  const animateUserMarkerTo = (target: { lat: number; lng: number }, durationMs = 900) => {
+    if (!userMarkerRef.current) return;
+    if (markerAnimationRef.current) {
+      cancelAnimationFrame(markerAnimationRef.current);
+    }
+
+    const start = displayedUserLocRef.current ?? target;
+    const startAt = performance.now();
+
+    const frame = (now: number) => {
+      const t = Math.min((now - startAt) / durationMs, 1);
+      const eased = 1 - Math.pow(1 - t, 3);
+      const lat = start.lat + (target.lat - start.lat) * eased;
+      const lng = start.lng + (target.lng - start.lng) * eased;
+      displayedUserLocRef.current = { lat, lng };
+      userMarkerRef.current.setLngLat([lng, lat]);
+      if (t < 1) {
+        markerAnimationRef.current = requestAnimationFrame(frame);
+      }
+    };
+
+    markerAnimationRef.current = requestAnimationFrame(frame);
   };
 
   useEffect(() => {
@@ -319,7 +503,57 @@ const Map = () => {
     } catch (e) {
       console.log('Could not set style:', e);
     }
-  }, [mapStyle, mapLoaded, userLoc]);
+  }, [mapStyle, mapLoaded]);
+
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+
+    geolocationWatchRef.current = navigator.geolocation.watchPosition(
+      (pos) => {
+        const nextLoc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        const heading = pos.coords.heading;
+        if (heading !== null && !isNaN(heading) && heading >= 0) {
+          userHeadingRef.current = heading;
+        }
+
+        setUserLoc(nextLoc);
+
+        if (userMarkerRef.current) {
+          animateUserMarkerTo(nextLoc);
+        } else if (mapRef.current && mapLoaded) {
+          drawUserMarker(nextLoc);
+        }
+
+        if (isNavigatingRef.current && mapRef.current) {
+          mapRef.current.easeTo({
+            center: [nextLoc.lng, nextLoc.lat],
+            bearing: getDirectionBearing(activeRouteRef.current || undefined),
+            pitch: 60,
+            duration: 900
+          });
+        }
+      },
+      (err) => {
+        console.log('Geolocation watch error:', err);
+      },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 1000,
+        timeout: 10000
+      }
+    );
+
+    return () => {
+      if (geolocationWatchRef.current !== null) {
+        navigator.geolocation.clearWatch(geolocationWatchRef.current);
+        geolocationWatchRef.current = null;
+      }
+      if (markerAnimationRef.current) {
+        cancelAnimationFrame(markerAnimationRef.current);
+        markerAnimationRef.current = null;
+      }
+    };
+  }, [mapLoaded]);
 
   useEffect(() => {
     if (inputValue.length < 3) {
@@ -364,17 +598,57 @@ const Map = () => {
       poiMarkers.forEach(m => m.remove());
       setPoiMarkers([]);
       setActivePoiType(null);
+      setPoiResults([]);
+      setShowPoiSidebar(false);
+      poiMarkerEntriesRef.current = [];
     }
   };
 
-  const cancelNavigation = () => {
+  const cancelNavigation = (clearRoute = false) => {
     setIsNavigating(false);
     setNavStep(0);
     setShowFullDirections(false);
+    if (clearRoute) {
+      setStats(null);
+    }
   };
 
-  const startNavigation = () => {
-    if (!stats) return;
+  const recordVisitedLocation = async (location: Business) => {
+    try {
+      await fetch('http://localhost:5173/loc/visit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          name: location.name,
+          address: location.address || location.name,
+          longitude: location.longitude,
+          latitude: location.latitude,
+          type: 1,
+          categories: location.category || []
+        })
+      });
+    } catch (e) {
+      console.error('Error logging visited location:', e);
+    }
+  };
+
+  const startNavigationWithRoute = (route: RouteInfo) => {
+    setShowSidebar(false);
+    setShowPoiSidebar(false);
+    const locationForVisit: Business = routeFavoriteLocation ?? {
+      name: route.name || 'Selected Location',
+      address: route.name || 'Unknown Location',
+      latitude: route.lat,
+      longitude: route.lng,
+      distance_meters: 0,
+      category: [],
+      score: 0,
+      classifications: []
+    };
+    void recordVisitedLocation(locationForVisit);
+
+    setStats(route);
     setIsNavigating(true);
     setNavStep(0);
     setShowFullDirections(false);
@@ -387,25 +661,19 @@ const Map = () => {
     setPoiMarkers([]);
     setActivePoiType(null);
     
-    if (stats.instructions && stats.instructions[0] && mapRef.current) {
-      const firstStep = stats.instructions[0];
-      if (firstStep.point && !isNaN(firstStep.point.lng) && !isNaN(firstStep.point.lat)) {
-        mapRef.current.flyTo({
-          center: [firstStep.point.lng, firstStep.point.lat],
-          zoom: 17,
-          pitch: 60,
-          bearing: 0
-        });
-      } else {
-
-        mapRef.current.flyTo({
-          center: [stats.lng, stats.lat],
-          zoom: 17,
-          pitch: 60,
-          bearing: 0
-        });
-      }
+    if (mapRef.current) {
+      mapRef.current.flyTo({
+        center: [userLoc.lng, userLoc.lat],
+        zoom: 17,
+        pitch: 60,
+        bearing: getDirectionBearing(route),
+        duration: 900
+      });
     }
+  };
+  const startNavigation = () => {
+    if (!stats) return;
+    startNavigationWithRoute(stats);
   };
 
   const nextNavStep = () => {
@@ -454,6 +722,66 @@ const Map = () => {
       });
     }
   };
+  
+  const addToFavorites = async (business: Business) => {
+    if (isSavingRef.current) {
+      showToastNotice('Saving in progress...');
+      return;
+    }
+    isSavingRef.current = true;
+    
+    try {
+        const createResponse = await fetch('http://localhost:5173/loc/add', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({
+                name: business.name,
+                address: business.address,
+                longitude: business.longitude,
+                latitude: business.latitude,
+                type: 1,
+                categories: business.category,
+            })
+        });
+
+        const createData = await createResponse.json().catch(() => null);
+        if (createResponse.ok) {
+            const locationData = createData;
+            const locationId = locationData?.location_id;
+            if (!locationId) {
+              showToastNotice('Failed to resolve location id');
+              return;
+            }
+            const favoriteResponse = await fetch(`http://localhost:5173/loc/${locationId}/favorite`, {
+                method: 'POST',
+                credentials: 'include'
+            });
+            const favoriteData = await favoriteResponse.json().catch(() => null);
+            if (favoriteResponse.ok) {
+                console.log('Location added to favorites');
+                showToastNotice("Location saved to favorites");
+                fetchFavoriteLocations();
+            } else {
+                const message = favoriteData?.message || '';
+                if (message.toLowerCase().includes('already')) {
+                  showToastNotice('Location already in favorites');
+                } else {
+                  console.error('Failed to add to favorites');
+                  showToastNotice('Failed to save location');
+                }
+            }
+        } else {
+            console.error('Failed to create location');
+            showToastNotice(createData?.message || 'Failed to create location');
+        }
+    } catch (error) {
+        console.error('Error adding to favorites:', error);
+        showToastNotice('Error saving location');
+    } finally {
+        isSavingRef.current = false;
+    }
+};
 
   const searchPoi = async (categoryId: string, type: string, icon: string, colorClass: string) => {
     if (!mapRef.current) return;
@@ -463,6 +791,8 @@ const Map = () => {
 
     if (activePoiType === type) {
       setActivePoiType(null);
+      setPoiResults([]);
+      setShowPoiSidebar(false);
       return;
     }
 
@@ -473,20 +803,25 @@ const Map = () => {
       const res = await services.poiSearch({
         key: API_KEY,
         center: [userLoc.lng, userLoc.lat],
-        radius: 10000,
+        radius: 50000,
         categorySet: categoryId,
-        limit: 30
+        limit: 100
       });
 
       console.log(`POI Search for ${type}:`, res.results?.length || 0, 'results');
 
       const newMarkers: any[] = [];
+      const newMarkerEntries: Array<{ marker: any; distanceMeters: number }> = [];
+      const nextPoiResults: PoiListItem[] = [];
       const bounds = new tt.LngLatBounds();
 
       (res.results || []).forEach((poi: any) => {
         if (hasValidPosition(poi.position)) {
           const lng = getLng(poi.position)!;
           const lat = getLat(poi.position)!;
+          const poiName = poi.poi?.name || type;
+          const poiAddress = poi.address?.freeformAddress || 'Unknown Address';
+          const poiCategories = poi.poi?.categories || [];
           
           const el = document.createElement('div');
           const innerEl = document.createElement('div');
@@ -500,9 +835,33 @@ const Map = () => {
             .addTo(mapRef.current);
 
           marker.getElement().addEventListener('click', () => {
-            calculateRoute(lat, lng, poi.poi?.name || type);
+            setShowSidebar(false);
+            setShowPoiSidebar(false);
+            const mappedLocation: Business = {
+              name: poiName,
+              address: poiAddress,
+              latitude: lat,
+              longitude: lng,
+              distance_meters: poi.dist || 0,
+              category: poiCategories,
+              score: 0,
+              classifications: []
+            };
+            calculateRoute(lat, lng, poiName, false, mappedLocation);
           });
 
+          newMarkerEntries.push({ marker, distanceMeters: poi.dist || 0 });
+          nextPoiResults.push({
+            id: poi.id || `${type}-${lat}-${lng}`,
+            name: poiName,
+            address: poiAddress,
+            lat,
+            lng,
+            icon,
+            type,
+            categories: poiCategories,
+            distanceMeters: poi.dist || 0
+          });
           newMarkers.push(marker);
           bounds.extend([lng, lat]);
         }
@@ -510,7 +869,14 @@ const Map = () => {
 
       // Update both state and ref
       poiMarkersRef.current = newMarkers;
+      poiMarkerEntriesRef.current = newMarkerEntries;
       setPoiMarkers(newMarkers);
+      setPoiResults(nextPoiResults);
+      applyPoiRadiusToMarkers();
+      if (nextPoiResults.length > 0) {
+        setShowSidebar(false);
+        setShowPoiSidebar(true);
+      }
 
       if (newMarkers.length > 0 && mapRef.current) {
         mapRef.current.setZoom(10);
@@ -519,6 +885,25 @@ const Map = () => {
     } catch (e) {
       console.error('POI search failed:', e);
     }
+  };
+
+  useEffect(() => {
+    applyPoiRadiusToMarkers();
+  }, [poiRadiusFilter, poiResults]);
+  const handlePoiResultClick = (poi: PoiListItem) => {
+    setShowSidebar(false);
+    setShowPoiSidebar(false);
+    const mappedLocation: Business = {
+      name: poi.name,
+      address: poi.address,
+      latitude: poi.lat,
+      longitude: poi.lng,
+      distance_meters: 0,
+      category: poi.categories,
+      score: 0,
+      classifications: []
+    };
+    calculateRoute(poi.lat, poi.lng, poi.name, false, mappedLocation);
   };
 
   const getManeuverIcon = (maneuverType: string): string => {
@@ -606,26 +991,49 @@ const Map = () => {
     }
   };
 
-  const calculateRoute = async (dLat: number, dLng: number, name: string) => {
-    // whenever a route is calculated we also mark the destination as visited
-    try {
-      await fetch('http://localhost:5173/loc/visit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          name,
-          address: name,
-          longitude: dLng,
-          latitude: dLat,
-          type: 1,
-          categories: []
-        })
-      });
-    } catch (e) {
-      console.error('Error logging visited location:', e);
-    }
-    if (!mapRef.current) return;
+  const navigateToSelectedLocation = async () => {
+    if (!selectedLocation) return;
+    setShowSidebar(false);
+    setShowPoiSidebar(false);
+    const routeName = selectedLocation.name || selectedLocation.address || 'Destination';
+    await calculateRoute(selectedLocation.latitude, selectedLocation.longitude, routeName, true, selectedLocation);
+    setSelectedLocation(null);
+  };
+  const addSelectedLocationToFavorites = async (e?: React.MouseEvent<HTMLButtonElement>) => {
+    e?.preventDefault();
+    e?.stopPropagation();
+    if (!selectedLocation) return;
+    const locationSnapshot = selectedLocation;
+    await addToFavorites(locationSnapshot);
+  };
+  const closeSelectedLocationPopup = () => {
+    setSelectedLocation(null);
+    setStats(null);
+    setRouteFavoriteLocation(null);
+  };
+  const addRouteLocationToFavorites = async () => {
+    if (!stats) return;
+    const locationForFavorite: Business = routeFavoriteLocation ?? {
+      name: stats.name || 'Selected Location',
+      address: stats.name || 'Unknown Location',
+      latitude: stats.lat,
+      longitude: stats.lng,
+      distance_meters: 0,
+      category: [],
+      score: 0,
+      classifications: []
+    };
+    await addToFavorites(locationForFavorite);
+  };
+
+  const calculateRoute = async (
+    dLat: number,
+    dLng: number,
+    name: string,
+    autoStart = false,
+    favoriteLocation?: Business
+  ): Promise<RouteInfo | null> => {
+    if (!mapRef.current) return null;
 
     console.log('calculateRoute called. Current POI markers count:', poiMarkersRef.current.length);
     
@@ -745,7 +1153,7 @@ const Map = () => {
       const totalDistance = summary.lengthInMeters || 0;
       const totalTime = summary.travelTimeInSeconds || 0;
 
-      setStats({
+      const routeInfo: RouteInfo = {
         name,
         lat: dLat,
         lng: dLng,
@@ -753,11 +1161,28 @@ const Map = () => {
         mins: totalTime > 0 ? Math.round(totalTime / 60) : 0,
         instructions,
         currentInstruction: 0
-      });
+      };
+      setStats(routeInfo);
+      setRouteFavoriteLocation(
+        favoriteLocation ?? {
+          name: name || 'Selected Location',
+          address: name || 'Unknown Location',
+          latitude: dLat,
+          longitude: dLng,
+          distance_meters: 0,
+          category: [],
+          score: 0,
+          classifications: []
+        }
+      );
+      if (autoStart) {
+        startNavigationWithRoute(routeInfo);
+      }
+      return routeInfo;
     } catch (e) {
       console.error('Route calculation failed:', e);
       // Set fallback stats
-      setStats({
+      const fallbackRoute: RouteInfo = {
         name,
         lat: dLat,
         lng: dLng,
@@ -774,7 +1199,24 @@ const Map = () => {
           }
         ],
         currentInstruction: 0
-      });
+      };
+      setStats(fallbackRoute);
+      setRouteFavoriteLocation(
+        favoriteLocation ?? {
+          name: name || 'Selected Location',
+          address: name || 'Unknown Location',
+          latitude: dLat,
+          longitude: dLng,
+          distance_meters: 0,
+          category: [],
+          score: 0,
+          classifications: []
+        }
+      );
+      if (autoStart) {
+        startNavigationWithRoute(fallbackRoute);
+      }
+      return fallbackRoute;
     }
   };
 
@@ -788,9 +1230,9 @@ const Map = () => {
   return (
     <div className="fixed inset-0 bg-neutral-900">
         <div ref={mapElement} className="w-full h-full relative [&_.tt-attribution]:hidden">
-          
+
           {/*hiding sidebar*/}
-          <Navbar page={`Map`}>
+          <Navbar page={`Map`}> 
             <Links link="tinder" className="text-[16px]">
               Findr <Heart size={22}/>
             </Links>
@@ -798,7 +1240,13 @@ const Map = () => {
               Dashboard <House size={17} />
             </Links>
           </Navbar>        
-         
+          {showToast && (
+            <Alerts
+              message={toastMessage}
+              textColor="text-green-400"
+              onClose={() => setShowToast(false)}
+            />
+          )}
           {/*Animation for loading map*/}
           {!mapLoaded && !mapError && (
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[#00d4ff] text-lg flex flex-col items-center gap-4">
@@ -835,10 +1283,10 @@ const Map = () => {
                     <p className="m-0 mt-0.5 text-gray-400 text-[11px]">{stats.miles} mi • {stats.mins} min</p>
                   </div>
                 </div>
-                <button className="border-none text-[#00d4ff] w-7 h-7 rounded-full cursor-pointer text-sm hover:bg-white/5" onClick={cancelNavigation}>✕</button>
+                <button className="border-none text-[#00d4ff] w-7 h-7 rounded-full cursor-pointer text-sm hover:bg-white/5" onClick={() => cancelNavigation(true)}>✕</button>
               </div>
 
-              <div className="p-4 bg-gradient-to-br from-[#00d4ff1a] to-[#0096c80d]">
+              <div className="p-4 bg-gradient-to-br from-[#00d4ff1a] to-[#0096c80d]"> 
                 <div className="flex items-center gap-3">
                   <span className="text-[32px]">{getManeuverIcon(stats.instructions[navStep]?.maneuverType || 'straight')}</span>
                   <div className="flex-1">
@@ -947,57 +1395,218 @@ const Map = () => {
             </div>
           </div>
 
+          {/*Favorite Location Sidebar*/}
+          <AnimatePresence>
+                    {showSidebar && (
+                        <motion.div
+                            initial={{ x: '100%' }}
+                            animate={{ x: 0 }}
+                            exit={{ x: '100%' }}
+                            transition={{ duration: 0.3 }}
+                            style={{
+                                marginTop,
+                                marginBottom,
+                                right,
+                                backgroundColor: bgColor,
+                                borderTopLeftRadius: borderRadius,
+                                borderBottomLeftRadius: borderRadius,
+                            }}
+                            className="fixed top-19 bottom-0 w-80 shadow-lg z-40 flex flex-col backdrop-blur-md"
+                        >
+                            <div className="flex justify-between items-center p-4 border-b border-white/10">
+                                <h2 className="text-xl font-bold text-neutral-400">Liked Locations</h2>
+                                <button
+                                    onClick={() => setShowSidebar(false)}
+                                    className="text-neutral-400 hover:text-white transition-colors"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+                            <div className="flex-1 overflow-y-auto p-4">
+                                {loadingFavorites ? (
+                                    <p className="text-gray-400 text-center py-4">Loading favorite locations...</p>
+                                ) : favoriteLocations.length === 0 && likedLocations.length===0? (
+                                    <p className="text-gray-400 text-center py-4">No favorite locations yet. Visit the map to add some!</p>
+                                ) : (
+                                    favoriteLocations.map((loc, i) => (
+                                        <div key={i} className="mb-4 p-3 bg-neutral-800/50 rounded-xl border border-white/10 flex flex-col md:flex-row justify-between items-start md:items-center hover:bg-neutral-800/80 transition-colors">
+                                            <div className="flex-1 cursor-pointer " onClick={() => { setShowSidebar(false); setShowPoiSidebar(false); navigate(`/map?lat=${loc.latitude}&lon=${loc.longitude}`); }}>
+                                                <h3 className="text-lg font-bold text-cyan-400/80">{loc.name}</h3>
+                                                <p className="text-gray-400 text-sm">{loc.address}</p>
+                                                {loc.categories && loc.categories.length > 0 && (
+                                                    <p className="text-gray-500 text-xs mt-2">
+                                                        {loc.categories.map(cat => cat.charAt(0).toUpperCase() + cat.slice(1)).join(', ')}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div> 
+                                    ))
+                                )}
+                                {likedLocations.length!==0&&(<p className="text-gray-400 text-center py-4">New Locations Liked</p>)}
+                                {likedLocations.map((loc, index) => (
+                                    <div
+                                        key={index}
+                                        className="mb-4 p-3 bg-neutral-800/50 border border-white/10 rounded-xl cursor-pointer hover:bg-neutral-800/80 transition-colors"
+                                        onClick={() => { setShowSidebar(false); setShowPoiSidebar(false); navigate(`/map?lat=${loc.latitude}&lon=${loc.longitude}`); }}
+                                    >
+                                        <h3 className="font-bold text-cyan-400">{loc.name}</h3>
+                                        <p className="text-sm text-neutral-400">{loc.address}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+          {/* POI Results Sidebar */}
+          <AnimatePresence>
+            {showPoiSidebar && (
+              <motion.div
+                initial={{ x: '100%' }}
+                animate={{ x: 0 }}
+                exit={{ x: '100%' }}
+                transition={{ duration: 0.3 }}
+                style={{
+                  marginTop,
+                  marginBottom,
+                  right,
+                  backgroundColor: bgColor,
+                  borderTopLeftRadius: borderRadius,
+                  borderBottomLeftRadius: borderRadius,
+                }}
+                className="fixed top-19 bottom-0 w-[380px] shadow-lg z-40 flex flex-col backdrop-blur-md"
+              >
+                <div className="flex justify-between items-center p-4 border-b border-white/10">
+                  <h2 className="text-xl font-bold text-neutral-400">POI Locations</h2>
+                  <button
+                    onClick={() => setShowPoiSidebar(false)}
+                    className="text-neutral-400 hover:text-white transition-colors"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <div className="px-4 py-2 border-b border-white/10">
+                  <div className="grid grid-cols-3 gap-2">
+                    {(['5', '10', '20'] as const).map((radius) => (
+                      <button
+                        key={`sidebar-${radius}`}
+                        onClick={() => setPoiRadiusFilter(radius)}
+                        className={`text-xs py-1.5 px-2 rounded-md border transition-colors ${
+                          poiRadiusFilter === radius
+                            ? 'bg-cyan-500/20 text-cyan-300 border-cyan-400/60'
+                            : 'bg-neutral-800/60 text-neutral-300 border-neutral-700 hover:border-cyan-500/50'
+                        }`}
+                      >
+                        {`${radius}mi`}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex-1 overflow-y-auto p-4">
+                  {filteredPoiResults.length === 0 ? (
+                    <p className="text-gray-400 text-center py-4">No POI locations in this radius.</p>
+                  ) : (
+                    filteredPoiResults.map((poi) => (
+                      <div
+                        key={poi.id}
+                        className="mb-4 p-3 bg-neutral-800/50 rounded-xl border border-white/10 cursor-pointer hover:bg-neutral-800/80 transition-colors"
+                        onClick={() => { setShowPoiSidebar(false); handlePoiResultClick(poi); }}
+                      >
+                        <div className="flex items-start gap-3">
+                          <span className="text-2xl">{poi.icon}</span>
+                          <div className="flex-1">
+                            <h3 className="text-lg font-bold text-cyan-400/80">{poi.name}</h3>
+                            <p className="text-gray-400 text-sm">{poi.address}</p>
+                            <p className="text-gray-500 text-xs mt-1">{metersToMiles(poi.distanceMeters).toFixed(1)} mi away</p>
+                            {poi.categories.length > 0 && (
+                              <p className="text-gray-500 text-xs mt-2">
+                                {poi.categories.join(', ')}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {poiResults.length > 0 && !showSidebar && !showPoiSidebar && (
+            <div className="absolute bottom-6 right-4 z-[1100] bg-neutral-900/95 border border-neutral-800 rounded-xl p-2 shadow-lg">
+              <button
+                onClick={() => setShowPoiSidebar(true)}
+                className="w-full mb-2 text-xs py-1.5 px-2 rounded-md border border-neutral-700 bg-neutral-800/70 text-cyan-300 hover:border-cyan-500/50 transition-colors"
+              >
+                Open POI Sidebar
+              </button>
+              <div className="grid grid-cols-3 gap-2">
+                {(['5', '10', '20'] as const).map((radius) => (
+                  <button
+                    key={radius}
+                    onClick={() => setPoiRadiusFilter(radius)}
+                    className={`text-xs py-1.5 px-2 rounded-md border transition-colors ${
+                      poiRadiusFilter === radius
+                        ? 'bg-cyan-500/20 text-cyan-300 border-cyan-400/60'
+                        : 'bg-neutral-800/60 text-neutral-300 border-neutral-700 hover:border-cyan-500/50'
+                    }`}
+                  >
+                    {`${radius}mi`}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Route Card */}
-          {stats && !isNavigating && (
+          {stats && !isNavigating && !selectedLocation && (
             <div className="absolute bottom-5 left-1/2 -translate-x-1/2 bg-neutral-900/95 border border-neutral-800 p-4 rounded-2xl w-[300px] z-[1000] shadow-xl">
               <div className="mb-3">
                 <h3 className="m-0 mb-1 text-[#00d4ff] text-sm">{stats.name}</h3>
                 <p className="m-0 mb-3 text-gray-400 text-sm">{stats.miles} mi • {stats.mins} min</p>
               </div>
               <div className="flex gap-2.5">
-                <button className="flex-[2] bg-[#00d4ff] text-black border-none p-2.5 rounded-lg font-bold cursor-pointer hover:bg-[#00b7db]" onClick={startNavigation}>Start Navigation</button>
+                <button className="flex-[2] bg-[#00d4ff] text-black border-none p-2.5 rounded-lg font-bold cursor-pointer hover:bg-[#00b7db]" onClick={startNavigation}>Start Navigation</button>                
                 <button className="flex-1 bg-neutral-800 text-white border-none p-2.5 rounded-lg cursor-pointer hover:bg-neutral-700" onClick={() => { setStats(null); clearMap(); }}>Close</button>
+                <button className="flex items-center justify-center bg-neutral-800 border-none w-8 h-8 text-white rounded-full cursor-pointer text-sm hover:bg-neutral-700" onClick={addRouteLocationToFavorites}><HeartPlus className="justify-center items-center text-green-500 drop-shadow-lg"/></button>
               </div>
             </div>
           )}
-
           {/* Location Info Popup */}
-          {selectedLocation && (
+          {showImageLocationPopup && selectedLocation && (
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-neutral-900/98 border border-neutral-800 rounded-2xl w-80 z-[3000] shadow-2xl max-h-[80vh] overflow-hidden">
               <div className="flex justify-between items-center p-4 border-b border-neutral-800">
-                <h3 className="m-0 text-[#00d4ff] text-lg">Location Details</h3>
-                <button className="bg-neutral-800 border-none text-white w-8 h-8 rounded-full cursor-pointer text-sm hover:bg-neutral-700" onClick={() => setSelectedLocation(null)}>✕</button>
+                <h3 className="m-0 text-[#00d4ff] text-lg">Location Details</h3> 
+                <div className="flex items-center gap-2">
+                <button className="flex items-center justify-center bg-neutral-800 border-none w-8 h-8 text-white rounded-full cursor-pointer text-sm hover:bg-neutral-700" onClick={addSelectedLocationToFavorites}><HeartPlus className="justify-center items-center text-green-500 drop-shadow-lg"/></button>
+                <button className="bg-neutral-800 border-none w-8 h-8 rounded-full cursor-pointer text-sm hover:bg-neutral-700 text-red-500/80" onClick={closeSelectedLocationPopup}>✕</button>
+                </div>
               </div>
               <div className="p-4">
                 {selectedLocation.imageUrl && (
                   <div className="w-full h-[180px] bg-neutral-900 rounded-lg mb-3 overflow-hidden flex items-center justify-center border border-neutral-800">
-                    <img 
+                    <img
                       src={selectedLocation.imageUrl} 
                       alt="Location" 
                       className="w-full h-full object-cover block"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.style.display = 'none';
-                        target.parentElement!.innerHTML = '<div class="text-red-400 text-xs text-center p-5">Image unavailable<br/>Tap Route to navigate</div>';
+                      onError={() => {
+                        setSelectedLocation(prev => prev ? { ...prev, imageUrl: undefined } : prev);
                       }}
                     />
                   </div>
                 )}
-                <p className="text-white text-sm mb-4 leading-relaxed p-2.5 bg-white/5 rounded-lg">📍 {selectedLocation.address}</p>
+                <p className="text-white text-sm mb-4 leading-relaxed p-2.5 bg-white/5 rounded-lg">📍 {selectedLocation?.address}</p>
                 <div className="flex justify-center gap-2.5">
-                  <button className="bg-gradient-to-br from-[#00d4ff] to-[#0099cc] text-black border-none p-3 px-6 rounded-lg font-bold cursor-pointer text-sm flex-1 transition-transform hover:scale-[1.02]" onClick={() => {
-                    calculateRoute(selectedLocation.lat, selectedLocation.lng, selectedLocation.address);
-                    setSelectedLocation(null);
-                  }}>🧭 Navigate</button>
+                  <button className="bg-gradient-to-br from-[#6fe7ff] to-[#0099cc] text-black border-none p-3 px-6 rounded-lg font-bold cursor-pointer text-sm flex-1 transition-transform hover:scale-[1.02]" onClick={navigateToSelectedLocation}>Navigate ➤</button>
                 </div>
               </div>
             </div>
           )}
-
           {/* Side Bar */}
           <div className={`absolute translate-y-92 items-center left-4 flex flex-col gap-3 z-[1000] text-[14px]`}>
             <button 
-              onClick={() => {
+              onClick={() => { 
                 if (!mapRef.current) return;
                 if (trafficOn) {
                   mapRef.current.hideTrafficFlow();
@@ -1008,11 +1617,11 @@ const Map = () => {
                 }
                 setTrafficOn(!trafficOn);
               }} 
-              className={`w-[55px] h-[40px] md:w-[60px] md:h-[50px] bg-neutral-900/95 text-white border border-neutral-800 rounded-xl cursor-pointer text-[22px] flex flex-col items-center justify-center shadow-lg transition-all hover:scale-105 hover:border-[#00d4ff] ${trafficOn ? 'border-[#00d4ff] text-[#00d4ff] bg-[#00d4ff1a]' : ''}`}
+              className={`w-[55px] h-[40px] md:w-[60px] md:h-[50px] bg-neutral-900/95 text-white border border-neutral-800 rounded-xl cursor-pointer text-[22px] flex flex-col items-center justify-center shadow-lg transition-all hover:scale-105 hover:border-[#00d4ff] ${trafficOn ? 'border-[#00d4ff] text-[#00d4ff] bg-[#00d4ff1a]' : ''}`} 
               title={trafficOn ? 'Hide Traffic' : 'Show Traffic'}
             >
               🚦
-            </button>
+            </button> 
             <button 
               onClick={() => {
                 if (mapRef.current) {
@@ -1044,13 +1653,24 @@ const Map = () => {
               }}
               className={`w-[55px] h-[40px] md:w-[60px] md:h-[50px] bg-neutral-900/95 text-white border border-neutral-800 rounded-xl cursor-pointer text-sm flex flex-col items-center justify-center shadow-lg transition-all hover:scale-105 hover:border-[#00d4ff] ${mapStyle !== 'regular' ? 'border-[#00d4ff] text-[#00d4ff] bg-[#00d4ff1a]' : ''}`}
               title={`Current: ${mapStyle}`}
-            >
+            > 
               <span className="text-sm font-bold tracking-wide">{mapStyle.charAt(0).toUpperCase() + mapStyle.slice(1)}</span>
+            </button>
+            <button
+              onClick={() => {
+                setShowSidebar(!showSidebar);
+                setShowPoiSidebar(false);
+                fetchFavoriteLocations();
+              }}
+              className={`w-[55px] h-[40px] md:w-[60px] md:h-[50px] bg-neutral-900/95 text-white border border-neutral-800 rounded-xl cursor-pointer text-sm flex flex-col items-center justify-center shadow-lg transition-all hover:scale-105 hover:border-[#00d4ff]`}
+              title={'Favorite Locations'}
+            > 
+              <span className="text-xs font-bold -tracking-wide">{`${showSidebar?'Close Sidebar':'Favorite Locations'}`}</span>
             </button>
           </div>
         </div>
       </div>
   );
 };
-
+ 
 export default Map;

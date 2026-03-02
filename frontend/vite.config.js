@@ -6,6 +6,7 @@ export default defineConfig({
         react(),
         tailwindcss(),
     ],
+    envPrefix: ['VITE_', 'PUBLIC_'],
     server: {
         port: 5174
     }

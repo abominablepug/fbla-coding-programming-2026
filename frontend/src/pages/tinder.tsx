@@ -8,6 +8,7 @@ import { getCommonsImage } from '../utils/getCommonsImage';
 import {useNavigate } from 'react-router-dom';
 import Links from '../components/links';
 import Body from '../components/body';
+import Alerts from '../components/alerts';
 
 interface Business {
     name: string;
@@ -21,39 +22,115 @@ interface Business {
     imageUrl?: string;
     lid?: number;
 }
+interface Location {
+	lid: number;
+	name: string;
+	longitude: number;
+	latitude: number;
+	type: number;
+	address?: string;
+	categories?: string[];
+	time?: string;
+}
+
 
 const TinderPage = () => {
+    const [user, setUser] = useState<{ uid: string, username: string } | null>(null);
     const [businesses, setBusinesses] = useState<Business[]>([]);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
-    const [swipeCount, setSwipeCount] = useState(0);
+    const [, setSwipeCount] = useState(0);
     const [error, setError] = useState<string | null>(null);
     const [likedLocations, setLikedLocations] = useState<Business[]>([]);
-    const [userLoc, setUserLoc] = useState({ lat: 34.0731, lng: -118.4016 });
+    const [userLoc, setUserLoc] = useState<{ lat: number; lng: number }>({ lat: 34.0731, lng: -118.4016 });
     const [showSidebar, setShowSidebar] = useState(false);
     const isSavingRef = useRef(false);
+    const processedSwipeRef = useRef<string | null>(null);
     const navigate = useNavigate();
-
+    const [showToast, setShowToast] = useState(false);
+    const [toastMessage, setToastMessage] = useState("");
     const { scrollY } = useScroll();
 	const marginTop = useTransform(scrollY, [0, 100], ["0px", "12px"]);
     const marginBottom = useTransform(scrollY, [0, 100], ["0px", "12px"]);
 	const borderRadius = useTransform(scrollY, [0, 100], ["0px", "24px"]);
 	const right = useTransform(scrollY, [0, 100], ["0px", "1%"]);
 	const bgColor = useTransform(scrollY, [0, 100], ["rgba(23, 23, 23, 1)", "rgba(30, 30, 30, 0.7)"]);
+    const [loadingFavorites, setLoadingFavorites] = useState(false);
+    const [favoriteLocations, setFavoriteLocations] = useState<Location[]>([]);
+    const [edgeGlow, setEdgeGlow] = useState<"left" | "right" | null>(null);
+    const handlePress = (side: "left" | "right") => {
+        setEdgeGlow(side);
 
-    const fetchBusinesses = async () => {
+        setTimeout(() => {
+            setEdgeGlow(null);
+        }, 600);
+    };
+    const triggerSwipe = (side: "left" | "right") => {
+        if (swipeDirection || currentIndex >= businesses.length) return;
+        setSwipeDirection(side);
+        handlePress(side);
+    };
+
+    useEffect(() => {
+		const fetchProfile = async () => {
+			try {
+				const response = await fetch('http://localhost:5173/auth/dashboard', {
+					credentials: 'include'
+				});
+				if (response.ok) {
+					const data = await response.json();
+					setUser(data);
+				} else {
+					navigate('/login');
+				}
+			} catch (error) {
+				console.error('Error fetching profile:', error);
+				navigate('/login');
+			}
+		};
+		fetchProfile();
+	}, [navigate]);
+
+    const fetchFavoriteLocations = async () => {
+		setLoadingFavorites(true);
+		try {
+			const response = await fetch('http://localhost:5173/loc/favorites', {
+				credentials: 'include'
+			});
+			if (response.ok) {
+				const data = await response.json();
+				setFavoriteLocations(data);
+			} else {
+				console.error('Failed to fetch favorite locations');
+				setFavoriteLocations([]);
+			}
+		} catch (error) {
+			console.error('Error fetching favorite locations:', error);
+			setFavoriteLocations([]);
+		} finally {
+			setLoadingFavorites(false);
+		}
+	};
+
+    useEffect(() => {
+		if (user) {
+			fetchFavoriteLocations();
+		}
+	}, [user]);
+
+    const fetchBusinesses = async (coords: { lat: number; lng: number }) => {
         setError(null);
-
+        if (!coords) return;
         try {
             const response = await fetch('http://localhost:5173/recc/ranked', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
                 body: JSON.stringify({
-                    latitude: userLoc.lat,
-                    longitude: userLoc.lng,
+                    latitude: coords.lat,
+                    longitude: coords.lng,
                     radius_mi: 20,
-                    limit: 10
+                    limit: 8
                 })
             });
             if (response.ok) {
@@ -81,21 +158,39 @@ const TinderPage = () => {
     };
 
     useEffect(() => {
-        fetchBusinesses();
-    }, []);
+        const handleLocation = (lat: number, lng: number) => {
+            const coords = { lat, lng };
+            setUserLoc(coords);
+            fetchBusinesses(coords); 
+        };
+    
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (pos) => handleLocation(pos.coords.latitude, pos.coords.longitude),
+                (error) => {
+                    console.warn('Geolocation denied, using fallback', error.message);
+                    setError(`Location error: ${error.message}. Using default.`);
+                    handleLocation(34.0731, -118.4016);
+                },
+                { timeout: 10000 } 
+            );
+        } else {
+            handleLocation(34.0731, -118.4016);
+        }
+    }, []); 
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === 'ArrowLeft' && currentIndex < businesses.length) {
-                setSwipeDirection('left');
+                triggerSwipe('left');
             } else if (e.key === 'ArrowRight' && currentIndex < businesses.length) {
-                setSwipeDirection('right');
+                triggerSwipe('right');
             }
         };
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [currentIndex, businesses.length]);
+    }, [currentIndex, businesses.length, swipeDirection]);
 
     const updatePreferences = async (action: string, poi: any) => {
         try {
@@ -139,6 +234,8 @@ const TinderPage = () => {
 
                 if (favoriteResponse.ok) {
                     console.log('Location added to favorites');
+                    setShowToast(true);
+                    setToastMessage("Location Saved to Favorites!")
                 } else {
                     console.error('Failed to add to favorites');
                 }
@@ -153,38 +250,44 @@ const TinderPage = () => {
     };
 
     async function handleAnimationComplete() {
+        if (!swipeDirection) return;
+        const currentBusiness = businesses[currentIndex];
+        if (!currentBusiness) return;
+
+        const swipeKey = `${currentIndex}-${swipeDirection}`;
+        if (processedSwipeRef.current === swipeKey) return;
+        processedSwipeRef.current = swipeKey;
+
         if (swipeDirection === 'left') {
-            await updatePreferences('dislike', { classifications: businesses[currentIndex].classifications });
+            await updatePreferences('dislike', { classifications: currentBusiness.classifications });
         } else if (swipeDirection === 'right') {
-            await updatePreferences('like', { classifications: businesses[currentIndex].classifications });
+            await updatePreferences('like', { classifications: currentBusiness.classifications });
             
-            await addToFavorites(businesses[currentIndex]);
+            await addToFavorites(currentBusiness);
             
             setLikedLocations(prev => {
                 const isAlreadyLiked = prev.some(loc => 
-                    loc.name === businesses[currentIndex].name && 
-                    loc.address === businesses[currentIndex].address
+                    loc.name === currentBusiness.name && 
+                    loc.address === currentBusiness.address
                 );
                 if (!isAlreadyLiked) {
-                    return [...prev, businesses[currentIndex]];
+                    return [...prev, currentBusiness];
                 }
                 return prev;
             });
             console.log(likedLocations);
-            setShowSidebar(true);
         }
 
-        if (swipeDirection) {
-            setCurrentIndex(currentIndex + 1);
-            setSwipeDirection(null);
-            const newSwipeCount = swipeCount + 1;
-            setSwipeCount(newSwipeCount);
+        setCurrentIndex(prev => prev + 1);
+        setSwipeDirection(null);
+        setSwipeCount(prev => {
+            const newSwipeCount = prev + 1;
             if (newSwipeCount % 5 === 0) {
-                fetchBusinesses();
+                fetchBusinesses(userLoc);
             }
-        }
+            return newSwipeCount;
+        });
     };
-
 
 
     function titleCase(str:string) {
@@ -197,8 +300,6 @@ const TinderPage = () => {
     }
 
     const currentBusiness = businesses[currentIndex];
-    const nextBusiness = businesses[Math.min(currentIndex + 1, businesses.length - 1)];
-
     return (
             <Body className="overscroll-none">
                 <Navbar page="Findr">
@@ -210,7 +311,51 @@ const TinderPage = () => {
                     </Links>
                     
                 </Navbar>
+                <AnimatePresence>
+                    {edgeGlow === "right" && (
+                        <motion.div
+                            key="right-glow"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: [0, 2, 0] }}
+                            transition={{ duration: 0.9, ease: "easeOut" }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-y-0 right-0 w-[350px] pointer-events-none z-30"
+                        >
+                            <div className="absolute right-[-200px] top-1/2 -translate-y-1/2 
+                                w-[600px] h-[800px] 
+                                bg-gradient-to-l from-green-500/40 to-transparent 
+                                blur-[160px] rounded-full"
+                            />
+                        </motion.div>
+                    )}
 
+                    {edgeGlow === "left" && (
+                        <motion.div
+                            key="left-glow"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: [0, 2, 0] }}
+                            transition={{ duration: 0.9, ease: "easeOut" }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-y-0 left-0 w-[350px] pointer-events-none z-30"
+                        >
+                            <div className="absolute left-[-200px] top-1/2 -translate-y-1/2 
+                                w-[600px] h-[800px] 
+                                bg-gradient-to-r from-red-500/40 to-transparent 
+                                blur-[160px] rounded-full"
+                            />
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+                {showToast && (
+                    <Alerts
+                    message={toastMessage}
+                    textColor="text-green-400"
+                    onClose={() => setShowToast(false)}
+                    />
+                )}
+                <div>
+
+                </div>
                 <div className="from-cyan-700/70 via-cyan-500/70 to-purple-400/70 z-10 pt-20 pb-32 h-screen flex items-center justify-center">
                     <AnimatePresence>
                         {currentBusiness && (
@@ -222,7 +367,7 @@ const TinderPage = () => {
                                     opacity: swipeDirection ? 0 : 1
                                 }}
                                 exit={{ opacity: 0 }}
-                                transition={{ duration: 0.5 }}
+                                transition={{ duration: 0.70 }}
                                 onAnimationComplete={handleAnimationComplete}
                                 className="w-full max-w-2xl px-4"
                             >
@@ -253,9 +398,9 @@ const TinderPage = () => {
                     {error ? <p className="text-red-400 text-center mt-8">{error}</p> : businesses.length === 0 && currentBusiness === undefined && <p className="text-white text-center">Loading...</p>}
                 </div>
 
-                <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 flex items-center justify-center gap-32"> 
+                <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 flex items-center justify-center gap-16"> 
                     <motion.button
-                        onClick={() => setSwipeDirection('left')}
+                        onClick={() => triggerSwipe('left')}
                         animate={{
                             scale: swipeDirection === 'left' ? [1, 3, 1] : 1
                         }}
@@ -272,9 +417,11 @@ const TinderPage = () => {
                             className="text-red-500 drop-shadow-lg"
                         />
                     </motion.button>
-
+                    <button className="px-4 py-4 rounded-full bg-sky-500 text-white max-w-fit text-md transition-all hover:bg-sky-400 shadow-lg" onClick={()=>setShowSidebar(!showSidebar)}>
+                        Show Favorite Locations
+                    </button>
                     <motion.button
-                        onClick={() => setSwipeDirection('right')}
+                        onClick={() => triggerSwipe('right')}
                         animate={{
                             scale: swipeDirection === 'right' ? [1, 3, 1] : 1
                         }}
@@ -320,8 +467,28 @@ const TinderPage = () => {
                                 </button>
                             </div>
                             <div className="flex-1 overflow-y-auto p-4">
+
+                                {loadingFavorites ? (
+                                    <p className="text-gray-400 text-center py-4">Loading favorite locations...</p>
+                                ) : favoriteLocations.length === 0 && likedLocations.length===0? (
+                                    <p className="text-gray-400 text-center py-4">No favorite locations yet. Visit the map to add some!</p>
+                                ) : (
+                                    favoriteLocations.map((loc, i) => (
+                                        <div key={i} className="mb-4 p-3 bg-neutral-800/50 rounded-xl border border-white/10 flex flex-col md:flex-row justify-between items-start md:items-center hover:bg-neutral-800/80 transition-colors">
+                                            <div className="flex-1 cursor-pointer " onClick={() => navigate(`/map?lat=${loc.latitude}&lon=${loc.longitude}`)}>
+                                                <h3 className="text-lg font-bold text-cyan-400/80">{loc.name}</h3>
+                                                <p className="text-gray-400 text-sm">{loc.address}</p>
+                                                {loc.categories && loc.categories.length > 0 && (
+                                                    <p className="text-gray-500 text-xs mt-2">
+                                                        {loc.categories.map(cat => cat.charAt(0).toUpperCase() + cat.slice(1)).join(', ')}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div> 
+                                    ))
+                                )}
+                                {likedLocations.length!==0&&(<p className="text-gray-400 text-center py-4">New Locations Liked</p>)}
                                 {likedLocations.map((loc, index) => (
-                                    
                                     <div
                                         key={index}
                                         className="mb-4 p-3 bg-neutral-800/50 border border-white/10 rounded-xl cursor-pointer hover:bg-neutral-800/80 transition-colors"
