@@ -1,5 +1,7 @@
 const API_KEY =
-  import.meta.env.PUBLIC_AI_API_KEY || import.meta.env.VITE_GOOGLE_API_KEY;
+  import.meta.env.PUBLIC_AI_API_KEY ||
+  import.meta.env.VITE_AI_API_KEY ||
+  import.meta.env.VITE_GOOGLE_API_KEY;
 
 type IncomingMessage = {
   role: "system" | "user" | "assistant";
@@ -46,6 +48,8 @@ export async function POST(req: Request) {
 
     const systemInstruction = `Answer only questions about local locations, local businesses, and local trip planning.
 If the user asks anything outside local places/trips, politely refuse and redirect back to local recommendations.
+Never ask the user to provide or confirm their location.
+Use the context provided in the conversation for current location and selected POIs.
 Use bullet points with the symbol • for recommendation lists.`;
 
     const response = await fetch(

@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import { motion} from 'framer-motion';
+import { useState } from 'react';
 import Card from '../components/card';
 import Links from '../components/links';
 import Navbar from '../components/navbar';

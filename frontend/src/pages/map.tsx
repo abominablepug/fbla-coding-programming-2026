@@ -7,7 +7,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import Navbar from '../components/navbar';
 import Links from '../components/links';
 import {House, Heart, HeartPlus} from 'lucide-react';
-import Alerts from '../components/alerts';
+import { enqueueAlert } from '../components/alerts';
+import LocalAiChatPopup from '../components/localAiChatPopup';
 
 interface Business {
   name: string;
@@ -161,6 +162,7 @@ const Map = () => {
   const [activePoiType, setActivePoiType] = useState<string | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
+  const [voiceGuidanceEnabled, setVoiceGuidanceEnabled] = useState(false);
   const [navStep, setNavStep] = useState(0);
   const [showFullDirections, setShowFullDirections] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<Business | null>(null);
@@ -172,8 +174,6 @@ const Map = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const isSavingRef = useRef(false);
-  const [showToast, setShowToast] = useState(false);
-  const [toastMessage, setToastMessage] = useState("");
   const [showSidebar, setShowSidebar] = useState(false);
   const [showPoiSidebar, setShowPoiSidebar] = useState(false);
   const [poiResults, setPoiResults] = useState<PoiListItem[]>([]);
@@ -194,8 +194,10 @@ const Map = () => {
   const userHeadingRef = useRef<number>(0);
   const isNavigatingRef = useRef(false);
   const activeRouteRef = useRef<RouteInfo | null>(null);
+  const lastSpokenInstructionRef = useRef<string | null>(null);
   const hasSelectedLocationImage = !!selectedLocation?.imageUrl;
   const showImageLocationPopup = !!selectedLocation && hasSelectedLocationImage && !isNavigating;
+  const isVoiceSupported = typeof window !== 'undefined' && 'speechSynthesis' in window;
 
   
   useEffect(() => {
@@ -211,9 +213,24 @@ const Map = () => {
     const lon = searchParams.get('lon');
     if (lat && lon && mapLoaded) {
       const destLat = parseFloat(lat);
-        const destLng = parseFloat(lon);
+      const destLng = parseFloat(lon);
+      const nameParam = searchParams.get('name');
+      const addressParam = searchParams.get('address');
       if (!isNaN(destLat) && !isNaN(destLng)) {
-        calculateRoute(destLat, destLng, 'Destination');
+        const routeName = nameParam?.trim() || addressParam?.trim() || 'Destination';
+        const paramLocation: Business | undefined = (nameParam || addressParam)
+          ? {
+              name: nameParam?.trim() || addressParam?.trim() || 'Selected Location',
+              address: addressParam?.trim() || nameParam?.trim() || 'Unknown Location',
+              latitude: destLat,
+              longitude: destLng,
+              distance_meters: 0,
+              category: [],
+              score: 0,
+              classifications: []
+            }
+          : undefined;
+        calculateRoute(destLat, destLng, routeName, false, paramLocation);
       }
     }
   }, [searchParams, mapLoaded]);
@@ -250,11 +267,14 @@ const Map = () => {
         return { map: '2/basic_street-light', poi: '2/poi_light' };
     }
   };
-  const showToastNotice = (message: string) => {
-    setShowToast(false);
-    setToastMessage(message);
-    window.setTimeout(() => setShowToast(true), 0);
+  const showToastNotice = (message: string, isError = false) => {
+    enqueueAlert({
+      message,
+      textColor: isError ? 'text-red-300' : 'text-green-300',
+    });
   };
+  const buildStaticMapImage = (lng: number, lat: number) =>
+    `https://api.tomtom.com/map/1/staticimage?key=${API_KEY}&layer=basic&style=main&center=${lng},${lat}&zoom=16&width=400&height=200&format=png`;
   const metersToMiles = (meters: number): number => meters * 0.000621371;
   const isPoiWithinRadius = (distanceMeters: number): boolean => {
     const miles = metersToMiles(distanceMeters);
@@ -345,7 +365,6 @@ useEffect(() => {
       });
 
       map.on('load', () => {
-        console.log('Map loaded successfully');
         setMapLoaded(true);
         setMapError(null);
         drawUserMarker(userLoc);
@@ -367,7 +386,7 @@ useEffect(() => {
             const name = place.poi?.name ?? "Unknown";
             const category = place.poi?.categories ?? [];
             const address = place.address?.freeformAddress ?? "";
-            const imageUrl = `https://api.tomtom.com/map/1/staticimage?key=${API_KEY}&layer=basic&style=main&center=${lng},${lat}&zoom=16&width=400&height=200&format=png`;
+            const imageUrl = buildStaticMapImage(lng, lat);
             const location: Business = {
               name: name,
               address: address,
@@ -390,7 +409,8 @@ useEffect(() => {
               distance_meters: 0,
               category: ['Other'],
               score: 0,
-              classifications: []
+              classifications: [],
+              imageUrl: buildStaticMapImage(lng, lat)
             });
 
           }
@@ -409,9 +429,7 @@ useEffect(() => {
           const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
           setUserLoc(coords);
           map.setCenter([coords.lng, coords.lat]);
-        }, (err) => {
-          console.log('Geolocation error:', err);
-        });
+        }, () => {});
       }
     } catch (error) {
       console.error('Failed to initialize map:', error);
@@ -478,7 +496,7 @@ useEffect(() => {
         duration: 1000
       });
     } catch (e) {
-      console.log('Could not set pitch:', e);
+      console.error('Could not set pitch:', e);
     }
   }, [mapPerspective, mapLoaded]);
 
@@ -501,7 +519,7 @@ useEffect(() => {
         drawUserMarker(userLoc);
       });
     } catch (e) {
-      console.log('Could not set style:', e);
+      console.error('Could not set style:', e);
     }
   }, [mapStyle, mapLoaded]);
 
@@ -534,7 +552,7 @@ useEffect(() => {
         }
       },
       (err) => {
-        console.log('Geolocation watch error:', err);
+        console.error('Geolocation watch error:', err);
       },
       {
         enableHighAccuracy: true,
@@ -605,6 +623,9 @@ useEffect(() => {
   };
 
   const cancelNavigation = (clearRoute = false) => {
+    if (isVoiceSupported) {
+      window.speechSynthesis.cancel();
+    }
     setIsNavigating(false);
     setNavStep(0);
     setShowFullDirections(false);
@@ -628,8 +649,10 @@ useEffect(() => {
           categories: location.category || []
         })
       });
+      showToastNotice('New location visited.');
     } catch (e) {
       console.error('Error logging visited location:', e);
+      showToastNotice('Failed to log visited location.', true);
     }
   };
 
@@ -722,10 +745,92 @@ useEffect(() => {
       });
     }
   };
+
+  const buildVoiceInstruction = (
+    instruction: RouteInstruction | undefined,
+    destinationName: string | undefined,
+    stepIndex: number,
+    totalSteps: number
+  ): string | null => {
+    if (!instruction) return null;
+    const stepLabel = `Step ${stepIndex + 1} of ${totalSteps}.`;
+    const distanceRaw = formatDistance(instruction.distance || 0);
+    const distance = distanceRaw
+      .replace('mi', ' miles')
+      .replace(/(\d+)m$/, '$1 meters');
+    const cleanedMessage = (instruction.message || instruction.streetName || 'Continue')
+      .replace(/[•]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (instruction.maneuverType?.toLowerCase() === 'arrive') {
+      return `${stepLabel} You have arrived at ${destinationName || 'your destination'}.`;
+    }
+    return `${stepLabel} ${cleanedMessage}. Continue for ${distance}.`;
+  };
+
+  const pickBestVoice = (): SpeechSynthesisVoice | null => {
+    if (!isVoiceSupported) return null;
+    const voices = window.speechSynthesis.getVoices();
+    if (voices.length === 0) return null;
+    const preferredNames = [
+      'Google US English',
+      'Microsoft Aria Online (Natural) - English (United States)',
+      'Samantha',
+      'Alex',
+    ];
+    const preferred =
+      voices.find((voice) => preferredNames.includes(voice.name)) ||
+      voices.find((voice) => voice.lang.toLowerCase().startsWith('en-us')) ||
+      voices.find((voice) => voice.lang.toLowerCase().startsWith('en'));
+    return preferred || voices[0];
+  };
+
+  useEffect(() => {
+    if (!voiceGuidanceEnabled || !isNavigating || !stats || !isVoiceSupported) return;
+    const text = buildVoiceInstruction(
+      stats.instructions[navStep],
+      stats.name,
+      navStep,
+      stats.instructions.length
+    );
+    if (!text) return;
+    if (lastSpokenInstructionRef.current === text) return;
+    lastSpokenInstructionRef.current = text;
+
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    const voice = pickBestVoice();
+    if (voice) utterance.voice = voice;
+    utterance.lang = 'en-US';
+    utterance.rate = 0.96;
+    utterance.pitch = 1;
+    utterance.volume = 1;
+    window.speechSynthesis.speak(utterance);
+  }, [voiceGuidanceEnabled, isNavigating, stats, navStep, isVoiceSupported]);
+
+  useEffect(() => {
+    return () => {
+      if (isVoiceSupported) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, [isVoiceSupported]);
+
+  useEffect(() => {
+    if (!isVoiceSupported) return;
+    window.speechSynthesis.getVoices();
+    const handleVoicesChanged = () => {
+      window.speechSynthesis.getVoices();
+    };
+    window.speechSynthesis.addEventListener('voiceschanged', handleVoicesChanged);
+    return () => {
+      window.speechSynthesis.removeEventListener('voiceschanged', handleVoicesChanged);
+    };
+  }, [isVoiceSupported]);
   
   const addToFavorites = async (business: Business) => {
     if (isSavingRef.current) {
-      showToastNotice('Saving in progress...');
+      showToastNotice('Saving in progress...', true);
       return;
     }
     isSavingRef.current = true;
@@ -750,7 +855,7 @@ useEffect(() => {
             const locationData = createData;
             const locationId = locationData?.location_id;
             if (!locationId) {
-              showToastNotice('Failed to resolve location id');
+              showToastNotice('Failed to resolve location id', true);
               return;
             }
             const favoriteResponse = await fetch(`http://localhost:5173/loc/${locationId}/favorite`, {
@@ -759,25 +864,24 @@ useEffect(() => {
             });
             const favoriteData = await favoriteResponse.json().catch(() => null);
             if (favoriteResponse.ok) {
-                console.log('Location added to favorites');
                 showToastNotice("Location saved to favorites");
                 fetchFavoriteLocations();
             } else {
                 const message = favoriteData?.message || '';
                 if (message.toLowerCase().includes('already')) {
-                  showToastNotice('Location already in favorites');
+                  showToastNotice('Location already in favorites', true);
                 } else {
                   console.error('Failed to add to favorites');
-                  showToastNotice('Failed to save location');
+                  showToastNotice('Failed to save location', true);
                 }
             }
         } else {
             console.error('Failed to create location');
-            showToastNotice(createData?.message || 'Failed to create location');
+            showToastNotice(createData?.message || 'Failed to create location', true);
         }
     } catch (error) {
         console.error('Error adding to favorites:', error);
-        showToastNotice('Error saving location');
+        showToastNotice('Error saving location', true);
     } finally {
         isSavingRef.current = false;
     }
@@ -808,7 +912,6 @@ useEffect(() => {
         limit: 100
       });
 
-      console.log(`POI Search for ${type}:`, res.results?.length || 0, 'results');
 
       const newMarkers: any[] = [];
       const newMarkerEntries: Array<{ marker: any; distanceMeters: number }> = [];
@@ -890,6 +993,7 @@ useEffect(() => {
   useEffect(() => {
     applyPoiRadiusToMarkers();
   }, [poiRadiusFilter, poiResults]);
+
   const handlePoiResultClick = (poi: PoiListItem) => {
     setShowSidebar(false);
     setShowPoiSidebar(false);
@@ -901,7 +1005,8 @@ useEffect(() => {
       distance_meters: 0,
       category: poi.categories,
       score: 0,
-      classifications: []
+      classifications: [],
+      imageUrl: buildStaticMapImage(poi.lng, poi.lat)
     };
     calculateRoute(poi.lat, poi.lng, poi.name, false, mappedLocation);
   };
@@ -1011,6 +1116,15 @@ useEffect(() => {
     setStats(null);
     setRouteFavoriteLocation(null);
   };
+  const buildMapRouteUrl = (loc: Location | Business) => {
+    const params = new URLSearchParams({
+      lat: String(loc.latitude),
+      lon: String(loc.longitude),
+      name: loc.name || '',
+      address: loc.address || '',
+    });
+    return `/map?${params.toString()}`;
+  };
   const addRouteLocationToFavorites = async () => {
     if (!stats) return;
     const locationForFavorite: Business = routeFavoriteLocation ?? {
@@ -1035,13 +1149,9 @@ useEffect(() => {
   ): Promise<RouteInfo | null> => {
     if (!mapRef.current) return null;
 
-    console.log('calculateRoute called. Current POI markers count:', poiMarkersRef.current.length);
-    
     const markersToRemove = [...poiMarkersRef.current];
-    console.log('Removing', markersToRemove.length, 'POI markers');
-    markersToRemove.forEach((m, idx) => {
+    markersToRemove.forEach((m) => {
       try {
-        console.log(`Removing POI marker ${idx}`);
         m.remove();
       } catch (e) {
         console.error('Error removing POI marker:', e);
@@ -1049,18 +1159,14 @@ useEffect(() => {
     });
     
     const destMarkers = [...markersRef.current];
-    console.log('Removing', destMarkers.length, 'destination markers');
-    destMarkers.forEach((m, idx) => {
+    destMarkers.forEach((m) => {
       try {
-        console.log(`Removing destination marker ${idx}`);
         m.remove();
       } catch (e) {
         console.error('Error removing destination marker:', e);
       }
     });
     
-    // Clear state and refs
-    console.log('Clearing state');
     poiMarkersRef.current = [];
     setPoiMarkers([]);
     setActivePoiType(null);
@@ -1164,15 +1270,18 @@ useEffect(() => {
       };
       setStats(routeInfo);
       setRouteFavoriteLocation(
-        favoriteLocation ?? {
-          name: name || 'Selected Location',
-          address: name || 'Unknown Location',
-          latitude: dLat,
-          longitude: dLng,
-          distance_meters: 0,
-          category: [],
-          score: 0,
-          classifications: []
+        {
+          ...(favoriteLocation ?? {
+            name: name || 'Selected Location',
+            address: name || 'Unknown Location',
+            latitude: dLat,
+            longitude: dLng,
+            distance_meters: 0,
+            category: [],
+            score: 0,
+            classifications: []
+          }),
+          imageUrl: favoriteLocation?.imageUrl || buildStaticMapImage(dLng, dLat),
         }
       );
       if (autoStart) {
@@ -1202,15 +1311,18 @@ useEffect(() => {
       };
       setStats(fallbackRoute);
       setRouteFavoriteLocation(
-        favoriteLocation ?? {
-          name: name || 'Selected Location',
-          address: name || 'Unknown Location',
-          latitude: dLat,
-          longitude: dLng,
-          distance_meters: 0,
-          category: [],
-          score: 0,
-          classifications: []
+        {
+          ...(favoriteLocation ?? {
+            name: name || 'Selected Location',
+            address: name || 'Unknown Location',
+            latitude: dLat,
+            longitude: dLng,
+            distance_meters: 0,
+            category: [],
+            score: 0,
+            classifications: []
+          }),
+          imageUrl: favoriteLocation?.imageUrl || buildStaticMapImage(dLng, dLat),
         }
       );
       if (autoStart) {
@@ -1239,14 +1351,10 @@ useEffect(() => {
             <Links link="dashboard" className="text-[16px]">
               Dashboard <House size={17} />
             </Links>
+            <Links link="reviews" className="text-[16px]">
+              Reviews
+            </Links>
           </Navbar>        
-          {showToast && (
-            <Alerts
-              message={toastMessage}
-              textColor="text-green-400"
-              onClose={() => setShowToast(false)}
-            />
-          )}
           {/*Animation for loading map*/}
           {!mapLoaded && !mapError && (
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[#00d4ff] text-lg flex flex-col items-center gap-4">
@@ -1265,7 +1373,6 @@ useEffect(() => {
                 <strong>To fix this:</strong><br/>
                 1. Get a TomTom API key from <a href="https://developer.tomtom.com/" target="_blank" rel="noopener noreferrer" className="text-[#00d4ff]">developer.tomtom.com</a><br/>
                 2. Create a .env file in the frontend directory<br/>
-                2. Create a .env file in the frontend directory<br/>
                 3. Add: VITE_TOMTOM_API_KEY=your_api_key<br/>
                 4. Restart the dev server
               </div>
@@ -1283,7 +1390,33 @@ useEffect(() => {
                     <p className="m-0 mt-0.5 text-gray-400 text-[11px]">{stats.miles} mi • {stats.mins} min</p>
                   </div>
                 </div>
-                <button className="border-none text-[#00d4ff] w-7 h-7 rounded-full cursor-pointer text-sm hover:bg-white/5" onClick={() => cancelNavigation(true)}>✕</button>
+                <div className="flex items-center gap-2">
+                  <button
+                    className={`group inline-flex items-center gap-1.5 border px-3 py-1.5 rounded-full cursor-pointer text-[11px] font-semibold transition-all ${
+                      voiceGuidanceEnabled
+                        ? 'border-cyan-300/80 bg-cyan-500/25 text-cyan-100 shadow-[0_0_16px_rgba(34,211,238,0.25)]'
+                        : 'border-neutral-700 bg-neutral-800/90 text-neutral-300 hover:border-cyan-500/40 hover:text-cyan-200'
+                    }`}
+                    onClick={() => {
+                      if (!isVoiceSupported) {
+                        showToastNotice('Voice guidance is not supported on this browser', true);
+                        return;
+                      }
+                      setVoiceGuidanceEnabled((prev) => {
+                        const next = !prev;
+                        if (!next) {
+                          window.speechSynthesis.cancel();
+                        }
+                        lastSpokenInstructionRef.current = null;
+                        return next;
+                      });
+                    }}
+                    title="Toggle live voice instructions"
+                  >
+                    {voiceGuidanceEnabled ? 'Voice On' : 'Voice Off'}
+                  </button>
+                  <button className="border-none text-[#00d4ff] w-7 h-7 rounded-full cursor-pointer text-sm hover:bg-white/5" onClick={() => cancelNavigation(true)}>✕</button>
+                </div>
               </div>
 
               <div className="p-4 bg-gradient-to-br from-[#00d4ff1a] to-[#0096c80d]"> 
@@ -1403,41 +1536,28 @@ useEffect(() => {
                             animate={{ x: 0 }}
                             exit={{ x: '100%' }}
                             transition={{ duration: 0.3 }}
-                            style={{
-                                marginTop,
-                                marginBottom,
-                                right,
-                                backgroundColor: bgColor,
-                                borderTopLeftRadius: borderRadius,
-                                borderBottomLeftRadius: borderRadius,
-                            }}
-                            className="fixed top-19 bottom-0 w-80 shadow-lg z-40 flex flex-col backdrop-blur-md"
+                            className="fixed top-20 bottom-3 right-2 z-[1500] w-[360px] rounded-2xl border border-cyan-500/30 bg-neutral-900/90 p-4 shadow-2xl backdrop-blur-xl"
                         >
-                            <div className="flex justify-between items-center p-4 border-b border-white/10">
-                                <h2 className="text-xl font-bold text-neutral-400">Liked Locations</h2>
+                            <div className="mb-3 flex items-center justify-between border-b border-white/10 pb-2">
+                                <h3 className="text-cyan-300 text-lg font-semibold">All Favorited Locations</h3>
                                 <button
                                     onClick={() => setShowSidebar(false)}
-                                    className="text-neutral-400 hover:text-white transition-colors"
+                                    className="h-7 w-7 rounded-full bg-white/5 text-neutral-300 hover:text-white hover:bg-white/10"
                                 >
                                     ✕
                                 </button>
                             </div>
-                            <div className="flex-1 overflow-y-auto p-4">
+                            <div className="h-[calc(100%-48px)] overflow-y-auto pr-1">
                                 {loadingFavorites ? (
                                     <p className="text-gray-400 text-center py-4">Loading favorite locations...</p>
                                 ) : favoriteLocations.length === 0 && likedLocations.length===0? (
                                     <p className="text-gray-400 text-center py-4">No favorite locations yet. Visit the map to add some!</p>
                                 ) : (
                                     favoriteLocations.map((loc, i) => (
-                                        <div key={i} className="mb-4 p-3 bg-neutral-800/50 rounded-xl border border-white/10 flex flex-col md:flex-row justify-between items-start md:items-center hover:bg-neutral-800/80 transition-colors">
-                                            <div className="flex-1 cursor-pointer " onClick={() => { setShowSidebar(false); setShowPoiSidebar(false); navigate(`/map?lat=${loc.latitude}&lon=${loc.longitude}`); }}>
-                                                <h3 className="text-lg font-bold text-cyan-400/80">{loc.name}</h3>
+                                        <div key={i} className="mb-3 rounded-xl border border-white/10 bg-neutral-800/55 p-3 hover:bg-neutral-800/80 transition-colors">
+                                            <div className="flex-1 cursor-pointer " onClick={() => { setShowSidebar(false); setShowPoiSidebar(false); navigate(buildMapRouteUrl(loc)); }}>
+                                                <h4 className="text-cyan-300 text-lg font-semibold">{loc.name}</h4>
                                                 <p className="text-gray-400 text-sm">{loc.address}</p>
-                                                {loc.categories && loc.categories.length > 0 && (
-                                                    <p className="text-gray-500 text-xs mt-2">
-                                                        {loc.categories.map(cat => cat.charAt(0).toUpperCase() + cat.slice(1)).join(', ')}
-                                                    </p>
-                                                )}
                                             </div>
                                         </div> 
                                     ))
@@ -1446,11 +1566,11 @@ useEffect(() => {
                                 {likedLocations.map((loc, index) => (
                                     <div
                                         key={index}
-                                        className="mb-4 p-3 bg-neutral-800/50 border border-white/10 rounded-xl cursor-pointer hover:bg-neutral-800/80 transition-colors"
-                                        onClick={() => { setShowSidebar(false); setShowPoiSidebar(false); navigate(`/map?lat=${loc.latitude}&lon=${loc.longitude}`); }}
+                                        className="mb-3 rounded-xl border border-white/10 bg-neutral-800/55 p-3 cursor-pointer hover:bg-neutral-800/80 transition-colors"
+                                        onClick={() => { setShowSidebar(false); setShowPoiSidebar(false); navigate(buildMapRouteUrl(loc)); }}
                                     >
-                                        <h3 className="font-bold text-cyan-400">{loc.name}</h3>
-                                        <p className="text-sm text-neutral-400">{loc.address}</p>
+                                        <h4 className="text-cyan-300 text-lg font-semibold">{loc.name}</h4>
+                                        <p className="text-gray-400 text-sm">{loc.address}</p>
                                     </div>
                                 ))}
                             </div>
@@ -1474,18 +1594,18 @@ useEffect(() => {
                   borderTopLeftRadius: borderRadius,
                   borderBottomLeftRadius: borderRadius,
                 }}
-                className="fixed top-19 bottom-0 w-[380px] shadow-lg z-40 flex flex-col backdrop-blur-md"
+                className="fixed top-20 bottom-3 right-2 z-[1500] w-[400px] rounded-2xl border border-cyan-500/30 bg-neutral-900/90 p-4 shadow-2xl backdrop-blur-xl flex flex-col"
               >
-                <div className="flex justify-between items-center p-4 border-b border-white/10">
-                  <h2 className="text-xl font-bold text-neutral-400">POI Locations</h2>
+                <div className="mb-3 flex justify-between items-center border-b border-white/10 pb-2">
+                  <h2 className="text-cyan-300 text-lg font-semibold">POI Locations</h2>
                   <button
                     onClick={() => setShowPoiSidebar(false)}
-                    className="text-neutral-400 hover:text-white transition-colors"
+                    className="h-7 w-7 rounded-full bg-white/5 text-neutral-300 hover:text-white hover:bg-white/10 transition-colors"
                   >
                     ✕
                   </button>
                 </div>
-                <div className="px-4 py-2 border-b border-white/10">
+                <div className="px-1 py-2 border-b border-white/10">
                   <div className="grid grid-cols-3 gap-2">
                     {(['5', '10', '20'] as const).map((radius) => (
                       <button
@@ -1502,20 +1622,20 @@ useEffect(() => {
                     ))}
                   </div>
                 </div>
-                <div className="flex-1 overflow-y-auto p-4">
+                <div className="flex-1 overflow-y-auto pt-3 pr-1">
                   {filteredPoiResults.length === 0 ? (
                     <p className="text-gray-400 text-center py-4">No POI locations in this radius.</p>
                   ) : (
                     filteredPoiResults.map((poi) => (
                       <div
                         key={poi.id}
-                        className="mb-4 p-3 bg-neutral-800/50 rounded-xl border border-white/10 cursor-pointer hover:bg-neutral-800/80 transition-colors"
+                        className="mb-3 rounded-xl border border-white/10 bg-neutral-800/50 p-4 cursor-pointer hover:bg-neutral-800/80 transition-colors"
                         onClick={() => { setShowPoiSidebar(false); handlePoiResultClick(poi); }}
                       >
                         <div className="flex items-start gap-3">
                           <span className="text-2xl">{poi.icon}</span>
                           <div className="flex-1">
-                            <h3 className="text-lg font-bold text-cyan-400/80">{poi.name}</h3>
+                            <h3 className="text-xl font-bold text-cyan-400/80">{poi.name}</h3>
                             <p className="text-gray-400 text-sm">{poi.address}</p>
                             <p className="text-gray-500 text-xs mt-1">{metersToMiles(poi.distanceMeters).toFixed(1)} mi away</p>
                             {poi.categories.length > 0 && (
@@ -1534,7 +1654,7 @@ useEffect(() => {
           </AnimatePresence>
 
           {poiResults.length > 0 && !showSidebar && !showPoiSidebar && (
-            <div className="absolute bottom-6 right-4 z-[1100] bg-neutral-900/95 border border-neutral-800 rounded-xl p-2 shadow-lg">
+            <div className="absolute bottom-6 left-4 z-[1100] bg-neutral-900/95 border border-neutral-800 rounded-xl p-2 shadow-lg">
               <button
                 onClick={() => setShowPoiSidebar(true)}
                 className="w-full mb-2 text-xs py-1.5 px-2 rounded-md border border-neutral-700 bg-neutral-800/70 text-cyan-300 hover:border-cyan-500/50 transition-colors"
@@ -1668,6 +1788,31 @@ useEffect(() => {
               <span className="text-xs font-bold -tracking-wide">{`${showSidebar?'Close Sidebar':'Favorite Locations'}`}</span>
             </button>
           </div>
+          <LocalAiChatPopup
+            userName={user.username}
+            activePage="map"
+            currentLocation={userLoc}
+            favoriteLocations={favoriteLocations.map((loc) => ({
+              name: loc.name,
+              address: loc.address,
+              latitude: loc.latitude,
+              longitude: loc.longitude,
+            }))}
+            visitedLocations={[]}
+            likedLocations={likedLocations.map((loc) => ({
+              name: loc.name,
+              address: loc.address,
+              latitude: loc.latitude,
+              longitude: loc.longitude,
+            }))}
+            selectedPois={filteredPoiResults.map((poi) => ({
+              name: poi.name,
+              address: poi.address,
+              latitude: poi.lat,
+              longitude: poi.lng,
+            }))}
+            activeSelectionLabel={selectedLocation?.name || stats?.name || activePoiType || undefined}
+          />
         </div>
       </div>
   );

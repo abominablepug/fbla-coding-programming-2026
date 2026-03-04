@@ -7,7 +7,6 @@ interface CardProps {
     cardClassName?: string;
     titleClassName?: string;
     contentClassName?: string;
-    style?: string;
     image?: string;
     imageHeight?: string;
     bgcolor?: string;
@@ -22,7 +21,6 @@ const Card: React.FC<CardProps> = ({
     cardClassName = "", 
     titleClassName = "", 
     contentClassName = "", 
-    style = "",
     image = "",
     imageHeight = "200px",
     bgcolor = "",

@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import Navbar from '../components/navbar';
 import Card from '../components/card';
 import { HeartPlus, MapPin, House} from 'lucide-react';
@@ -8,7 +8,8 @@ import { getCommonsImage } from '../utils/getCommonsImage';
 import {useNavigate } from 'react-router-dom';
 import Links from '../components/links';
 import Body from '../components/body';
-import Alerts from '../components/alerts';
+import { enqueueAlert } from '../components/alerts';
+import LocalAiChatPopup from '../components/localAiChatPopup';
 
 interface Business {
     name: string;
@@ -35,6 +36,7 @@ interface Location {
 
 
 const TinderPage = () => {
+    const TOMTOM_API_KEY = import.meta.env.VITE_TOMTOM_API_KEY;
     const [user, setUser] = useState<{ uid: string, username: string } | null>(null);
     const [businesses, setBusinesses] = useState<Business[]>([]);
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -47,14 +49,6 @@ const TinderPage = () => {
     const isSavingRef = useRef(false);
     const processedSwipeRef = useRef<string | null>(null);
     const navigate = useNavigate();
-    const [showToast, setShowToast] = useState(false);
-    const [toastMessage, setToastMessage] = useState("");
-    const { scrollY } = useScroll();
-	const marginTop = useTransform(scrollY, [0, 100], ["0px", "12px"]);
-    const marginBottom = useTransform(scrollY, [0, 100], ["0px", "12px"]);
-	const borderRadius = useTransform(scrollY, [0, 100], ["0px", "24px"]);
-	const right = useTransform(scrollY, [0, 100], ["0px", "1%"]);
-	const bgColor = useTransform(scrollY, [0, 100], ["rgba(23, 23, 23, 1)", "rgba(30, 30, 30, 0.7)"]);
     const [loadingFavorites, setLoadingFavorites] = useState(false);
     const [favoriteLocations, setFavoriteLocations] = useState<Location[]>([]);
     const [edgeGlow, setEdgeGlow] = useState<"left" | "right" | null>(null);
@@ -118,6 +112,11 @@ const TinderPage = () => {
 		}
 	}, [user]);
 
+    const buildStaticMapImage = (lng: number, lat: number) =>
+        TOMTOM_API_KEY
+            ? `https://api.tomtom.com/map/1/staticimage?key=${TOMTOM_API_KEY}&layer=basic&style=main&center=${lng},${lat}&zoom=16&width=420&height=260&format=png`
+            : '';
+
     const fetchBusinesses = async (coords: { lat: number; lng: number }) => {
         setError(null);
         if (!coords) return;
@@ -143,7 +142,13 @@ const TinderPage = () => {
                         if (name && address) {
                             imageUrl = (await getCommonsImage(`${name} ${address}`)) || '';
                         }
-                        return { ...result, imageUrl };
+                        if (!imageUrl) {
+                            imageUrl = buildStaticMapImage(result.longitude, result.latitude);
+                        }
+                        return {
+                            ...result,
+                            imageUrl,
+                        };
                     })
                 );
                 setBusinesses(businessesWithImages);
@@ -233,17 +238,18 @@ const TinderPage = () => {
                 });
 
                 if (favoriteResponse.ok) {
-                    console.log('Location added to favorites');
-                    setShowToast(true);
-                    setToastMessage("Location Saved to Favorites!")
+                    enqueueAlert({ message: "Location saved to favorites.", textColor: "text-green-300" });
                 } else {
                     console.error('Failed to add to favorites');
+                    enqueueAlert({ message: "Failed to add favorite.", textColor: "text-red-300" });
                 }
             } else {
                 console.error('Failed to create location');
+                enqueueAlert({ message: "Failed to create location.", textColor: "text-red-300" });
             }
         } catch (error) {
             console.error('Error adding to favorites:', error);
+            enqueueAlert({ message: "Error saving favorite.", textColor: "text-red-300" });
         } finally {
             isSavingRef.current = false;
         }
@@ -275,7 +281,6 @@ const TinderPage = () => {
                 }
                 return prev;
             });
-            console.log(likedLocations);
         }
 
         setCurrentIndex(prev => prev + 1);
@@ -288,17 +293,25 @@ const TinderPage = () => {
             return newSwipeCount;
         });
     };
+    const buildMapRouteUrl = (loc: Location | Business) => {
+        const params = new URLSearchParams({
+            lat: String(loc.latitude),
+            lon: String(loc.longitude),
+            name: loc.name || '',
+            address: loc.address || '',
+        });
+        return `/map?${params.toString()}`;
+    };
 
 
     function titleCase(str:string) {
-        var splitStr = str.toLowerCase().split(' ');
-        for (var i = 0; i < splitStr.length; i++) {
+        const splitStr = str.toLowerCase().split(' ');
+        for (let i = 0; i < splitStr.length; i++) {
             
             splitStr[i] = splitStr[i].charAt(0).toUpperCase() + splitStr[i].substring(1);     
         }
         return splitStr.join(' '); 
     }
-
     const currentBusiness = businesses[currentIndex];
     return (
             <Body className="overscroll-none">
@@ -308,6 +321,9 @@ const TinderPage = () => {
                     </Links>
                     <Links link="/dashboard">
                         Dashboard <House size={17} />
+                    </Links>
+                    <Links link="/reviews">
+                        Reviews
                     </Links>
                     
                 </Navbar>
@@ -346,16 +362,6 @@ const TinderPage = () => {
                         </motion.div>
                     )}
                 </AnimatePresence>
-                {showToast && (
-                    <Alerts
-                    message={toastMessage}
-                    textColor="text-green-400"
-                    onClose={() => setShowToast(false)}
-                    />
-                )}
-                <div>
-
-                </div>
                 <div className="from-cyan-700/70 via-cyan-500/70 to-purple-400/70 z-10 pt-20 pb-32 h-screen flex items-center justify-center">
                     <AnimatePresence>
                         {currentBusiness && (
@@ -447,26 +453,18 @@ const TinderPage = () => {
                             animate={{ x: 0 }}
                             exit={{ x: '100%' }}
                             transition={{ duration: 0.3 }}
-                            style={{
-                                marginTop,
-                                marginBottom,
-                                right,
-                                backgroundColor: bgColor,
-                                borderTopLeftRadius: borderRadius,
-                                borderBottomLeftRadius: borderRadius,
-                            }}
-                            className="fixed top-19 bottom-0 w-80 shadow-lg z-40 flex flex-col backdrop-blur-md"
+                            className="fixed top-20 bottom-3 right-2 z-[1500] w-[360px] rounded-2xl border border-cyan-500/30 bg-neutral-900/90 p-4 shadow-2xl backdrop-blur-xl"
                         >
-                            <div className="flex justify-between items-center p-4 border-b border-white/10">
-                                <h2 className="text-xl font-bold text-neutral-400">Liked Locations</h2>
+                            <div className="mb-3 flex items-center justify-between border-b border-white/10 pb-2">
+                                <h3 className="text-cyan-300 text-lg font-semibold">All Favorited Locations</h3>
                                 <button
                                     onClick={() => setShowSidebar(false)}
-                                    className="text-neutral-400 hover:text-white transition-colors"
+                                    className="h-7 w-7 rounded-full bg-white/5 text-neutral-300 hover:text-white hover:bg-white/10"
                                 >
                                     ✕
                                 </button>
                             </div>
-                            <div className="flex-1 overflow-y-auto p-4">
+                            <div className="h-[calc(100%-48px)] overflow-y-auto pr-1">
 
                                 {loadingFavorites ? (
                                     <p className="text-gray-400 text-center py-4">Loading favorite locations...</p>
@@ -474,15 +472,10 @@ const TinderPage = () => {
                                     <p className="text-gray-400 text-center py-4">No favorite locations yet. Visit the map to add some!</p>
                                 ) : (
                                     favoriteLocations.map((loc, i) => (
-                                        <div key={i} className="mb-4 p-3 bg-neutral-800/50 rounded-xl border border-white/10 flex flex-col md:flex-row justify-between items-start md:items-center hover:bg-neutral-800/80 transition-colors">
-                                            <div className="flex-1 cursor-pointer " onClick={() => navigate(`/map?lat=${loc.latitude}&lon=${loc.longitude}`)}>
-                                                <h3 className="text-lg font-bold text-cyan-400/80">{loc.name}</h3>
+                                        <div key={i} className="mb-3 rounded-xl border border-white/10 bg-neutral-800/55 p-3 hover:bg-neutral-800/80 transition-colors">
+                                            <div className="flex-1 cursor-pointer " onClick={() => navigate(buildMapRouteUrl(loc))}>
+                                                <h4 className="text-cyan-300 text-lg font-semibold">{loc.name}</h4>
                                                 <p className="text-gray-400 text-sm">{loc.address}</p>
-                                                {loc.categories && loc.categories.length > 0 && (
-                                                    <p className="text-gray-500 text-xs mt-2">
-                                                        {loc.categories.map(cat => cat.charAt(0).toUpperCase() + cat.slice(1)).join(', ')}
-                                                    </p>
-                                                )}
                                             </div>
                                         </div> 
                                     ))
@@ -491,17 +484,42 @@ const TinderPage = () => {
                                 {likedLocations.map((loc, index) => (
                                     <div
                                         key={index}
-                                        className="mb-4 p-3 bg-neutral-800/50 border border-white/10 rounded-xl cursor-pointer hover:bg-neutral-800/80 transition-colors"
-                                        onClick={() => navigate(`/map?lat=${loc.latitude}&lon=${loc.longitude}`)}
+                                        className="mb-3 rounded-xl border border-white/10 bg-neutral-800/55 p-3 cursor-pointer hover:bg-neutral-800/80 transition-colors"
+                                        onClick={() => navigate(buildMapRouteUrl(loc))}
                                     >
-                                        <h3 className="font-bold text-cyan-400">{loc.name}</h3>
-                                        <p className="text-sm text-neutral-400">{loc.address}</p>
+                                        <h4 className="text-cyan-300 text-lg font-semibold">{loc.name}</h4>
+                                        <p className="text-gray-400 text-sm">{loc.address}</p>
                                     </div>
                                 ))}
                             </div>
                         </motion.div>
                     )}
                 </AnimatePresence>
+                <LocalAiChatPopup
+                    userName={user?.username}
+                    activePage="findr"
+                    currentLocation={userLoc}
+                    favoriteLocations={favoriteLocations.map((loc) => ({
+                        name: loc.name,
+                        address: loc.address,
+                        latitude: loc.latitude,
+                        longitude: loc.longitude,
+                    }))}
+                    visitedLocations={[]}
+                    likedLocations={likedLocations.map((loc) => ({
+                        name: loc.name,
+                        address: loc.address,
+                        latitude: loc.latitude,
+                        longitude: loc.longitude,
+                    }))}
+                    selectedPois={currentBusiness ? [{
+                        name: currentBusiness.name,
+                        address: currentBusiness.address,
+                        latitude: currentBusiness.latitude,
+                        longitude: currentBusiness.longitude,
+                    }] : []}
+                    activeSelectionLabel={currentBusiness?.name}
+                />
             </Body>
     );
 }

@@ -41,8 +41,7 @@ const Register = () => {
 				credentials: 'include'
 			});
 			if (response.ok) {
-				const data = await response.json();
-				console.log('Account Created:', data);
+				await response.json();
 				navigate('/dashboard');
 			} else {
 				const errorData = await response.json();

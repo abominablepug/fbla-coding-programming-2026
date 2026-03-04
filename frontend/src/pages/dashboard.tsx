@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Card from "../components/card";
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/navbar';
 import Links from '../components/links';
-import { Heart, MapPin } from 'lucide-react';
+import { Heart, HeartMinus, MapPin } from 'lucide-react';
 import Body from '../components/body';
-import Alerts from '../components/alerts'
+import { enqueueAlert } from '../components/alerts';
 import LocalAiChatPopup from '../components/localAiChatPopup';
 
 interface Location {
@@ -34,10 +34,10 @@ const Dashboard = () => {
 	const [loadingFavorites, setLoadingFavorites] = useState(false);
 	const [loadingVisited, setLoadingVisited] = useState(false);
 	const [visitedLocations, setVisitedLocations] = useState<Location[]>([]);
-	const [showNotif, setShowNotif] = useState(false);
-	const [notifMessage, setNotifMessage]= useState("");
+	const [visitedHistory, setVisitedHistory] = useState<Location[]>([]);
 	const imageSrc = `http://localhost:5173/static/profile_pictures/${profilePic}`;
 	const [popup,setPopup] = useState(false);
+	const [showFavoritesSidebar, setShowFavoritesSidebar] = useState(false);
 	
 
 	const fetchFavoriteLocations = async () => {
@@ -69,6 +69,7 @@ const Dashboard = () => {
 			});
 			if (response.ok) {
 				const data: Location[] = await response.json();
+				setVisitedHistory(data);
 				const unique: Location[] = [];
 				const seen = new Set<number>();
 				for (const loc of data) {
@@ -98,13 +99,14 @@ const Dashboard = () => {
 			});
 			if (response.ok) {
 				setFavoriteLocations(favoriteLocations.filter(loc => loc.lid !== locationId));
-				setNotifMessage("Removed Location From Favorites!")
-				setShowNotif(true);
+				enqueueAlert({ message: "Removed location from favorites.", textColor: "text-red-300" });
 			} else {
 				console.error('Failed to remove from favorites');
+				enqueueAlert({ message: "Failed to remove favorite location.", textColor: "text-red-300" });
 			}
 		} catch (error) {
 			console.error('Error removing from favorites:', error);
+			enqueueAlert({ message: "Error removing favorite location.", textColor: "text-red-300" });
 		}
 	};
 
@@ -119,11 +121,14 @@ const Dashboard = () => {
 				const data = await response.json();
 				setProfilePic(data.profile_picture);
 				setOpenForm(false);
+				enqueueAlert({ message: "Profile picture updated.", textColor: "text-green-300" });
 			} else {
 				console.error('Failed to upload profile picture');
+				enqueueAlert({ message: "Failed to update profile picture.", textColor: "text-red-300" });
 			}
 		} catch (error) {
 			console.error('Error uploading profile picture:', error);
+			enqueueAlert({ message: "Error uploading profile picture.", textColor: "text-red-300" });
 		}
 	};
 
@@ -132,6 +137,7 @@ const Dashboard = () => {
 			setPwSubmitError('');
 			if (!password || !confirmPassword) {
 				setPwSubmitError('Please fill in all fields.');
+				enqueueAlert({ message: "Fill in all password fields.", textColor: "text-red-300" });
 				return;
 			}
 			const response = await fetch('http://localhost:5173/auth/change_password', {
@@ -145,18 +151,22 @@ const Dashboard = () => {
 				setConfirmPassword('');
 				setCurrentPassword('');
 				setPwSubmitError('');
+				enqueueAlert({ message: "Password changed successfully.", textColor: "text-green-300" });
 			}else {
 				const errorData = await response.json();
 				if (errorData.message === 'Current password is incorrect') {
 					setPwSubmitError('Current password is incorrect');
+					enqueueAlert({ message: "Current password is incorrect.", textColor: "text-red-300" });
 				} else {
 					console.error('Failed to change password. Try again.');
 					setPassword('');
 					setConfirmPassword('');
 					setCurrentPassword('');
+					enqueueAlert({ message: "Failed to change password.", textColor: "text-red-300" });
 				}}
 		} catch (error) {
 			console.error('Error changing password:', error);
+			enqueueAlert({ message: "Error changing password.", textColor: "text-red-300" });
 		}
 	};
 
@@ -287,6 +297,57 @@ const Dashboard = () => {
 		setPopup(true);
 	}
 
+	const formatVisitedAt = (visitedAt?: string) => {
+		if (!visitedAt) return 'Unknown time';
+		const date = new Date(visitedAt);
+		if (Number.isNaN(date.getTime())) return 'Unknown time';
+		return new Intl.DateTimeFormat('en-US', {
+			month: 'short',
+			day: 'numeric',
+			year: 'numeric',
+			hour: 'numeric',
+			minute: '2-digit',
+		}).format(date);
+	};
+	const buildMapRouteUrl = (loc: Location) => {
+		const params = new URLSearchParams({
+			lat: String(loc.latitude),
+			lon: String(loc.longitude),
+			name: loc.name || '',
+			address: loc.address || '',
+		});
+		return `/map?${params.toString()}`;
+	};
+
+	const totalDistanceMiles = useMemo(() => {
+		if (visitedHistory.length < 2) return 0;
+
+		const toRad = (deg: number) => (deg * Math.PI) / 180;
+		const haversineMiles = (a: Location, b: Location) => {
+			const R = 3958.8;
+			const dLat = toRad(b.latitude - a.latitude);
+			const dLon = toRad(b.longitude - a.longitude);
+			const lat1 = toRad(a.latitude);
+			const lat2 = toRad(b.latitude);
+			const h =
+				Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+				Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+			return 2 * R * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
+		};
+
+		const ordered = [...visitedHistory].sort((a, b) => {
+			const ta = a.visited_at ? new Date(a.visited_at).getTime() : 0;
+			const tb = b.visited_at ? new Date(b.visited_at).getTime() : 0;
+			return ta - tb;
+		});
+
+		let total = 0;
+		for (let i = 1; i < ordered.length; i++) {
+			total += haversineMiles(ordered[i - 1], ordered[i]);
+		}
+		return total;
+	}, [visitedHistory]);
+
 	if (!user) return <div className="min-h-screen bg-neutral-900 text-white flex items-center justify-center">Loading...</div>;
 
 	return (
@@ -298,17 +359,13 @@ const Dashboard = () => {
 				<Links link="tinder">
 					Findr <Heart size={22} />
 				</Links>
+				<Links link="reviews">
+					Reviews
+				</Links>
 				<Links link="/" onClick={handleLogout}>
 					Logout →
 				</Links>
 			</Navbar>
-			{showNotif && (
-                    <Alerts
-                    message={notifMessage}
-                    textColor="text-red-400"
-                    onClose={() => setShowNotif(false)}
-                    />
-                )}
 			<div className="relative grid gap-11 pt-28">
 				<div className="text-cyan-500/80" >
 						{popup && (
@@ -338,13 +395,39 @@ const Dashboard = () => {
 						)}
 						<div className="grid grid-cols-1 gap-y-3 place-items-center text-center">
 							<img onClick={handlePopup} className="rounded-full border-4 w-32 h-32 object-cover shadow-w-auto border-cyan-600 hover:border-cyan-700 transition-transform" src={imageSrc} alt="Profile" />
-							<p className="text-black-400 text-3xl">Welcome {user.username}</p>
-
+							<p className="text-black-400 text-3xl tracking-wider">Welcome back {user.username}</p>
 						</div>
 				</div> 
+				<div className="mx-auto w-[95%] grid grid-cols-1 sm:grid-cols-3 gap-2">
+					<div className="rounded-lg border border-cyan-400/25 bg-neutral-900/75 px-3 py-2 text-center">
+						<p className="text-[10px] uppercase tracking-[0.08em] text-cyan-200/75">Locations Favorited</p>
+						<p className="text-lg font-semibold text-cyan-300">{favoriteLocations.length}</p>
+					</div>
+					<div className="rounded-lg border border-cyan-400/25 bg-neutral-900/75 px-3 py-2 text-center">
+						<p className="text-[10px] uppercase tracking-[0.08em] text-cyan-200/75">Locations Visited</p>
+						<p className="text-lg font-semibold text-cyan-300">{visitedLocations.length}</p>
+					</div>
+					<div className="rounded-lg border border-cyan-400/25 bg-neutral-900/75 px-3 py-2 text-center">
+						<p className="text-[10px] uppercase tracking-[0.08em] text-cyan-200/75">Distance Travelled</p>
+						<p className="text-lg font-semibold text-cyan-300">{totalDistanceMiles.toFixed(1)} mi</p>
+					</div>
+				</div>
 				<div className="w-[95%] h-[2px] mx-auto bg-gradient-to-r from-transparent via-cyan-400/80 to-transparent shadow-[0_0_10px_rgba(34,211,238,0.25)]" />
 				<div className="grid grid-cols-2" >
-				<Card title='Favorite Locations:'cardClassName='w-[89%] ease-in-out hover:shadow-cyan-500/20 hover:shadow-2xl hover:scale-102 transition-all duration-500'>
+				<Card
+					title={
+						<div className="flex items-center justify-between gap-3 text-3xl font-bold text-[#406386] line-clamp-2">
+							<span>Favorite Locations:</span>
+							<button
+								onClick={() => setShowFavoritesSidebar((prev) => !prev)}
+								className="rounded-full border border-cyan-400/40 bg-cyan-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-cyan-200 hover:bg-cyan-500/25 transition-colors"
+							>
+								{showFavoritesSidebar ? 'Hide Sidebar' : 'View All Favorites'}
+							</button>
+						</div>
+					}
+					cardClassName='w-[89%] ease-in-out hover:shadow-cyan-500/20 hover:shadow-2xl hover:scale-102 transition-all duration-500'
+				>
                     <div className="flex flex-col gap-4 ">
                         {loadingFavorites ? (
                             <p className="text-gray-400 text-center py-4">Loading favorite locations...</p>
@@ -352,7 +435,7 @@ const Dashboard = () => {
                             <p className="text-gray-400 text-center py-4">No favorite locations yet. Visit the map to add some!</p>
                         ) :(favoriteLocations.slice(0,5).map((loc, i) => (
                                 <div key={i} className="bg-neutral-800/50 p-4 rounded-xl border border-white/10 flex flex-col md:flex-row justify-between items-start md:items-center hover:bg-neutral-800/80 transition-colors">
-                                    <div className="flex-1 cursor-pointer" onClick={() => navigate(`/map?lat=${loc.latitude}&lon=${loc.longitude}`)}>
+                                    <div className="flex-1 cursor-pointer" onClick={() => navigate(buildMapRouteUrl(loc))}>
                                         <h3 className="text-lg font-bold text-cyan-400/80">{loc.name}</h3>
 										<p className="text-gray-400 text-sm">{loc.address}</p>
 										{loc.categories && loc.categories.length > 0 && (
@@ -362,8 +445,13 @@ const Dashboard = () => {
 										)}
                                     </div>
                                     <div className="mt-2 md:mt-0 flex flex-col items-end gap-2">
-                                        <button  style={{height: '40px',width:"60px",padding:"4px"}}onClick={(e) => { e.stopPropagation(); handleDeleteFavorite(loc.lid); }} className="px-3 py-1 bg-cyan-500 hover:bg-cyan-600 text-white text-sm rounded transition-colors">
-                                            Delete
+										<button
+											style={{height: '36px',width:"36px",padding:"4px"}}
+											onClick={(e) => { e.stopPropagation(); handleDeleteFavorite(loc.lid); }}
+											className="flex items-center justify-center rounded-md border border-red-400/40 bg-red-500/15 text-red-300 hover:bg-red-500/25 transition-colors"
+											aria-label="Remove favorite"
+										>
+                                            <HeartMinus size={16} className="text-red-400" />
                                         </button>
                                     </div>
                                 </div> 
@@ -398,9 +486,10 @@ const Dashboard = () => {
 						) : (
 							visitedLocations.slice(0,5).map((loc, i) => (
 								<div key={i} className="bg-neutral-800/50 p-4 rounded-xl border border-white/10 flex flex-col md:flex-row justify-between items-start md:items-center hover:bg-neutral-800/80 transition-colors">
-									<div className="flex-1 cursor-pointer" onClick={() => navigate(`/map?lat=${loc.latitude}&lon=${loc.longitude}`)}>
+									<div className="flex-1 cursor-pointer" onClick={() => navigate(buildMapRouteUrl(loc))}>
 										<h3 className="text-lg font-bold text-cyan-400/80">{loc.name}</h3>
 										<p className="text-gray-400 text-sm">{loc.address}</p>
+										<p className="text-cyan-200/70 text-xs mt-1">Visited: {formatVisitedAt(loc.visited_at)}</p>
 										{loc.categories && loc.categories.length > 0 && (
 											<p className="text-gray-500 text-xs mt-2">
 												{loc.categories.map(cat => cat.charAt(0).toUpperCase() + cat.slice(1)).join(', ')}
@@ -416,8 +505,50 @@ const Dashboard = () => {
 				</Card>
 				</div>
 			</div>
+			{showFavoritesSidebar && (
+				<div className="fixed top-20 bottom-3 right-2 z-[1500] w-[360px] rounded-2xl border border-cyan-500/30 bg-neutral-900/90 p-4 shadow-2xl backdrop-blur-xl">
+					<div className="mb-3 flex items-center justify-between border-b border-white/10 pb-2">
+						<h3 className="text-cyan-300 text-lg font-semibold">All Favorited Locations</h3>
+						<button
+							onClick={() => setShowFavoritesSidebar(false)}
+							className="h-7 w-7 rounded-full bg-white/5 text-neutral-300 hover:text-white hover:bg-white/10"
+						>
+							✕
+						</button>
+					</div>
+					<div className="h-[calc(100%-48px)] overflow-y-auto pr-1">
+						{loadingFavorites ? (
+							<p className="text-gray-400 text-center py-4">Loading favorite locations...</p>
+						) : favoriteLocations.length === 0 ? (
+							<p className="text-gray-400 text-center py-4">No favorite locations yet.</p>
+						) : (
+							favoriteLocations.map((loc, i) => (
+								<div
+									key={i}
+									className="mb-3 rounded-xl border border-white/10 bg-neutral-800/55 p-3 hover:bg-neutral-800/80 transition-colors"
+								>
+									<div className="flex items-start justify-between gap-3">
+										<div className="cursor-pointer flex-1" onClick={() => { navigate(buildMapRouteUrl(loc)); setShowFavoritesSidebar(false); }}>
+											<h4 className="text-cyan-300 text-lg font-semibold">{loc.name}</h4>
+											<p className="text-gray-400 text-sm">{loc.address}</p>
+										</div>
+										<button
+											onClick={(e) => { e.stopPropagation(); handleDeleteFavorite(loc.lid); }}
+											className="flex h-[36px] w-[36px] shrink-0 items-center justify-center rounded-md border border-red-400/40 bg-red-500/15 text-red-300 hover:bg-red-500/25 transition-colors"
+											aria-label="Remove favorite"
+										>
+											<HeartMinus size={16} className="text-red-400" />
+										</button>
+									</div>
+								</div>
+							))
+						)}
+					</div>
+				</div>
+			)}
 			<LocalAiChatPopup
 				userName={user.username}
+				activePage="dashboard"
 				favoriteLocations={favoriteLocations}
 				visitedLocations={visitedLocations}
 			/>
