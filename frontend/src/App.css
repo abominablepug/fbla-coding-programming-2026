@@ -43,7 +43,6 @@
 }
 
 .scroll-morph-nav {
-  /* This links the animation to the scroll progress */
   animation: nav-morph linear both;
   animation-timeline: scroll();
   animation-range: 0px 150px;

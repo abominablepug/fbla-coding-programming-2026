@@ -28,7 +28,10 @@ interface LocalAiChatPopupProps {
   activeSelectionLabel?: string;
 }
 
-const TOMTOM_API_KEY = import.meta.env.VITE_TOMTOM_API_KEY;
+const TOMTOM_API_KEY =
+  import.meta.env.VITE_TOMTOM_API_KEY ||
+  import.meta.env.PUBLIC_TOMTOM_API_KEY ||
+  import.meta.env.TOMTOM_API_KEY;
 const AI_API_KEY =
   import.meta.env.PUBLIC_AI_API_KEY ||
   import.meta.env.VITE_AI_API_KEY ||
@@ -58,6 +61,68 @@ const LocalAiChatPopup = ({
   ]);
   const [fetchedVisitedLocations, setFetchedVisitedLocations] = useState<LocalPlace[]>([]);
   const [detectedLocation, setDetectedLocation] = useState<{ lat: number; lng: number } | null>(null);
+
+  const inferLocalSearchQuery = (message: string): string => {
+    const q = message.toLowerCase();
+    if (/(pizza|pizzeria)/.test(q)) return 'pizza';
+    if (/(burger|burgers)/.test(q)) return 'burger';
+    if (/(sushi)/.test(q)) return 'sushi';
+    if (/(taco|tacos|mexican)/.test(q)) return 'tacos';
+    if (/(ice cream|dessert|boba|bubble tea)/.test(q)) return 'dessert';
+    if (/(food|eat|restaurant|dinner|lunch|breakfast|brunch)/.test(q)) return 'restaurant';
+    if (/(coffee|cafe|tea)/.test(q)) return 'cafe';
+    if (/(bar|nightlife|drink|club|pub)/.test(q)) return 'bar';
+    if (/(gas|fuel)/.test(q)) return 'gas station';
+    if (/(hotel|stay|lodging)/.test(q)) return 'hotel';
+    if (/(park|outdoor|trail|hike)/.test(q)) return 'park';
+    if (/(shopping|mall|store)/.test(q)) return 'shopping center';
+    const cleaned = q
+      .replace(/[^a-z0-9\s]/g, ' ')
+      .replace(
+        /\b(find|show|give|me|best|good|great|nice|places|place|near|nearby|around|local|for|to|with|the|a|an|please)\b/g,
+        ' '
+      )
+      .replace(/\s+/g, ' ')
+      .trim();
+    return cleaned || 'points of interest';
+  };
+
+  const isLocalDiscoveryIntent = (message: string): boolean => {
+    const q = message.toLowerCase();
+    return /(near me|around me|nearby|current location|close by|closest|within \d+|local places|what.*near|pizza|restaurant|food|coffee|cafe|bar|hotel|gas|shopping|park|sushi|burger|taco)/.test(q);
+  };
+
+  const getLocalRecommendations = async (rawMessage: string): Promise<string | null> => {
+    if (!TOMTOM_API_KEY || !effectiveLocation) return null;
+    const query = inferLocalSearchQuery(rawMessage);
+    try {
+      const res = await fetch(
+        `https://api.tomtom.com/search/2/search/${encodeURIComponent(query)}.json?key=${encodeURIComponent(
+          TOMTOM_API_KEY
+        )}&lat=${encodeURIComponent(String(effectiveLocation.lat))}&lon=${encodeURIComponent(
+          String(effectiveLocation.lng)
+        )}&radius=16093&limit=5&openingHours=nextSevenDays`
+      );
+      if (!res.ok) return null;
+      const data = await res.json();
+      const results = Array.isArray(data?.results) ? data.results : [];
+      const places = results
+        .filter((r: any) => r?.position && Number.isFinite(r.position.lat) && Number.isFinite(r.position.lon))
+        .slice(0, 5)
+        .map((r: any) => {
+          const name = r?.poi?.name || r?.address?.freeformAddress || 'Unknown';
+          const address = r?.address?.freeformAddress || 'Address unavailable';
+          const distMiles = Number.isFinite(r?.dist) ? (r.dist * 0.000621371).toFixed(1) : '?';
+          return `• ${name} - ${address} (${distMiles} mi)`;
+        });
+
+      if (places.length === 0) return null;
+      return `Here are nearby "${query}" places from your location:\n${places.join('\n')}\n\nTap a Route button below to navigate.`;
+    } catch (error) {
+      console.error('Local recommendations lookup failed:', error);
+      return null;
+    }
+  };
 
   useEffect(() => {
     const fetchVisitedLocations = async () => {
@@ -183,6 +248,32 @@ const LocalAiChatPopup = ({
     const nearest = withDistance[0];
     const farthest = withDistance[withDistance.length - 1];
     return `Nearest place: ${nearest.name} (${nearest.distance.toFixed(2)} miles). Farthest place: ${farthest.name} (${farthest.distance.toFixed(2)} miles).`;
+  };
+
+  const buildFallbackResponse = (message: string): string => {
+    const lower = message.toLowerCase();
+    const local = allKnownPlaces
+      .filter((place) => Number.isFinite(place.latitude) && Number.isFinite(place.longitude))
+      .slice(0, 5);
+    if (local.length === 0) {
+      return 'I can help with local places and routes, but I do not have enough nearby locations loaded yet. Open Map or Findr and try again.';
+    }
+
+    if (/(nearest|closest)/.test(lower) && effectiveLocation) {
+      const ranked = [...local].sort((a, b) => {
+        const da = haversineMiles(effectiveLocation.lat, effectiveLocation.lng, a.latitude, a.longitude);
+        const db = haversineMiles(effectiveLocation.lat, effectiveLocation.lng, b.latitude, b.longitude);
+        return da - db;
+      });
+      const top = ranked.slice(0, 3);
+      return `Closest locations right now:\n${top
+        .map((loc) => `• ${loc.name} - ${loc.address || 'No address'}`)
+        .join('\n')}\n\nUse Route buttons below to navigate.`;
+    }
+
+    return `Here are local places from your current app context:\n${local
+      .map((loc) => `• ${loc.name} - ${loc.address || 'No address'}`)
+      .join('\n')}\n\nAsk for nearest, farthest, or route options and I can guide you.`;
   };
 
   const buildLocalContext = () => {
@@ -362,14 +453,48 @@ const LocalAiChatPopup = ({
     }
   };
 
+  const sanitizeAssistantResponse = (text: string): string => {
+    return text
+      .replace(/\r\n/g, '\n')
+      .replace(/```/g, '')
+      .replace(/^#{1,6}\s+/gm, '')
+      .replace(/^>\s?/gm, '')
+      .replace(/^\s*[-*]\s+/gm, '• ')
+      .replace(/^\s*\d+\)\s+/gm, (m) => `${m.replace(')', '.').trimStart()}`)
+      .replace(/\*\*/g, '')
+      .replace(/__/g, '')
+      .replace(/`/g, '')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+  };
+
+  const renderAssistantText = (content: string) => {
+    const lines = content.split('\n').map((line) => line.trim()).filter(Boolean);
+    return (
+      <div className="space-y-1">
+        {lines.map((line, lineIdx) => {
+          const isBullet = line.startsWith('• ') || line.startsWith('- ') || line.startsWith('* ');
+          const normalizedLine = isBullet ? `• ${line.replace(/^[•\-*]\s*/, '')}` : line;
+          return (
+            <p key={`${lineIdx}-${normalizedLine}`} className="m-0">
+              {normalizedLine}
+            </p>
+          );
+        })}
+      </div>
+    );
+  };
+
   const handleSendChat = async () => {
     const message = chatInput.trim();
     if (!message || chatLoading) return;
     if (!AI_API_KEY) {
+      const localReply = await getLocalRecommendations(message);
       setChatMessages((prev) => [
         ...prev,
-        { role: 'assistant', content: 'AI key is missing. Add PUBLIC_AI_API_KEY in frontend/.env and restart the dev server.' },
+        { role: 'assistant', content: localReply || buildFallbackResponse(message) },
       ]);
+      setChatInput('');
       return;
     }
 
@@ -379,6 +504,14 @@ const LocalAiChatPopup = ({
     setChatLoading(true);
 
     try {
+      if (isLocalDiscoveryIntent(message)) {
+        const localReply = await getLocalRecommendations(message);
+        if (localReply) {
+          setChatMessages((prev) => [...prev, { role: 'assistant', content: localReply }]);
+          return;
+        }
+      }
+
       const aiMessages = [
         { role: 'user', content: `Context:\n${buildLocalContext()}` },
         ...nextMessages.map((m) => ({
@@ -405,14 +538,21 @@ const LocalAiChatPopup = ({
       }
       const assistantTextRaw = data?.choices?.[0]?.message?.content;
       const assistantText = typeof assistantTextRaw === 'string' && assistantTextRaw.trim()
-        ? assistantTextRaw.replace(/^- /gm, '• ')
+        ? sanitizeAssistantResponse(assistantTextRaw)
         : 'I could not respond right now. Please try again.';
       setChatMessages((prev) => [...prev, { role: 'assistant', content: assistantText }]);
     } catch (error) {
       console.error('Chat error', error);
+      const localReply = await getLocalRecommendations(message);
       setChatMessages((prev) => [
         ...prev,
-        { role: 'assistant', content: error instanceof Error ? error.message : 'I could not respond right now. Please try again.' },
+        {
+          role: 'assistant',
+          content:
+            (error instanceof Error ? error.message : 'AI error.') +
+            '\n\n' +
+            (localReply || buildFallbackResponse(message)),
+        },
       ]);
     } finally {
       setChatLoading(false);
@@ -450,7 +590,11 @@ const LocalAiChatPopup = ({
                             : 'border border-neutral-700 bg-neutral-800 text-neutral-100'
                         }`}
                       >
-                        {msg.content}
+                        {msg.role === 'assistant' ? (
+                          renderAssistantText(msg.content)
+                        ) : (
+                          msg.content
+                        )}
                       </div>
                       {candidates.length > 0 && (
                         <div className="mt-2 flex flex-wrap gap-1.5">

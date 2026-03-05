@@ -7,6 +7,13 @@ import { Heart, HeartMinus, MapPin } from 'lucide-react';
 import Body from '../components/body';
 import { enqueueAlert } from '../components/alerts';
 import LocalAiChatPopup from '../components/localAiChatPopup';
+import {
+	fetchTomTomPoiDetailsForLocation,
+	formatBusinessHoursForDisplay,
+	serializeBusinessHours,
+	serializeSocials,
+	type SocialLink,
+} from '../utils/tomtomPoiDetails';
 
 interface Location {
 	lid: number;
@@ -18,7 +25,53 @@ interface Location {
 	categories?: string[];
 	time?: string;
 	visited_at?: string;
+	phone?: string;
+	email?: string;
+	website?: string;
+	businessHours?: string[];
+	socials?: SocialLink[];
 }
+
+const API_KEY =
+	import.meta.env.VITE_TOMTOM_API_KEY ||
+	import.meta.env.PUBLIC_TOMTOM_API_KEY ||
+	import.meta.env.TOMTOM_API_KEY;
+const AUTH_BASE_URL = import.meta.env.VITE_AUTH_BASE_URL || 'http://localhost:5173';
+
+const LocationDetailBlock = ({ loc }: { loc: Location }) => {
+	const formattedHours = formatBusinessHoursForDisplay(loc.businessHours, 2);
+
+	return (
+		<div className="mt-2.5 grid grid-cols-2 gap-1.5 text-[11px] leading-snug">
+			<div className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-gray-300">
+				Phone: {loc.phone || 'N/A'}
+			</div>
+			<div className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-gray-300">
+				Email: {loc.email || 'N/A'}
+			</div>
+			<div className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-gray-300">
+				Website:{' '}
+				{loc.website ? (
+					<a
+						href={loc.website}
+						target="_blank"
+						rel="noopener noreferrer"
+						className="text-cyan-300 hover:text-cyan-200 underline break-all"
+						onClick={(e) => e.stopPropagation()}
+					>
+						Open
+					</a>
+				) : 'N/A'}
+			</div>
+			<div className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-gray-400">
+				Socials: {loc.socials && loc.socials.length > 0 ? loc.socials.slice(0, 3).map((social) => social.platform).join(', ') : 'N/A'}
+			</div>
+			<div className="col-span-2 rounded-md border border-white/10 bg-white/5 px-2 py-1 text-gray-400">
+				Hours: {formattedHours.length > 0 ? formattedHours.join(' | ') : 'N/A'}
+			</div>
+		</div>
+	);
+};
 
 const Dashboard = () => {
 	const [user, setUser] = useState<{ uid: string, username: string } | null>(null);
@@ -39,7 +92,6 @@ const Dashboard = () => {
 	const [popup,setPopup] = useState(false);
 	const [showFavoritesSidebar, setShowFavoritesSidebar] = useState(false);
 	
-
 	const fetchFavoriteLocations = async () => {
 		setLoadingFavorites(true);
 		try {
@@ -48,7 +100,22 @@ const Dashboard = () => {
 			});
 			if (response.ok) {
 				const data = await response.json();
-				setFavoriteLocations(data);
+				if (!API_KEY) {
+					setFavoriteLocations(data);
+				} else {
+					const enriched = await Promise.all(
+						data.map(async (loc: Location) => {
+							const details = await fetchTomTomPoiDetailsForLocation(API_KEY, {
+								name: loc.name,
+								address: loc.address,
+								latitude: loc.latitude,
+								longitude: loc.longitude
+							});
+							return { ...loc, ...details };
+						})
+					);
+					setFavoriteLocations(enriched);
+				}
 			} else {
 				console.error('Failed to fetch favorite locations');
 				setFavoriteLocations([]);
@@ -69,10 +136,24 @@ const Dashboard = () => {
 			});
 			if (response.ok) {
 				const data: Location[] = await response.json();
-				setVisitedHistory(data);
+				let visitedWithDetails: Location[] = data;
+				if (API_KEY) {
+					visitedWithDetails = await Promise.all(
+						data.map(async (loc) => {
+							const details = await fetchTomTomPoiDetailsForLocation(API_KEY, {
+								name: loc.name,
+								address: loc.address,
+								latitude: loc.latitude,
+								longitude: loc.longitude
+							});
+							return { ...loc, ...details };
+						})
+					);
+				}
+				setVisitedHistory(visitedWithDetails);
 				const unique: Location[] = [];
 				const seen = new Set<number>();
-				for (const loc of data) {
+				for (const loc of visitedWithDetails) {
 					if (!seen.has(loc.lid)) {
 						seen.add(loc.lid);
 						unique.push(loc);
@@ -112,7 +193,7 @@ const Dashboard = () => {
 
 	const handleFileChange = async (formData: FormData) => {
 		try {
-			const response = await fetch('http://localhost:5173/auth/change_picture', {
+			const response = await fetch(`${AUTH_BASE_URL}/auth/change_picture`, {
 				method: 'POST',
 				body: formData,
 				credentials: 'include'
@@ -140,7 +221,7 @@ const Dashboard = () => {
 				enqueueAlert({ message: "Fill in all password fields.", textColor: "text-red-300" });
 				return;
 			}
-			const response = await fetch('http://localhost:5173/auth/change_password', {
+			const response = await fetch(`${AUTH_BASE_URL}/auth/change_password`, {
 				method: 'POST',
 				body: formData,
 				credentials: 'include'
@@ -255,7 +336,7 @@ const Dashboard = () => {
 	useEffect(() => {
 		const fetchProfile = async () => {
 			try {
-				const response = await fetch('http://localhost:5173/auth/dashboard', {
+				const response = await fetch(`${AUTH_BASE_URL}/auth/dashboard`, {
 					credentials: 'include'
 				});
 				if (response.ok) {
@@ -283,7 +364,7 @@ const Dashboard = () => {
 	const handleLogout = async (e: React.MouseEvent) => {
 		e.preventDefault();
 		try {
-			await fetch('http://localhost:5173/auth/logout', {
+			await fetch(`${AUTH_BASE_URL}/auth/logout`, {
 				credentials: 'include'
 			});
 			navigate('/');
@@ -302,9 +383,6 @@ const Dashboard = () => {
 		const date = new Date(visitedAt);
 		if (Number.isNaN(date.getTime())) return 'Unknown time';
 		return new Intl.DateTimeFormat('en-US', {
-			month: 'short',
-			day: 'numeric',
-			year: 'numeric',
 			hour: 'numeric',
 			minute: '2-digit',
 		}).format(date);
@@ -316,6 +394,13 @@ const Dashboard = () => {
 			name: loc.name || '',
 			address: loc.address || '',
 		});
+		if (loc.phone) params.set('phone', loc.phone);
+		if (loc.email) params.set('email', loc.email);
+		if (loc.website) params.set('website', loc.website);
+		const serializedHours = serializeBusinessHours(loc.businessHours);
+		if (serializedHours) params.set('businessHours', serializedHours);
+		const serializedSocials = serializeSocials(loc.socials);
+		if (serializedSocials) params.set('socials', serializedSocials);
 		return `/map?${params.toString()}`;
 	};
 
@@ -434,17 +519,18 @@ const Dashboard = () => {
                         ) : favoriteLocations.length === 0 ? (
                             <p className="text-gray-400 text-center py-4">No favorite locations yet. Visit the map to add some!</p>
                         ) :(favoriteLocations.slice(0,5).map((loc, i) => (
-                                <div key={i} className="bg-neutral-800/50 p-4 rounded-xl border border-white/10 flex flex-col md:flex-row justify-between items-start md:items-center hover:bg-neutral-800/80 transition-colors">
-                                    <div className="flex-1 cursor-pointer" onClick={() => navigate(buildMapRouteUrl(loc))}>
+                                <div key={i} className="bg-neutral-800/50 p-4 rounded-xl border border-white/10 flex flex-col md:flex-row justify-between items-start md:items-center gap-3 hover:bg-neutral-800/80 transition-colors">
+                                    <div className="flex-1 min-w-0 md:pr-4 cursor-pointer" onClick={() => navigate(buildMapRouteUrl(loc))}>
                                         <h3 className="text-lg font-bold text-cyan-400/80">{loc.name}</h3>
 										<p className="text-gray-400 text-sm">{loc.address}</p>
+										<LocationDetailBlock loc={loc} />
 										{loc.categories && loc.categories.length > 0 && (
 											<p className="text-gray-500 text-xs mt-2">
 												{loc.categories.map(cat => cat.charAt(0).toUpperCase() + cat.slice(1)).join(', ')}
 											</p>
 										)}
                                     </div>
-                                    <div className="mt-2 md:mt-0 flex flex-col items-end gap-2">
+                                    <div className="mt-2 md:mt-0 md:self-center shrink-0 flex flex-col items-end gap-2">
 										<button
 											style={{height: '36px',width:"36px",padding:"4px"}}
 											onClick={(e) => { e.stopPropagation(); handleDeleteFavorite(loc.lid); }}
@@ -485,10 +571,34 @@ const Dashboard = () => {
 							<p className="text-gray-400 text-center py-4">No visited locations yet. Navigate somewhere on the map!</p>
 						) : (
 							visitedLocations.slice(0,5).map((loc, i) => (
-								<div key={i} className="bg-neutral-800/50 p-4 rounded-xl border border-white/10 flex flex-col md:flex-row justify-between items-start md:items-center hover:bg-neutral-800/80 transition-colors">
-									<div className="flex-1 cursor-pointer" onClick={() => navigate(buildMapRouteUrl(loc))}>
+								<div key={i} className="bg-neutral-800/50 p-4 rounded-xl border border-white/10 flex flex-col md:flex-row justify-between items-start md:items-center gap-3 hover:bg-neutral-800/80 transition-colors">
+									<div className="flex-1 min-w-0 md:pr-4 cursor-pointer" onClick={() => navigate(buildMapRouteUrl(loc))}>
 										<h3 className="text-lg font-bold text-cyan-400/80">{loc.name}</h3>
 										<p className="text-gray-400 text-sm">{loc.address}</p>
+										<div className="mt-2.5 grid grid-cols-6 gap-1.5 text-[11px] leading-snug">
+											<div className="col-span-2 rounded-md border border-white/10 bg-white/5 px-2 py-1 text-gray-300">Phone: {loc.phone || 'N/A'}</div>
+											<div className="col-span-2 rounded-md border border-white/10 bg-white/5 px-2 py-1 text-gray-300">Email: {loc.email || 'N/A'}</div>
+											<div className="col-span-2 rounded-md border border-white/10 bg-white/5 px-2 py-1 text-gray-300">
+												Website:{' '}
+												{loc.website ? (
+													<a
+														href={loc.website}
+														target="_blank"
+														rel="noopener noreferrer"
+														className="text-cyan-300 hover:text-cyan-200 underline break-all"
+														onClick={(e) => e.stopPropagation()}
+													>
+														Open
+													</a>
+												) : 'N/A'}
+											</div>
+											<div className="col-span-3 rounded-md border border-white/10 bg-white/5 px-2 py-1 text-gray-400">
+												Socials: {loc.socials && loc.socials.length > 0 ? loc.socials.slice(0, 3).map((social) => social.platform).join(', ') : 'N/A'}
+											</div>
+											<div className="col-span-3 rounded-md border border-white/10 bg-white/5 px-2 py-1 text-gray-400">
+												Hours: {formatBusinessHoursForDisplay(loc.businessHours, 2).length > 0 ? formatBusinessHoursForDisplay(loc.businessHours, 2).join(' | ') : 'N/A'}
+											</div>
+										</div>
 										<p className="text-cyan-200/70 text-xs mt-1">Visited: {formatVisitedAt(loc.visited_at)}</p>
 										{loc.categories && loc.categories.length > 0 && (
 											<p className="text-gray-500 text-xs mt-2">
@@ -497,6 +607,12 @@ const Dashboard = () => {
 											
 										)}
 									</div>
+									<button
+										onClick={() => navigate(`/reviews?locationId=${encodeURIComponent(String(loc.lid))}`)}
+										className="mt-3 md:mt-0 md:self-center shrink-0 rounded-md border border-cyan-400/40 bg-cyan-500/15 px-3 py-1.5 text-xs text-cyan-200 hover:bg-cyan-500/25 transition-colors"
+									>
+										Review This Visit
+									</button>
 								</div>
 							))
 						)
@@ -527,14 +643,15 @@ const Dashboard = () => {
 									key={i}
 									className="mb-3 rounded-xl border border-white/10 bg-neutral-800/55 p-3 hover:bg-neutral-800/80 transition-colors"
 								>
-									<div className="flex items-start justify-between gap-3">
-										<div className="cursor-pointer flex-1" onClick={() => { navigate(buildMapRouteUrl(loc)); setShowFavoritesSidebar(false); }}>
+									<div className="flex items-center justify-between gap-3">
+										<div className="cursor-pointer flex-1 min-w-0 pr-2" onClick={() => { navigate(buildMapRouteUrl(loc)); setShowFavoritesSidebar(false); }}>
 											<h4 className="text-cyan-300 text-lg font-semibold">{loc.name}</h4>
 											<p className="text-gray-400 text-sm">{loc.address}</p>
+											<LocationDetailBlock loc={loc} />
 										</div>
 										<button
 											onClick={(e) => { e.stopPropagation(); handleDeleteFavorite(loc.lid); }}
-											className="flex h-[36px] w-[36px] shrink-0 items-center justify-center rounded-md border border-red-400/40 bg-red-500/15 text-red-300 hover:bg-red-500/25 transition-colors"
+											className="flex h-[36px] w-[36px] shrink-0 self-center items-center justify-center rounded-md border border-red-400/40 bg-red-500/15 text-red-300 hover:bg-red-500/25 transition-colors"
 											aria-label="Remove favorite"
 										>
 											<HeartMinus size={16} className="text-red-400" />

@@ -6,9 +6,12 @@ import {useNavigate } from 'react-router-dom';
 import Body from '../components/body';
 
 const Login = () => {
+	const AUTH_BASE_URL = (import.meta.env.VITE_AUTH_BASE_URL || import.meta.env.PUBLIC_AUTH_BASE_URL || 'http://localhost:5173').trim();
+	const loginUrl = AUTH_BASE_URL ? `${AUTH_BASE_URL}/auth/login` : '/auth/login';
 	const [username, setUsername] = useState('');
 	const [password, setPassword] = useState('');
 	const [submitError, setSubmitError] = useState('');
+	const [isSubmitting, setIsSubmitting] = useState(false);
 	const navigate = useNavigate();
 
 	return (
@@ -24,28 +27,39 @@ const Login = () => {
 					onSubmit={async (e) => {
 						e.preventDefault();
 						setSubmitError('');
-
 						const formData = new FormData();
-						formData.append('username', username);
+						formData.append('username', username.trim());
 						formData.append('password', password);
 
 						try {
-							const res = await fetch("http://localhost:5173/auth/login", { 
-								method: "POST",
+							setIsSubmitting(true);
+							const res = await fetch(loginUrl, {
+								method: 'POST',
 								credentials: 'include',
-								body: formData 
+								body: formData
 							});
 
-							const data = await res.json();
+							const contentType = res.headers.get('content-type') || '';
+							const isJson = contentType.includes('application/json');
+							const data = isJson ? await res.json().catch(() => ({} as any)) : null;
 
 							if (res.ok) {
-								navigate("/dashboard");
-							} else {
-								setSubmitError(data.message || 'Login failed');
+								navigate('/dashboard');
+								return;
 							}
+
+							if (isJson && data?.message) {
+								setSubmitError(data.message);
+								return;
+							}
+
+							const text = await res.text().catch(() => '');
+							setSubmitError(text?.trim() || `Login failed (${res.status})`);
 						} catch (err) {
-							setSubmitError('Server connection failed');
+							setSubmitError('Cannot reach auth response. If register just failed, sign in with existing account or use a different email for new registration.');
 							console.error(err);
+						} finally {
+							setIsSubmitting(false);
 						}
 					}}>
 					<div>
@@ -73,11 +87,13 @@ const Login = () => {
 					<div className="grid grid-cols-2 flex-col text-center transition-transform gap-6">
 					<button
 						type="submit"
-						className="w-full rounded-lg bg-sky-500 py-3 font-semibold text-white hover:bg-sky-400 active:scale-[0.98] transition-all shadow-lg"
+						disabled={isSubmitting}
+						className="w-full rounded-lg bg-sky-500 py-3 font-semibold text-white hover:bg-sky-400 active:scale-[0.98] transition-all shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
 					>
-						Sign In
+						{isSubmitting ? 'Signing In...' : 'Sign In'}
 					</button>
 					<button
+						type="button"
 						className="w-full rounded-lg bg-sky-500 py-3 font-semibold text-white hover:bg-sky-400 active:scale-[0.98] transition-all shadow-lg"
 					>
 						Forgot Password

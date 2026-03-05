@@ -9,6 +9,16 @@ import Links from '../components/links';
 import {House, Heart, HeartPlus} from 'lucide-react';
 import { enqueueAlert } from '../components/alerts';
 import LocalAiChatPopup from '../components/localAiChatPopup';
+import {
+  extractTomTomPoiDetails,
+  fetchTomTomPoiDetailsForLocation,
+  formatBusinessHoursForDisplay,
+  parseBusinessHoursQuery,
+  parseSocialsQuery,
+  serializeBusinessHours,
+  serializeSocials,
+  type SocialLink
+} from '../utils/tomtomPoiDetails';
 
 interface Business {
   name: string;
@@ -21,6 +31,11 @@ interface Business {
   classifications: any[];
   imageUrl?: string;
   lid?: number;
+  phone?: string;
+  email?: string;
+  website?: string;
+  businessHours?: string[];
+  socials?: SocialLink[];
 }
 
 interface Location {
@@ -32,9 +47,18 @@ interface Location {
 	address?: string;
 	categories?: string[];
 	time?: string;
+  phone?: string;
+  email?: string;
+  website?: string;
+  businessHours?: string[];
+  socials?: SocialLink[];
 }
 
-const API_KEY = import.meta.env.VITE_TOMTOM_API_KEY;
+const API_KEY =
+  import.meta.env.VITE_TOMTOM_API_KEY ||
+  import.meta.env.PUBLIC_TOMTOM_API_KEY ||
+  import.meta.env.TOMTOM_API_KEY;
+const AUTH_BASE_URL = import.meta.env.VITE_AUTH_BASE_URL || 'http://localhost:5173';
 
 const POI_GROUPS = [
   {
@@ -144,7 +168,48 @@ interface PoiListItem {
   type: string;
   categories: string[];
   distanceMeters: number;
+  phone?: string;
+  email?: string;
+  website?: string;
+  businessHours?: string[];
+  socials?: SocialLink[];
 }
+
+const LocationDetailBlock = ({ details }: { details?: Pick<Business, 'phone' | 'email' | 'website' | 'businessHours' | 'socials'> }) => {
+  const formattedHours = formatBusinessHoursForDisplay(details?.businessHours, 2);
+
+  return (
+    <div className="mt-2.5 grid grid-cols-3 gap-1.5 text-[11px] leading-snug">
+      <div className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-gray-300">
+        Phone: {details?.phone || 'N/A'}
+      </div>
+      <div className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-gray-300">
+        Email: {details?.email || 'N/A'}
+      </div>
+      <div className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-gray-300">
+        Website:{' '}
+        {details?.website ? (
+          <a
+            href={details.website}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-cyan-300 hover:text-cyan-200 underline break-all"
+            onClick={(e) => e.stopPropagation()}
+          >
+            Open
+          </a>
+        ) : 'N/A'}
+      </div>
+      <div className="col-span-1 rounded-md border border-white/10 bg-white/5 px-2 py-1 text-gray-400">
+        Socials: {' '}
+        {details?.socials && details.socials.length > 0 ? details.socials.slice(0, 3).map((social) => social.platform).join(', ') : 'N/A'}
+      </div>
+      <div className="col-span-2 rounded-md border border-white/10 bg-white/5 px-2 py-1 text-gray-400">
+        Hours: {formattedHours.length > 0 ? formattedHours.join(' | ') : 'N/A'}
+      </div>
+    </div>
+  );
+};
 
 const Map = () => {
   const mapElement = useRef<HTMLDivElement>(null);
@@ -218,6 +283,8 @@ const Map = () => {
       const addressParam = searchParams.get('address');
       if (!isNaN(destLat) && !isNaN(destLng)) {
         const routeName = nameParam?.trim() || addressParam?.trim() || 'Destination';
+        const businessHours = parseBusinessHoursQuery(searchParams.get('businessHours'));
+        const socials = parseSocialsQuery(searchParams.get('socials'));
         const paramLocation: Business | undefined = (nameParam || addressParam)
           ? {
               name: nameParam?.trim() || addressParam?.trim() || 'Selected Location',
@@ -227,7 +294,12 @@ const Map = () => {
               distance_meters: 0,
               category: [],
               score: 0,
-              classifications: []
+              classifications: [],
+              phone: searchParams.get('phone') || undefined,
+              email: searchParams.get('email') || undefined,
+              website: searchParams.get('website') || undefined,
+              businessHours,
+              socials
             }
           : undefined;
         calculateRoute(destLat, destLng, routeName, false, paramLocation);
@@ -238,7 +310,7 @@ const Map = () => {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const response = await fetch('http://localhost:5173/auth/dashboard', {
+        const response = await fetch(`${AUTH_BASE_URL}/auth/dashboard`, {
           credentials: 'include'
         });
         if (response.ok) {
@@ -253,7 +325,7 @@ const Map = () => {
       }
     };
     fetchProfile();
-  }, [navigate]);
+  }, [navigate, AUTH_BASE_URL]);
 
   const getMapStyle = () => {
     switch (mapStyle) {
@@ -320,7 +392,22 @@ const fetchFavoriteLocations = async () => {
     });
     if (response.ok) {
       const data = await response.json();
-      setFavoriteLocations(data);
+      if (!API_KEY) {
+        setFavoriteLocations(data);
+      } else {
+        const enriched = await Promise.all(
+          data.map(async (loc: Location) => {
+            const details = await fetchTomTomPoiDetailsForLocation(API_KEY, {
+              name: loc.name,
+              address: loc.address,
+              latitude: loc.latitude,
+              longitude: loc.longitude
+            });
+            return { ...loc, ...details };
+          })
+        );
+        setFavoriteLocations(enriched);
+      }
     } else {
       console.error('Failed to fetch favorite locations');
       setFavoriteLocations([]);
@@ -378,7 +465,7 @@ useEffect(() => {
 
           try {
             const response = await fetch(
-              `https://api.tomtom.com/search/2/nearbySearch/.json?key=${API_KEY}&lat=${lat}&lon=${lng}&radius=50`
+              `https://api.tomtom.com/search/2/nearbySearch/.json?key=${API_KEY}&lat=${lat}&lon=${lng}&radius=50&openingHours=nextSevenDays`
             );
             const data = await response.json();
             const place = data.results?.[0];
@@ -387,6 +474,7 @@ useEffect(() => {
             const category = place.poi?.categories ?? [];
             const address = place.address?.freeformAddress ?? "";
             const imageUrl = buildStaticMapImage(lng, lat);
+            const details = extractTomTomPoiDetails(place);
             const location: Business = {
               name: name,
               address: address,
@@ -396,7 +484,8 @@ useEffect(() => {
               category: category,
               score: 0,
               classifications: [],
-              imageUrl: imageUrl
+              imageUrl: imageUrl,
+              ...details
             };
             setSelectedLocation(location);
           } catch (error) {
@@ -585,8 +674,9 @@ useEffect(() => {
           query: inputValue,
           center: [userLoc.lng, userLoc.lat],
           typeahead: true,
-          limit: 6
-        });
+          limit: 6,
+          openingHours: 'nextSevenDays'
+        } as any);
         setSuggestions(res.results || []);
       } catch (e) { 
         console.error('Autocomplete error:', e); 
@@ -636,7 +726,7 @@ useEffect(() => {
 
   const recordVisitedLocation = async (location: Business) => {
     try {
-      await fetch('http://localhost:5173/loc/visit', {
+      const response = await fetch('http://localhost:5173/loc/visit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -646,10 +736,19 @@ useEffect(() => {
           longitude: location.longitude,
           latitude: location.latitude,
           type: 1,
-          categories: location.category || []
+          categories: location.category || [],
+          phone: location.phone,
+          email: location.email,
+          website: location.website,
+          businessHours: location.businessHours,
+          socials: location.socials
         })
       });
-      showToastNotice('New location visited.');
+      if (response.ok) {
+        showToastNotice('New location visited.');
+      } else {
+        showToastNotice('Failed to log visited location.', true);
+      }
     } catch (e) {
       console.error('Error logging visited location:', e);
       showToastNotice('Failed to log visited location.', true);
@@ -762,10 +861,13 @@ useEffect(() => {
       .replace(/[•]/g, '')
       .replace(/\s+/g, ' ')
       .trim();
+    const speechFriendlyMessage = cleanedMessage
+      .replace(/\bdr\.\b/gi, 'Drive')
+      .replace(/\bdr\b/gi, 'Drive');
     if (instruction.maneuverType?.toLowerCase() === 'arrive') {
       return `${stepLabel} You have arrived at ${destinationName || 'your destination'}.`;
     }
-    return `${stepLabel} ${cleanedMessage}. Continue for ${distance}.`;
+    return `${stepLabel} ${speechFriendlyMessage}. Continue for ${distance}.`;
   };
 
   const pickBestVoice = (): SpeechSynthesisVoice | null => {
@@ -847,6 +949,11 @@ useEffect(() => {
                 latitude: business.latitude,
                 type: 1,
                 categories: business.category,
+                phone: business.phone,
+                email: business.email,
+                website: business.website,
+                businessHours: business.businessHours,
+                socials: business.socials,
             })
         });
 
@@ -909,7 +1016,8 @@ useEffect(() => {
         center: [userLoc.lng, userLoc.lat],
         radius: 50000,
         categorySet: categoryId,
-        limit: 100
+        limit: 100,
+        openingHours: 'nextSevenDays' as any
       });
 
 
@@ -925,6 +1033,7 @@ useEffect(() => {
           const poiName = poi.poi?.name || type;
           const poiAddress = poi.address?.freeformAddress || 'Unknown Address';
           const poiCategories = poi.poi?.categories || [];
+          const details = extractTomTomPoiDetails(poi);
           
           const el = document.createElement('div');
           const innerEl = document.createElement('div');
@@ -948,7 +1057,8 @@ useEffect(() => {
               distance_meters: poi.dist || 0,
               category: poiCategories,
               score: 0,
-              classifications: []
+              classifications: [],
+              ...details
             };
             calculateRoute(lat, lng, poiName, false, mappedLocation);
           });
@@ -963,7 +1073,8 @@ useEffect(() => {
             icon,
             type,
             categories: poiCategories,
-            distanceMeters: poi.dist || 0
+            distanceMeters: poi.dist || 0,
+            ...details
           });
           newMarkers.push(marker);
           bounds.extend([lng, lat]);
@@ -1006,33 +1117,14 @@ useEffect(() => {
       category: poi.categories,
       score: 0,
       classifications: [],
-      imageUrl: buildStaticMapImage(poi.lng, poi.lat)
+      imageUrl: buildStaticMapImage(poi.lng, poi.lat),
+      phone: poi.phone,
+      email: poi.email,
+      website: poi.website,
+      businessHours: poi.businessHours,
+      socials: poi.socials,
     };
     calculateRoute(poi.lat, poi.lng, poi.name, false, mappedLocation);
-  };
-
-  const getManeuverIcon = (maneuverType: string): string => {
-    const icons: { [key: string]: string } = {
-      'depart': '🚗',
-      'arrive': '🏁',
-      'turn-left': '⬅️',
-      'turn-right': '➡️',
-      'slight-left': '↙️',
-      'slight-right': '↗️',
-      'sharp-left': '⬅️',
-      'sharp-right': '➡️',
-      'straight': '⬆️',
-      'uturn': '🔄',
-      'roundabout-left': '↩️',
-      'roundabout-right': '↪️',
-      'merge': '↗️',
-      'on-ramp': '🛤️',
-      'off-ramp': '🛤️',
-      'end-of-road': '🛣️',
-      'ferry': '⛴️',
-      'ferry-train': '🚢'
-    };
-    return icons[maneuverType.toLowerCase()] || '➡️';
   };
 
   const handleSelectSuggestion = (poi: any) => {
@@ -1041,6 +1133,8 @@ useEffect(() => {
     const lng = getLng(poi.position)!;
     const lat = getLat(poi.position)!;
     const poiName = poi.poi?.name || poi.address?.freeformAddress || 'Destination';
+    const poiAddress = poi.address?.freeformAddress || poiName;
+    const details = extractTomTomPoiDetails(poi);
     
     setInputValue(poiName);
     setSuggestions([]);
@@ -1065,7 +1159,18 @@ useEffect(() => {
        });
     }
 
-    calculateRoute(lat, lng, poiName);
+    calculateRoute(lat, lng, poiName, false, {
+      name: poiName,
+      address: poiAddress,
+      latitude: lat,
+      longitude: lng,
+      distance_meters: poi.dist || 0,
+      category: poi.poi?.categories || [],
+      score: 0,
+      classifications: poi.poi?.classifications || [],
+      imageUrl: buildStaticMapImage(lng, lat),
+      ...details
+    });
   };
 
   const handleSearch = async () => {
@@ -1076,8 +1181,9 @@ useEffect(() => {
         key: API_KEY,
         query: inputValue,
         center: [userLoc.lng, userLoc.lat],
-        limit: 1
-      });
+        limit: 1,
+        openingHours: 'nextSevenDays'
+      } as any);
 
       if (res.results && res.results.length > 0) {
         handleSelectSuggestion(res.results[0]);
@@ -1123,6 +1229,13 @@ useEffect(() => {
       name: loc.name || '',
       address: loc.address || '',
     });
+    if (loc.phone) params.set('phone', loc.phone);
+    if (loc.email) params.set('email', loc.email);
+    if (loc.website) params.set('website', loc.website);
+    const serializedHours = serializeBusinessHours(loc.businessHours);
+    if (serializedHours) params.set('businessHours', serializedHours);
+    const serializedSocials = serializeSocials(loc.socials);
+    if (serializedSocials) params.set('socials', serializedSocials);
     return `/map?${params.toString()}`;
   };
   const addRouteLocationToFavorites = async () => {
@@ -1345,13 +1458,13 @@ useEffect(() => {
 
           {/*hiding sidebar*/}
           <Navbar page={`Map`}> 
-            <Links link="tinder" className="text-[16px]">
-              Findr <Heart size={22}/>
+            <Links link="tinder" className="text-[15px]">
+              Findr <Heart size={18}/>
             </Links>
-            <Links link="dashboard" className="text-[16px]">
-              Dashboard <House size={17} />
+            <Links link="dashboard" className="text-[15px]">
+              Dashboard <House size={18} />
             </Links>
-            <Links link="reviews" className="text-[16px]">
+            <Links link="reviews" className="text-[15px]">
               Reviews
             </Links>
           </Navbar>        
@@ -1388,6 +1501,7 @@ useEffect(() => {
                   <div>
                     <h4 className="m-0 text-[#00d4ff] text-md">{stats.name}</h4>
                     <p className="m-0 mt-0.5 text-gray-400 text-[11px]">{stats.miles} mi • {stats.mins} min</p>
+                    <LocationDetailBlock details={routeFavoriteLocation || undefined} />
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -1420,12 +1534,9 @@ useEffect(() => {
               </div>
 
               <div className="p-4 bg-gradient-to-br from-[#00d4ff1a] to-[#0096c80d]"> 
-                <div className="flex items-center gap-3">
-                  <span className="text-[32px]">{getManeuverIcon(stats.instructions[navStep]?.maneuverType || 'straight')}</span>
-                  <div className="flex-1">
-                    <p className="m-0 text-white text-sm font-bold">{stats.instructions[navStep]?.streetName || stats.instructions[navStep]?.message || 'Continue'}</p>
-                    <p className="m-0 mt-1 text-[#00d4ff] text-xs">{formatDistance(stats.instructions[navStep]?.distance || 0)}</p>
-                  </div>
+                <div className="rounded-lg border border-cyan-400/20 bg-black/20 px-3 py-2">
+                  <p className="m-0 text-cyan-300 text-xs font-semibold">Step {navStep + 1}</p>
+                  <p className="m-0 mt-1 text-white text-sm font-bold">{stats.instructions[navStep]?.streetName || stats.instructions[navStep]?.message || 'Unknown Address'}</p>
                 </div>
               </div>
 
@@ -1444,14 +1555,13 @@ useEffect(() => {
                   {stats.instructions.map((inst, idx) => (
                     <div 
                       key={idx} 
-                      className={`flex items-center gap-2.5 p-2.5 px-4 cursor-pointer border-b border-neutral-800 hover:bg-white/5 ${idx === navStep ? 'bg-[#00d4ff26] border-l-[3px] border-l-[#00d4ff]' : ''} ${idx < navStep ? 'opacity-50' : ''}`}
+                      className={`p-2.5 px-4 cursor-pointer border-b border-neutral-800 hover:bg-white/5 ${idx === navStep ? 'bg-[#00d4ff26] border-l-[3px] border-l-[#00d4ff]' : ''} ${idx < navStep ? 'opacity-50' : ''}`}
                       onClick={() => jumpToStep(idx)}
                     >
-                      <span className="text-sm w-5 text-center">{getManeuverIcon(inst.maneuverType)}</span>
-                      <div className="flex-1 flex justify-between items-center">
-                        <span className="text-white text-xs">{inst.streetName || inst.message}</span>
-                        <span className="text-gray-400 text-[11px]">{formatDistance(inst.distance)}</span>
-                      </div>
+                      <p className="m-0 text-white text-xs">
+                        <span className="text-cyan-300 font-semibold mr-2">#{idx + 1}</span>
+                        {inst.streetName || inst.message || 'Unknown Address'}
+                      </p>
                     </div>
                   ))}
                 </div>
@@ -1558,6 +1668,7 @@ useEffect(() => {
                                             <div className="flex-1 cursor-pointer " onClick={() => { setShowSidebar(false); setShowPoiSidebar(false); navigate(buildMapRouteUrl(loc)); }}>
                                                 <h4 className="text-cyan-300 text-lg font-semibold">{loc.name}</h4>
                                                 <p className="text-gray-400 text-sm">{loc.address}</p>
+                                                <LocationDetailBlock details={loc} />
                                             </div>
                                         </div> 
                                     ))
@@ -1571,6 +1682,7 @@ useEffect(() => {
                                     >
                                         <h4 className="text-cyan-300 text-lg font-semibold">{loc.name}</h4>
                                         <p className="text-gray-400 text-sm">{loc.address}</p>
+                                        <LocationDetailBlock details={loc} />
                                     </div>
                                 ))}
                             </div>
@@ -1643,6 +1755,7 @@ useEffect(() => {
                                 {poi.categories.join(', ')}
                               </p>
                             )}
+                            <LocationDetailBlock details={poi} />
                           </div>
                         </div>
                       </div>
@@ -1685,6 +1798,7 @@ useEffect(() => {
               <div className="mb-3">
                 <h3 className="m-0 mb-1 text-[#00d4ff] text-sm">{stats.name}</h3>
                 <p className="m-0 mb-3 text-gray-400 text-sm">{stats.miles} mi • {stats.mins} min</p>
+                <LocationDetailBlock details={routeFavoriteLocation || undefined} />
               </div>
               <div className="flex gap-2.5">
                 <button className="flex-[2] bg-[#00d4ff] text-black border-none p-2.5 rounded-lg font-bold cursor-pointer hover:bg-[#00b7db]" onClick={startNavigation}>Start Navigation</button>                
@@ -1695,7 +1809,7 @@ useEffect(() => {
           )}
           {/* Location Info Popup */}
           {showImageLocationPopup && selectedLocation && (
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-neutral-900/98 border border-neutral-800 rounded-2xl w-80 z-[3000] shadow-2xl max-h-[80vh] overflow-hidden">
+            <div className="absolute top-[58%] left-1/2 -translate-x-1/2 -translate-y-1/2 bg-neutral-900/98 border border-neutral-800 rounded-2xl w-80 z-[3000] shadow-2xl max-h-[72vh] overflow-hidden">
               <div className="flex justify-between items-center p-4 border-b border-neutral-800">
                 <h3 className="m-0 text-[#00d4ff] text-lg">Location Details</h3> 
                 <div className="flex items-center gap-2">
@@ -1703,9 +1817,10 @@ useEffect(() => {
                 <button className="bg-neutral-800 border-none w-8 h-8 rounded-full cursor-pointer text-sm hover:bg-neutral-700 text-red-500/80" onClick={closeSelectedLocationPopup}>✕</button>
                 </div>
               </div>
-              <div className="p-4">
+              <div className="p-4 space-y-3">
+                <h4 className="text-cyan-300 text-base m-0">{selectedLocation.name}</h4>
                 {selectedLocation.imageUrl && (
-                  <div className="w-full h-[180px] bg-neutral-900 rounded-lg mb-3 overflow-hidden flex items-center justify-center border border-neutral-800">
+                  <div className="w-full h-[180px] bg-neutral-900 rounded-lg overflow-hidden flex items-center justify-center border border-neutral-800">
                     <img
                       src={selectedLocation.imageUrl} 
                       alt="Location" 
@@ -1716,9 +1831,10 @@ useEffect(() => {
                     />
                   </div>
                 )}
-                <p className="text-white text-sm mb-4 leading-relaxed p-2.5 bg-white/5 rounded-lg">📍 {selectedLocation?.address}</p>
-                <div className="flex justify-center gap-2.5">
-                  <button className="bg-gradient-to-br from-[#6fe7ff] to-[#0099cc] text-black border-none p-3 px-6 rounded-lg font-bold cursor-pointer text-sm flex-1 transition-transform hover:scale-[1.02]" onClick={navigateToSelectedLocation}>Navigate ➤</button>
+                <p className="text-white text-sm leading-relaxed p-2.5 bg-white/5 rounded-lg m-0">📍 {selectedLocation?.address}</p>
+                <LocationDetailBlock details={selectedLocation} />
+                <div className="flex justify-center pt-1">
+                  <button className="bg-gradient-to-br from-[#6fe7ff] to-[#0099cc] text-black border-none p-3 px-6 rounded-lg font-bold cursor-pointer text-sm w-full transition-transform hover:scale-[1.02]" onClick={navigateToSelectedLocation}>Navigate ➤</button>
                 </div>
               </div>
             </div>

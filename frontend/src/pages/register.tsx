@@ -6,11 +6,14 @@ import {useNavigate } from 'react-router-dom';
 import Body from '../components/body';
 
 const Register = () => {
+	const AUTH_BASE_URL = (import.meta.env.VITE_AUTH_BASE_URL || import.meta.env.PUBLIC_AUTH_BASE_URL || 'http://localhost:5173').trim();
+	const registerUrl = AUTH_BASE_URL ? `${AUTH_BASE_URL}/auth/register` : '/auth/register';
 	const [username, setUsername] = useState('');
 	const [password, setPassword] = useState('');
 	const [email, setEmail] = useState('');
 	const [confirmPassword, setConfirmPassword] = useState('');
 	const [submitError, setSubmitError] = useState('');
+	const [isSubmitting, setIsSubmitting] = useState(false);
 	const navigate = useNavigate();
 
 	const isPasswordValid = password.length >= 8 && /\d/.test(password) && /[a-zA-Z]/.test(password);
@@ -19,38 +22,66 @@ const Register = () => {
 	const handleRegister = async (e: React.FormEvent) => {
 		e.preventDefault();
 		setSubmitError('');
-		const url = 'http://localhost:5173/auth/register';
 		if (!doPasswordsMatch) {
+			setSubmitError('Passwords do not match.');
 			return;
 		}
 
 
 		if (!isPasswordValid) {
+			setSubmitError('Password must be at least 8 characters long and contain both letters and numbers.');
 			return;
 		}
 
 		const formData = new FormData();
-		formData.append('username', username);
-		formData.append('password', password);
-		formData.append('email', email);
+		const normalizedUsername = username.trim();
+		const normalizedEmail = email.trim().toLowerCase();
+		const normalizedPassword = password;
+		formData.append('username', normalizedUsername);
+		formData.append('password', normalizedPassword);
+		formData.append('email', normalizedEmail);
 
 		try {
-			const response = await fetch(url, {
+			setIsSubmitting(true);
+			const response = await fetch(registerUrl, {
 				method: 'POST',
 				body: formData,
 				credentials: 'include'
 			});
+
+			const contentType = response.headers.get('content-type') || '';
+			const isJson = contentType.includes('application/json');
+			const data = isJson ? await response.json().catch(() => ({} as any)) : null;
+
 			if (response.ok) {
-				await response.json();
 				navigate('/dashboard');
-			} else {
-				const errorData = await response.json();
-				setSubmitError(errorData.message || 'Failed to create account.');
-				console.error('Failed to create account:', response.statusText);
+				return;
 			}
+
+			if (isJson && data?.message) {
+				setSubmitError(data.message);
+				return;
+			}
+
+			const text = await response.text().catch(() => '');
+			const normalized = text.toLowerCase();
+
+			if (normalized.includes('unique constraint failed: user.email')) {
+				setSubmitError('An account with this email already exists.');
+				return;
+			}
+
+			if (normalized.includes('unique constraint failed: user.username') || normalized.includes('username already exists')) {
+				setSubmitError('Username already exists.');
+				return;
+			}
+
+			setSubmitError(`Failed to create account (${response.status}).`);
 		} catch (error) {
-			setSubmitError('Network error occurred.');
+			setSubmitError('Request blocked. This usually means the email already exists or backend returned an exception page. Try a different email or sign in.');
 			console.error('Network error:', error);
+		} finally {
+			setIsSubmitting(false);
 		}
 	};
 
@@ -120,9 +151,10 @@ const Register = () => {
 					{submitError && <p className="text-red-400 text-sm text-center">{submitError}</p>}
 					<button
 						type="submit"
-						className="w-full rounded-lg bg-sky-500 py-3 font-semibold text-white hover:bg-sky-400 active:scale-[0.98] transition-all shadow-lg "
+						disabled={isSubmitting}
+						className="w-full rounded-lg bg-sky-500 py-3 font-semibold text-white hover:bg-sky-400 active:scale-[0.98] transition-all shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
 					>
-						Sign Up
+						{isSubmitting ? 'Creating Account...' : 'Sign Up'}
 					</button>
 				</form>
 			</Card>
