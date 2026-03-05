@@ -4,16 +4,19 @@ import Links from '../components/links';
 import Navbar from '../components/navbar';
 import {useNavigate } from 'react-router-dom';
 import Body from '../components/body';
+import HCaptchaWidget from '../components/hcaptchaWidget';
 
 const Register = () => {
 	const AUTH_BASE_URL = (import.meta.env.VITE_AUTH_BASE_URL || import.meta.env.PUBLIC_AUTH_BASE_URL || 'http://localhost:5173').trim();
 	const registerUrl = AUTH_BASE_URL ? `${AUTH_BASE_URL}/auth/register` : '/auth/register';
+	const HCAPTCHA_SITE_KEY = (import.meta.env.VITE_HCAPTCHA_SITE_KEY || import.meta.env.PUBLIC_HCAPTCHA_SITE_KEY || '').trim();
 	const [username, setUsername] = useState('');
 	const [password, setPassword] = useState('');
 	const [email, setEmail] = useState('');
 	const [confirmPassword, setConfirmPassword] = useState('');
 	const [submitError, setSubmitError] = useState('');
 	const [isSubmitting, setIsSubmitting] = useState(false);
+	const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 	const navigate = useNavigate();
 
 	const isPasswordValid = password.length >= 8 && /\d/.test(password) && /[a-zA-Z]/.test(password);
@@ -33,6 +36,8 @@ const Register = () => {
 			return;
 		}
 
+		if (!captchaToken) return;
+
 		const formData = new FormData();
 		const normalizedUsername = username.trim();
 		const normalizedEmail = email.trim().toLowerCase();
@@ -40,6 +45,7 @@ const Register = () => {
 		formData.append('username', normalizedUsername);
 		formData.append('password', normalizedPassword);
 		formData.append('email', normalizedEmail);
+		formData.append('captcha_token', captchaToken);
 
 		try {
 			setIsSubmitting(true);
@@ -148,10 +154,11 @@ const Register = () => {
 							</p>
 						)}
 					</div>
+					<HCaptchaWidget siteKey={HCAPTCHA_SITE_KEY} onVerifyToken={setCaptchaToken} />
 					{submitError && <p className="text-red-400 text-sm text-center">{submitError}</p>}
 					<button
 						type="submit"
-						disabled={isSubmitting}
+						disabled={isSubmitting || !captchaToken}
 						className="w-full rounded-lg bg-sky-500 py-3 font-semibold text-white hover:bg-sky-400 active:scale-[0.98] transition-all shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
 					>
 						{isSubmitting ? 'Creating Account...' : 'Sign Up'}

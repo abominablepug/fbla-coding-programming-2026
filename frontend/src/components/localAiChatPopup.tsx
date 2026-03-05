@@ -52,6 +52,7 @@ const LocalAiChatPopup = ({
   const [chatInput, setChatInput] = useState('');
   const [chatLoading, setChatLoading] = useState(false);
   const [routingTarget, setRoutingTarget] = useState<string | null>(null);
+  const [latestTomTomPlaces, setLatestTomTomPlaces] = useState<LocalPlace[]>([]);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
     {
       role: 'assistant',
@@ -121,6 +122,37 @@ const LocalAiChatPopup = ({
     } catch (error) {
       console.error('Local recommendations lookup failed:', error);
       return null;
+    }
+  };
+
+  const fetchTomTomPlaces = async (rawMessage: string, limit = 8): Promise<LocalPlace[]> => {
+    if (!TOMTOM_API_KEY || !effectiveLocation) return [];
+    const query = inferLocalSearchQuery(rawMessage);
+    try {
+      const res = await fetch(
+        `https://api.tomtom.com/search/2/search/${encodeURIComponent(query)}.json?key=${encodeURIComponent(
+          TOMTOM_API_KEY
+        )}&lat=${encodeURIComponent(String(effectiveLocation.lat))}&lon=${encodeURIComponent(
+          String(effectiveLocation.lng)
+        )}&radius=16093&limit=${Math.max(1, Math.min(20, limit))}&openingHours=nextSevenDays`
+      );
+      if (!res.ok) return [];
+      const data = await res.json();
+      const results = Array.isArray(data?.results) ? data.results : [];
+      return results
+        .filter((r: any) => r?.position && Number.isFinite(r.position.lat) && Number.isFinite(r.position.lon))
+        .map((r: any) => ({
+          name: r?.poi?.name || r?.address?.freeformAddress || 'Unknown',
+          address: r?.address?.freeformAddress || 'Address unavailable',
+          latitude: Number(r.position.lat),
+          longitude: Number(r.position.lon),
+          isOpen: typeof r?.poi?.openingHours?.openNow === 'boolean' ? r.poi.openingHours.openNow : null,
+          rating: typeof r?.score === 'number' ? r.score : null,
+        }))
+        .slice(0, limit);
+    } catch (error) {
+      console.error('TomTom live place fetch failed:', error);
+      return [];
     }
   };
 
@@ -203,6 +235,16 @@ const LocalAiChatPopup = ({
     () => [...favoriteLocations, ...effectiveVisitedLocations, ...likedLocations, ...selectedPois],
     [favoriteLocations, effectiveVisitedLocations, likedLocations, selectedPois]
   );
+  const allRouteablePlaces = useMemo(() => {
+    const merged = [...allKnownPlaces, ...latestTomTomPlaces];
+    const seen = new Set<string>();
+    return merged.filter((place) => {
+      const key = `${(place.name || '').trim().toLowerCase()}|${(place.address || '').trim().toLowerCase()}|${place.latitude}|${place.longitude}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [allKnownPlaces, latestTomTomPlaces]);
 
   const summarizePlaces = (title: string, places: LocalPlace[]) => {
     const summary = places
@@ -250,9 +292,10 @@ const LocalAiChatPopup = ({
     return `Nearest place: ${nearest.name} (${nearest.distance.toFixed(2)} miles). Farthest place: ${farthest.name} (${farthest.distance.toFixed(2)} miles).`;
   };
 
-  const buildFallbackResponse = (message: string): string => {
+  const buildFallbackResponse = (message: string, livePlaces: LocalPlace[] = []): string => {
     const lower = message.toLowerCase();
-    const local = allKnownPlaces
+    const sourcePlaces = livePlaces.length > 0 ? livePlaces : allKnownPlaces;
+    const local = sourcePlaces
       .filter((place) => Number.isFinite(place.latitude) && Number.isFinite(place.longitude))
       .slice(0, 5);
     if (local.length === 0) {
@@ -276,7 +319,7 @@ const LocalAiChatPopup = ({
       .join('\n')}\n\nAsk for nearest, farthest, or route options and I can guide you.`;
   };
 
-  const buildLocalContext = () => {
+  const buildLocalContext = (liveTomTomPlaces: LocalPlace[] = []) => {
     const currentLocLine =
       effectiveLocation && Number.isFinite(effectiveLocation.lat) && Number.isFinite(effectiveLocation.lng)
         ? `Current user location: [${effectiveLocation.lat}, ${effectiveLocation.lng}].`
@@ -291,9 +334,11 @@ const LocalAiChatPopup = ({
       summarizePlaces('Newly liked locations', likedLocations),
       summarizePlaces('Selected POIs', selectedPois),
       summarizePlaces('All known map/popup locations', allKnownPlaces),
+      summarizePlaces('Live TomTom places nearby (primary)', liveTomTomPlaces),
       `Current highlighted selection: ${activeSelectionLabel || 'None'}.`,
       nearestAndFarthestSummary(),
       'You must answer only about local locations, routes, navigation, POIs, and local business recommendations.',
+      'Treat Live TomTom places nearby (primary) as the main source for recommendations when available.',
       'Prioritize places in the user vicinity. Prefer options within roughly 10 miles of current location when possible.',
       'Never ask the user for their location and never ask them to confirm their location.',
       'Use provided current location, selected POIs, and known map/popup locations directly.',
@@ -343,7 +388,7 @@ const LocalAiChatPopup = ({
 
     const uniqueKnownPlaces: LocalPlace[] = [];
     const seen = new Set<string>();
-    for (const place of allKnownPlaces) {
+    for (const place of allRouteablePlaces) {
       const key = `${normalizeText(place.name || '')}|${normalizeText(place.address || '')}`;
       if (!key || seen.has(key)) continue;
       seen.add(key);
@@ -364,7 +409,7 @@ const LocalAiChatPopup = ({
   const routeToKnownPlace = (query: string): boolean => {
     const q = normalizeText(query);
     if (!q) return false;
-    const scored = allKnownPlaces
+    const scored = allRouteablePlaces
       .map((place) => {
         const name = normalizeText(place.name || '');
         const address = normalizeText(place.address || '');
@@ -489,10 +534,12 @@ const LocalAiChatPopup = ({
     const message = chatInput.trim();
     if (!message || chatLoading) return;
     if (!AI_API_KEY) {
+      const liveTomTomPlaces = await fetchTomTomPlaces(message, 8);
+      setLatestTomTomPlaces(liveTomTomPlaces);
       const localReply = await getLocalRecommendations(message);
       setChatMessages((prev) => [
         ...prev,
-        { role: 'assistant', content: localReply || buildFallbackResponse(message) },
+        { role: 'assistant', content: localReply || buildFallbackResponse(message, liveTomTomPlaces) },
       ]);
       setChatInput('');
       return;
@@ -502,8 +549,12 @@ const LocalAiChatPopup = ({
     setChatMessages(nextMessages);
     setChatInput('');
     setChatLoading(true);
+    let liveTomTomPlacesForTurn: LocalPlace[] = [];
 
     try {
+      liveTomTomPlacesForTurn = await fetchTomTomPlaces(message, 8);
+      setLatestTomTomPlaces(liveTomTomPlacesForTurn);
+
       if (isLocalDiscoveryIntent(message)) {
         const localReply = await getLocalRecommendations(message);
         if (localReply) {
@@ -513,7 +564,7 @@ const LocalAiChatPopup = ({
       }
 
       const aiMessages = [
-        { role: 'user', content: `Context:\n${buildLocalContext()}` },
+        { role: 'user', content: `Context:\n${buildLocalContext(liveTomTomPlacesForTurn)}` },
         ...nextMessages.map((m) => ({
           role: m.role,
           content: m.content,
@@ -551,7 +602,7 @@ const LocalAiChatPopup = ({
           content:
             (error instanceof Error ? error.message : 'AI error.') +
             '\n\n' +
-            (localReply || buildFallbackResponse(message)),
+            (localReply || buildFallbackResponse(message, liveTomTomPlacesForTurn)),
         },
       ]);
     } finally {

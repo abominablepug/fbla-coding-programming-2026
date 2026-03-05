@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Heart, MapPin } from 'lucide-react';
+import { Heart, House, MapPin, TicketPercent } from 'lucide-react';
 import Navbar from '../components/navbar';
 import Links from '../components/links';
 import Body from '../components/body';
@@ -8,6 +8,7 @@ import Card from '../components/card';
 import { enqueueAlert } from '../components/alerts';
 import LocalAiChatPopup from '../components/localAiChatPopup';
 import { POST as getAiChatResponse } from '../utils/aiChatResponse';
+import googleSampleReviews from '../data/googleSampleReviews.json';
 import {
   fetchTomTomPoiDetailsForLocation,
   formatBusinessHoursForDisplay,
@@ -43,14 +44,13 @@ interface BackendReviewsResponse {
   reviews?: BackendReview[];
 }
 
-interface FsqTip {
-  id?: string;
-  text?: string;
-  created_at?: string;
+interface SampleGoogleReview {
+  name: string;
+  star_rating: number;
+  content: string;
+  relative_time: string;
 }
 
-const FOURSQUARE_API_KEY =
-  import.meta.env.VITE_FOURSQUARE_API_KEY || import.meta.env.PUBLIC_FOURSQUARE_API_KEY;
 const TOMTOM_API_KEY =
   import.meta.env.VITE_TOMTOM_API_KEY ||
   import.meta.env.PUBLIC_TOMTOM_API_KEY ||
@@ -127,11 +127,6 @@ const ReviewsPage = () => {
   const [reviewPrompt, setReviewPrompt] = useState('');
   const [generatingReview, setGeneratingReview] = useState(false);
 
-  const [loadingFsq, setLoadingFsq] = useState(false);
-  const [fsqRating, setFsqRating] = useState<number | null>(null);
-  const [fsqTips, setFsqTips] = useState<FsqTip[]>([]);
-  const [fsqError, setFsqError] = useState<string | null>(null);
-
   const allReviewableLocations = useMemo(() => {
     const merged = [...favoriteLocations, ...recentlyViewedLocations];
     const seen = new Set<number>();
@@ -146,6 +141,35 @@ const ReviewsPage = () => {
     () => allReviewableLocations.find((loc) => loc.lid === selectedLocationId) || null,
     [allReviewableLocations, selectedLocationId]
   );
+  const sampleGoogleReviewsForSelected = useMemo(() => {
+    if (!selectedLocation) return [] as SampleGoogleReview[];
+    const base = googleSampleReviews as SampleGoogleReview[];
+    if (!Array.isArray(base) || base.length === 0) return [];
+
+    const seedSource = `${selectedLocation.name}|${selectedLocation.address || ''}|${selectedLocation.lid}`;
+    const seed = seedSource.split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+    const count = Math.min(4, base.length);
+    const selected: SampleGoogleReview[] = [];
+
+    for (let i = 0; i < count; i++) {
+      const idx = (seed + i * 3) % base.length;
+      const item = base[idx];
+      const variation = ((seed + i) % 3) - 1;
+      selected.push({
+        ...item,
+        star_rating: Math.max(3, Math.min(5, item.star_rating + variation)),
+      });
+    }
+
+    return selected;
+  }, [selectedLocation]);
+  const sampleGoogleRating = useMemo(() => {
+    if (sampleGoogleReviewsForSelected.length === 0) return null;
+    const avg =
+      sampleGoogleReviewsForSelected.reduce((sum, row) => sum + row.star_rating, 0) /
+      sampleGoogleReviewsForSelected.length;
+    return avg;
+  }, [sampleGoogleReviewsForSelected]);
   const requestedLocationId = useMemo(() => {
     const raw = searchParams.get('locationId');
     const parsed = Number(raw);
@@ -299,108 +323,6 @@ const ReviewsPage = () => {
     }
   };
 
-  const fetchFoursquareData = async (location: Location) => {
-    setLoadingFsq(true);
-    setFsqError(null);
-    setFsqRating(null);
-    setFsqTips([]);
-
-    if (!FOURSQUARE_API_KEY) {
-      setFsqError('Missing Foursquare API key in frontend env.');
-      setLoadingFsq(false);
-      return;
-    }
-
-    try {
-      const headers = {
-        Authorization: FOURSQUARE_API_KEY,
-        Accept: 'application/json',
-      };
-
-      const searchRes = await fetch(
-        `https://api.foursquare.com/v3/places/search?query=${encodeURIComponent(location.name)}&ll=${location.latitude},${location.longitude}&radius=1800&limit=5`,
-        { headers }
-      );
-
-      if (searchRes.status === 401 || searchRes.status === 403) {
-        setFsqError('Foursquare authorization failed (401/403). Check key permissions/plan for Places API v3.');
-        return;
-      }
-      if (!searchRes.ok) {
-        setFsqError(`Foursquare search failed (${searchRes.status}).`);
-        return;
-      }
-
-      const searchData = await searchRes.json();
-      const results = Array.isArray(searchData?.results) ? searchData.results : [];
-      if (results.length === 0) {
-        setFsqError('No Foursquare place match found.');
-        return;
-      }
-
-      const normalizedTarget = location.name.toLowerCase().trim();
-      const bestMatch =
-        results.find((r: { name?: string }) => (r?.name || '').toLowerCase().trim() === normalizedTarget) ||
-        results[0];
-
-      const fsqId = bestMatch?.fsq_id;
-      if (!fsqId) {
-        setFsqError('Foursquare place id missing.');
-        return;
-      }
-
-      const detailsRes = await fetch(
-        `https://api.foursquare.com/v3/places/${fsqId}?fields=rating`,
-        { headers }
-      );
-
-      if (detailsRes.status === 401 || detailsRes.status === 403) {
-        setFsqError('Foursquare authorization failed while loading rating.');
-        return;
-      }
-      if (detailsRes.ok) {
-        const detailsData = await detailsRes.json();
-        const rating = typeof detailsData?.rating === 'number' ? detailsData.rating : null;
-        setFsqRating(rating);
-      }
-
-      const tipsRes = await fetch(
-        `https://api.foursquare.com/v3/places/${fsqId}/tips?limit=10`,
-        { headers }
-      );
-
-      if (tipsRes.status === 401 || tipsRes.status === 403) {
-        setFsqError('Foursquare authorization failed while loading tips.');
-        return;
-      }
-      if (!tipsRes.ok) {
-        setFsqError(`Foursquare tips request failed (${tipsRes.status}).`);
-        return;
-      }
-
-      const tipsData = await tipsRes.json();
-      const tipRows = Array.isArray(tipsData)
-        ? tipsData
-        : Array.isArray(tipsData?.results)
-        ? tipsData.results
-        : [];
-
-      setFsqTips(
-        tipRows.map((tip: { id?: string; text?: string; created_at?: string }) => ({
-          id: tip?.id,
-          text: tip?.text,
-          created_at: tip?.created_at,
-        }))
-      );
-      setFsqError(null);
-    } catch (error) {
-      console.error('Error loading Foursquare data:', error);
-      setFsqError('Foursquare request failed.');
-    } finally {
-      setLoadingFsq(false);
-    }
-  };
-
   useEffect(() => {
     void fetchProfile();
     void fetchFavorites();
@@ -410,7 +332,6 @@ const ReviewsPage = () => {
   useEffect(() => {
     if (!selectedLocation) return;
     void fetchBackendReviews(selectedLocation.lid, user);
-    void fetchFoursquareData(selectedLocation);
   }, [selectedLocation?.lid, user?.uid]);
 
   useEffect(() => {
@@ -497,9 +418,10 @@ const ReviewsPage = () => {
   return (
     <Body>
       <Navbar page="Reviews">
-        <Links link="/dashboard">Dashboard</Links>
+        <Links link="/dashboard">Dashboard <House size={18} /></Links>
         <Links link="/map">Map <MapPin size={18} /></Links>
         <Links link="/tinder">Findr <Heart size={18} /></Links>
+        <Links link="/discount">Coupons <TicketPercent size={18} /></Links>
       </Navbar>
 
       <div className="pt-28 pb-16 mx-auto w-[96%] max-w-7xl space-y-6">
@@ -544,14 +466,14 @@ const ReviewsPage = () => {
                 </div>
               )}
               cardClassName="w-full border border-white/10 shadow-[0_10px_34px_rgba(0,0,0,0.24)]"
-              contentClassName="space-y-3"
+              contentClassName="space-y-3 min-h-[48vh]"
             >
               {!favoritesCollapsed && (loadingFavorites ? (
                 <p className="text-gray-400">Loading favorites...</p>
               ) : favoriteLocations.length === 0 ? (
                 <p className="text-gray-400">No favorite locations yet.</p>
               ) : (
-                <div className="space-y-3 max-h-[36vh] overflow-y-auto pr-1">
+                <div className="space-y-3 max-h-[44vh] overflow-y-auto pr-1">
                   {favoriteLocations.map((loc) => (
                     <button
                       key={`fav-${loc.lid}`}
@@ -588,14 +510,14 @@ const ReviewsPage = () => {
                 </div>
               )}
               cardClassName="w-full border border-white/10 shadow-[0_10px_34px_rgba(0,0,0,0.24)]"
-              contentClassName="space-y-3"
+              contentClassName="space-y-3 min-h-[48vh]"
             >
               {!recentCollapsed && (loadingRecentlyViewed ? (
                 <p className="text-gray-400">Loading recently viewed...</p>
               ) : recentlyViewedLocations.length === 0 ? (
                 <p className="text-gray-400">No recently viewed locations yet.</p>
               ) : (
-                <div className="space-y-3 max-h-[36vh] overflow-y-auto pr-1">
+                <div className="space-y-3 max-h-[44vh] overflow-y-auto pr-1">
                   {recentlyViewedLocations.map((loc) => (
                     <button
                       key={`recent-${loc.lid}`}
@@ -631,7 +553,7 @@ const ReviewsPage = () => {
                         Address: {selectedLocation.address || 'N/A'}
                       </div>
                       <div className="rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-gray-300">
-                        Foursquare Rating: {loadingFsq ? 'Loading...' : fsqRating != null ? `${fsqRating.toFixed(1)} ★` : 'N/A'}
+                        Google Rating: {sampleGoogleRating != null ? `${sampleGoogleRating.toFixed(1)} ★` : 'N/A'}
                       </div>
                       <div className="rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-gray-300">
                         Phone: {selectedLocation.phone || 'N/A'}
@@ -654,19 +576,24 @@ const ReviewsPage = () => {
                   <div className="rounded-xl border border-white/10 bg-neutral-800/55 p-4">
                     <h3 className="text-cyan-300 font-semibold">Location Details</h3>
                     <LocationDetailBlock loc={selectedLocation} />
-                    {fsqError && <p className="text-xs text-amber-300 mt-2">{fsqError}</p>}
                   </div>
 
                   <div className="rounded-xl border border-white/10 bg-neutral-800/55 p-4">
-                    <h3 className="text-cyan-300 font-semibold">Foursquare Tips</h3>
-                    {loadingFsq ? (
-                      <p className="text-gray-400 text-sm mt-2">Loading tips...</p>
-                    ) : fsqTips.length === 0 ? (
-                      <p className="text-gray-400 text-sm mt-2">No tips available.</p>
+                    <h3 className="text-cyan-300 font-semibold">Google Reviews</h3>
+                    {sampleGoogleReviewsForSelected.length === 0 ? (
+                      <p className="text-gray-400 text-sm mt-2">No sample Google reviews available.</p>
                     ) : (
-                      <div className="mt-2 space-y-2 max-h-[220px] overflow-y-auto pr-1">
-                        {fsqTips.map((tip, idx) => (
-                          <p key={tip.id || idx} className="text-sm text-gray-300">• {tip.text || 'No content'}</p>
+                      <div className="mt-2 space-y-2 max-h-[260px] overflow-y-auto pr-1">
+                        {sampleGoogleReviewsForSelected.map((review, idx) => (
+                          <div key={`${review.name}-${idx}`} className="rounded-lg border border-white/10 p-3">
+                            <p className="text-sm text-cyan-200">
+                              {review.name}
+                              {' • '}
+                              {'★'.repeat(Math.max(1, Math.min(5, review.star_rating)))}
+                            </p>
+                            <p className="text-xs text-gray-500 mt-1">{review.relative_time}</p>
+                            <p className="text-sm text-gray-300 mt-1">{review.content}</p>
+                          </div>
                         ))}
                       </div>
                     )}

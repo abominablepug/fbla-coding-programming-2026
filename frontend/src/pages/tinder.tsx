@@ -2,13 +2,14 @@ import { useEffect, useMemo, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Navbar from '../components/navbar';
 import Card from '../components/card';
-import { HeartPlus, MapPin, House, X } from 'lucide-react';
+import { HeartPlus, MapPin, House, Star, TicketPercent, X } from 'lucide-react';
 import { getCommonsImage } from '../utils/getCommonsImage';
 import {useNavigate } from 'react-router-dom';
 import Links from '../components/links';
 import Body from '../components/body';
 import { enqueueAlert } from '../components/alerts';
 import LocalAiChatPopup from '../components/localAiChatPopup';
+import LocationReviewsPopup from '../components/locationReviewsPopup';
 
 interface Business {
     name: string;
@@ -412,14 +413,17 @@ const TinderPage = () => {
     return (
             <Body className="overscroll-none">
                 <Navbar page="Findr">
-                    <Links link="/map">
-                        Map<MapPin size={22}/>
-                    </Links>
                     <Links link="/dashboard">
                         Dashboard <House size={17} />
                     </Links>
+                    <Links link="/map">
+                        Map<MapPin size={22}/>
+                    </Links>
+                    <Links link="/discount">
+                        Coupons <TicketPercent size={18} />
+                    </Links>
                     <Links link="/reviews">
-                        Reviews
+                        Reviews <Star size={18} />
                     </Links>
                     
                 </Navbar>
@@ -505,6 +509,12 @@ const TinderPage = () => {
                                                     <p className="text-white text-sm leading-relaxed"><strong>Distance:</strong> {(currentBusiness.distance_meters / 1609.34).toFixed(2)} miles</p>
                                                     <p className="text-white text-sm leading-relaxed"><strong>Categories:</strong> {currentBusiness.category?.map(category => titleCase(category)).join(', ') || 'N/A'}</p>
                                                     <p className="text-cyan-50 text-sm mt-2 truncate"><strong>{getOtherDetailsLine(currentBusiness)}</strong></p>
+                                                    <div className="mt-3">
+                                                        <LocationReviewsPopup
+                                                            location={{ lid: currentBusiness.lid, name: currentBusiness.name, address: currentBusiness.address }}
+                                                            buttonClassName="rounded-md border border-white/20 bg-white/5 px-3 py-2 text-xs text-gray-100 hover:bg-white/10"
+                                                        />
+                                                    </div>
                                                 </div>
                                             {currentBusiness.imageUrl && (
                                                 <div className="relative w-[176px] h-[126px] rounded-xl overflow-hidden border-2 border-cyan-300/75 shadow-[0_0_0_2px_rgba(34,211,238,0.2)] shrink-0">
@@ -605,6 +615,12 @@ const TinderPage = () => {
                                                 <p className="text-gray-400 text-sm">{loc.address}</p>
                                                 {renderFavoriteDetails(loc)}
                                             </div>
+                                            <div className="mt-2 flex justify-end">
+                                                <LocationReviewsPopup
+                                                    location={{ lid: loc.lid, name: loc.name, address: loc.address }}
+                                                    buttonClassName="rounded-md border border-white/20 bg-white/5 px-2.5 py-1.5 text-xs text-gray-200 hover:bg-white/10"
+                                                />
+                                            </div>
                                         </div> 
                                     ))
                                 )}
@@ -618,6 +634,12 @@ const TinderPage = () => {
                                         <h4 className="text-cyan-300 text-lg font-semibold">{loc.name}</h4>
                                         <p className="text-gray-400 text-sm">{loc.address}</p>
                                         {renderFavoriteDetails(loc)}
+                                        <div className="mt-2 flex justify-end" onClick={(e) => e.stopPropagation()}>
+                                            <LocationReviewsPopup
+                                                location={{ lid: loc.lid, name: loc.name, address: loc.address }}
+                                                buttonClassName="rounded-md border border-white/20 bg-white/5 px-2.5 py-1.5 text-xs text-gray-200 hover:bg-white/10"
+                                            />
+                                        </div>
                                     </div>
                                 ))}
                             </div>

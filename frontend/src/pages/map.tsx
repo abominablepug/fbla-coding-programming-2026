@@ -6,9 +6,10 @@ import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion'
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import Navbar from '../components/navbar';
 import Links from '../components/links';
-import {House, Heart, HeartPlus} from 'lucide-react';
+import {House, Heart, HeartPlus, Star, TicketPercent} from 'lucide-react';
 import { enqueueAlert } from '../components/alerts';
 import LocalAiChatPopup from '../components/localAiChatPopup';
+import LocationReviewsPopup from '../components/locationReviewsPopup';
 import {
   extractTomTomPoiDetails,
   fetchTomTomPoiDetailsForLocation,
@@ -1458,14 +1459,17 @@ useEffect(() => {
 
           {/*hiding sidebar*/}
           <Navbar page={`Map`}> 
-            <Links link="tinder" className="text-[15px]">
-              Findr <Heart size={18}/>
-            </Links>
             <Links link="dashboard" className="text-[15px]">
               Dashboard <House size={18} />
             </Links>
+            <Links link="tinder" className="text-[15px]">
+              Findr <Heart size={18}/>
+            </Links>
+            <Links link="discount" className="text-[15px]">
+              Coupons <TicketPercent size={18} />
+            </Links>
             <Links link="reviews" className="text-[15px]">
-              Reviews
+              Reviews <Star size={18} />
             </Links>
           </Navbar>        
           {/*Animation for loading map*/}
@@ -1501,7 +1505,6 @@ useEffect(() => {
                   <div>
                     <h4 className="m-0 text-[#00d4ff] text-md">{stats.name}</h4>
                     <p className="m-0 mt-0.5 text-gray-400 text-[11px]">{stats.miles} mi • {stats.mins} min</p>
-                    <LocationDetailBlock details={routeFavoriteLocation || undefined} />
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -1670,6 +1673,12 @@ useEffect(() => {
                                                 <p className="text-gray-400 text-sm">{loc.address}</p>
                                                 <LocationDetailBlock details={loc} />
                                             </div>
+                                            <div className="mt-2 flex justify-end">
+                                              <LocationReviewsPopup
+                                                location={{ lid: loc.lid, name: loc.name, address: loc.address }}
+                                                buttonClassName="rounded-md border border-white/20 bg-white/5 px-2.5 py-1.5 text-xs text-gray-200 hover:bg-white/10"
+                                              />
+                                            </div>
                                         </div> 
                                     ))
                                 )}
@@ -1683,6 +1692,12 @@ useEffect(() => {
                                         <h4 className="text-cyan-300 text-lg font-semibold">{loc.name}</h4>
                                         <p className="text-gray-400 text-sm">{loc.address}</p>
                                         <LocationDetailBlock details={loc} />
+                                        <div className="mt-2 flex justify-end" onClick={(e) => e.stopPropagation()}>
+                                          <LocationReviewsPopup
+                                            location={{ lid: loc.lid, name: loc.name, address: loc.address }}
+                                            buttonClassName="rounded-md border border-white/20 bg-white/5 px-2.5 py-1.5 text-xs text-gray-200 hover:bg-white/10"
+                                          />
+                                        </div>
                                     </div>
                                 ))}
                             </div>
@@ -1756,6 +1771,12 @@ useEffect(() => {
                               </p>
                             )}
                             <LocationDetailBlock details={poi} />
+                            <div className="mt-2" onClick={(e) => e.stopPropagation()}>
+                              <LocationReviewsPopup
+                                location={{ name: poi.name, address: poi.address }}
+                                buttonClassName="rounded-md border border-white/20 bg-white/5 px-2.5 py-1.5 text-xs text-gray-200 hover:bg-white/10"
+                              />
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -1803,6 +1824,14 @@ useEffect(() => {
               <div className="flex gap-2.5">
                 <button className="flex-[2] bg-[#00d4ff] text-black border-none p-2.5 rounded-lg font-bold cursor-pointer hover:bg-[#00b7db]" onClick={startNavigation}>Start Navigation</button>                
                 <button className="flex-1 bg-neutral-800 text-white border-none p-2.5 rounded-lg cursor-pointer hover:bg-neutral-700" onClick={() => { setStats(null); clearMap(); }}>Close</button>
+                <LocationReviewsPopup
+                  location={{
+                    lid: routeFavoriteLocation?.lid,
+                    name: stats.name,
+                    address: routeFavoriteLocation?.address || stats.name,
+                  }}
+                  buttonClassName="rounded-lg border border-neutral-700 bg-neutral-800 text-white px-2.5 py-2 text-xs hover:bg-neutral-700"
+                />
                 <button className="flex items-center justify-center bg-neutral-800 border-none w-8 h-8 text-white rounded-full cursor-pointer text-sm hover:bg-neutral-700" onClick={addRouteLocationToFavorites}><HeartPlus className="justify-center items-center text-green-500 drop-shadow-lg"/></button>
               </div>
             </div>
@@ -1833,8 +1862,16 @@ useEffect(() => {
                 )}
                 <p className="text-white text-sm leading-relaxed p-2.5 bg-white/5 rounded-lg m-0">📍 {selectedLocation?.address}</p>
                 <LocationDetailBlock details={selectedLocation} />
-                <div className="flex justify-center pt-1">
-                  <button className="bg-gradient-to-br from-[#6fe7ff] to-[#0099cc] text-black border-none p-3 px-6 rounded-lg font-bold cursor-pointer text-sm w-full transition-transform hover:scale-[1.02]" onClick={navigateToSelectedLocation}>Navigate ➤</button>
+                <div className="flex justify-center pt-1 gap-2">
+                  <button className="bg-gradient-to-br from-[#6fe7ff] to-[#0099cc] text-black border-none p-3 px-6 rounded-lg font-bold cursor-pointer text-sm flex-1 transition-transform hover:scale-[1.02]" onClick={navigateToSelectedLocation}>Navigate ➤</button>
+                  <LocationReviewsPopup
+                    location={{
+                      lid: selectedLocation?.lid,
+                      name: selectedLocation?.name || 'Selected Location',
+                      address: selectedLocation?.address,
+                    }}
+                    buttonClassName="rounded-lg border border-white/20 bg-white/5 px-3 py-3 text-xs text-gray-200 hover:bg-white/10"
+                  />
                 </div>
               </div>
             </div>

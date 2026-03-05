@@ -3,7 +3,7 @@ import Card from "../components/card";
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/navbar';
 import Links from '../components/links';
-import { Heart, HeartMinus, MapPin } from 'lucide-react';
+import { BookmarkCheck, Heart, HeartMinus, HeartPlus, MapPin, Star, TicketPercent } from 'lucide-react';
 import Body from '../components/body';
 import { enqueueAlert } from '../components/alerts';
 import LocalAiChatPopup from '../components/localAiChatPopup';
@@ -31,6 +31,31 @@ interface Location {
 	businessHours?: string[];
 	socials?: SocialLink[];
 }
+
+interface SavedCouponMeta {
+	key: string;
+	name: string;
+	title: string;
+	discountLabel: string;
+	code: string;
+	lid: number;
+	sourceType: 'personal' | 'nearby';
+	address?: string;
+}
+
+const dedupeDashboardLocations = (locations: Location[]): Location[] => {
+	const seen = new Set<string>();
+	return locations.filter((loc) => {
+		const key = loc.lid > 0
+			? `lid:${loc.lid}`
+			: `${(loc.name || '').trim().toLowerCase()}|${(loc.address || '').trim().toLowerCase()}|${loc.latitude}|${loc.longitude}`;
+		if (seen.has(key)) return false;
+		seen.add(key);
+		return true;
+	});
+};
+
+const dedupeStrings = (values: string[]): string[] => Array.from(new Set(values));
 
 const API_KEY =
 	import.meta.env.VITE_TOMTOM_API_KEY ||
@@ -91,6 +116,9 @@ const Dashboard = () => {
 	const imageSrc = `http://localhost:5173/static/profile_pictures/${profilePic}`;
 	const [popup,setPopup] = useState(false);
 	const [showFavoritesSidebar, setShowFavoritesSidebar] = useState(false);
+	const [showCouponsSidebar, setShowCouponsSidebar] = useState(false);
+	const [savedCouponKeys, setSavedCouponKeys] = useState<string[]>([]);
+	const [savedCouponMeta, setSavedCouponMeta] = useState<Record<string, SavedCouponMeta>>({});
 	
 	const fetchFavoriteLocations = async () => {
 		setLoadingFavorites(true);
@@ -101,7 +129,7 @@ const Dashboard = () => {
 			if (response.ok) {
 				const data = await response.json();
 				if (!API_KEY) {
-					setFavoriteLocations(data);
+					setFavoriteLocations(dedupeDashboardLocations(data));
 				} else {
 					const enriched = await Promise.all(
 						data.map(async (loc: Location) => {
@@ -114,7 +142,7 @@ const Dashboard = () => {
 							return { ...loc, ...details };
 						})
 					);
-					setFavoriteLocations(enriched);
+					setFavoriteLocations(dedupeDashboardLocations(enriched));
 				}
 			} else {
 				console.error('Failed to fetch favorite locations');
@@ -188,6 +216,47 @@ const Dashboard = () => {
 		} catch (error) {
 			console.error('Error removing from favorites:', error);
 			enqueueAlert({ message: "Error removing favorite location.", textColor: "text-red-300" });
+		}
+	};
+
+	const handleFavoriteVisitedLocation = async (loc: Location) => {
+		try {
+			const createResponse = await fetch('http://localhost:5173/loc/add', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				credentials: 'include',
+				body: JSON.stringify({
+					name: loc.name,
+					address: loc.address,
+					longitude: loc.longitude,
+					latitude: loc.latitude,
+					type: 1,
+					categories: loc.categories || [],
+				}),
+			});
+
+			if (!createResponse.ok) {
+				enqueueAlert({ message: 'Failed to prepare location for favorites.', textColor: 'text-red-300' });
+				return;
+			}
+
+			const data = await createResponse.json();
+			const locationId = data?.location_id ?? loc.lid;
+			const favoriteResponse = await fetch(`http://localhost:5173/loc/${locationId}/favorite`, {
+				method: 'POST',
+				credentials: 'include',
+			});
+
+			if (!favoriteResponse.ok) {
+				enqueueAlert({ message: 'Failed to add visited location to favorites.', textColor: 'text-red-300' });
+				return;
+			}
+
+			enqueueAlert({ message: 'Visited location added to favorites.', textColor: 'text-green-300' });
+			await fetchFavoriteLocations();
+		} catch (error) {
+			console.error('Error adding visited location to favorites:', error);
+			enqueueAlert({ message: 'Error adding visited location to favorites.', textColor: 'text-red-300' });
 		}
 	};
 
@@ -343,6 +412,22 @@ const Dashboard = () => {
 					const data = await response.json();
 					setUser(data);
 					setProfilePic(data.profile_picture);
+					try {
+						const storageKey = `bizmatch_saved_coupons_${Number(data.uid)}`;
+						const raw = window.localStorage.getItem(storageKey);
+						const parsed = raw ? JSON.parse(raw) : [];
+						setSavedCouponKeys(Array.isArray(parsed) ? dedupeStrings(parsed.filter((v): v is string => typeof v === 'string')) : []);
+					} catch {
+						setSavedCouponKeys([]);
+					}
+					try {
+						const metaStorageKey = `bizmatch_saved_coupon_meta_${Number(data.uid)}`;
+						const rawMeta = window.localStorage.getItem(metaStorageKey);
+						const parsedMeta = rawMeta ? JSON.parse(rawMeta) : {};
+						setSavedCouponMeta(parsedMeta && typeof parsedMeta === 'object' ? parsedMeta : {});
+					} catch {
+						setSavedCouponMeta({});
+					}
 				} else {
 					navigate('/login');
 				}
@@ -360,6 +445,26 @@ const Dashboard = () => {
 			fetchVisitedLocations();
 		}
 	}, [user]);
+
+	useEffect(() => {
+		if (!user) return;
+		try {
+			const storageKey = `bizmatch_saved_coupons_${Number(user.uid)}`;
+			window.localStorage.setItem(storageKey, JSON.stringify(savedCouponKeys));
+		} catch {
+			// ignore storage errors
+		}
+	}, [savedCouponKeys, user]);
+
+	useEffect(() => {
+		if (!user) return;
+		try {
+			const metaStorageKey = `bizmatch_saved_coupon_meta_${Number(user.uid)}`;
+			window.localStorage.setItem(metaStorageKey, JSON.stringify(savedCouponMeta));
+		} catch {
+			// ignore storage errors
+		}
+	}, [savedCouponMeta, user]);
 
 	const handleLogout = async (e: React.MouseEvent) => {
 		e.preventDefault();
@@ -433,6 +538,58 @@ const Dashboard = () => {
 		return total;
 	}, [visitedHistory]);
 
+	const couponPreviews = useMemo(() => {
+		const allLocations = dedupeDashboardLocations([...favoriteLocations, ...visitedLocations]);
+		const uniqueByLid = allLocations.filter((loc, i, arr) => arr.findIndex((x) => x.lid === loc.lid) === i);
+		const byLid = new Map<number, Location>(uniqueByLid.map((loc) => [loc.lid, loc]));
+
+		const parsedSaved = savedCouponKeys
+			.map((key) => {
+				const [source, lidPart, code] = key.split('|');
+				const lid = Number(lidPart);
+				const meta = savedCouponMeta[key];
+				const locFromList = Number.isFinite(lid) ? byLid.get(lid) : undefined;
+				const loc: Location | null = locFromList || (meta
+					? {
+						lid: meta.lid,
+						name: meta.name,
+						address: meta.address,
+						longitude: 0,
+						latitude: 0,
+						type: 1,
+					}
+					: null);
+				if (!loc) return null;
+				return { loc, code, source, key, meta };
+			})
+			.filter(Boolean) as Array<{ loc: Location; code: string; source: string; key: string; meta?: SavedCouponMeta }>;
+
+		return parsedSaved.slice(0, 8).map((entry, idx) => {
+				const category = (entry.loc.categories?.[0] || '').toLowerCase();
+				const isFood = /(restaurant|food|cafe|coffee|pizza|bar|nightlife)/.test(category);
+				const isShop = /(shopping|store|retail|mall)/.test(category);
+				const parsedDiscount = entry.code.match(/(\d+)OFF/i)?.[1];
+				return {
+					loc: entry.loc,
+					label: entry.meta?.discountLabel || (parsedDiscount ? `${parsedDiscount}% OFF` : 'Coupon'),
+					title: entry.meta?.title || (isFood ? 'Meal Coupon' : isShop ? 'Shopping Coupon' : 'Local Coupon'),
+					code: entry.code,
+					key: entry.key,
+					index: idx,
+				};
+			});
+	}, [visitedLocations, favoriteLocations, savedCouponKeys, savedCouponMeta]);
+
+	const unsaveCouponByKey = (couponKey: string) => {
+		setSavedCouponKeys((prev) => prev.filter((key) => key !== couponKey));
+		setSavedCouponMeta((curr) => {
+			const next = { ...curr };
+			delete next[couponKey];
+			return next;
+		});
+		enqueueAlert({ message: 'Coupon unsaved.', textColor: 'text-red-300' });
+	};
+
 	if (!user) return <div className="min-h-screen bg-neutral-900 text-white flex items-center justify-center">Loading...</div>;
 
 	return (
@@ -444,8 +601,11 @@ const Dashboard = () => {
 				<Links link="tinder">
 					Findr <Heart size={22} />
 				</Links>
+				<Links link="discount">
+					Coupons <TicketPercent size={18} />
+				</Links>
 				<Links link="reviews">
-					Reviews
+					Reviews <Star size={18} />
 				</Links>
 				<Links link="/" onClick={handleLogout}>
 					Logout →
@@ -483,7 +643,7 @@ const Dashboard = () => {
 							<p className="text-black-400 text-3xl tracking-wider">Welcome back {user.username}</p>
 						</div>
 				</div> 
-				<div className="mx-auto w-[95%] grid grid-cols-1 sm:grid-cols-3 gap-2">
+				<div className="mx-auto w-[95%] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
 					<div className="rounded-lg border border-cyan-400/25 bg-neutral-900/75 px-3 py-2 text-center">
 						<p className="text-[10px] uppercase tracking-[0.08em] text-cyan-200/75">Locations Favorited</p>
 						<p className="text-lg font-semibold text-cyan-300">{favoriteLocations.length}</p>
@@ -491,6 +651,10 @@ const Dashboard = () => {
 					<div className="rounded-lg border border-cyan-400/25 bg-neutral-900/75 px-3 py-2 text-center">
 						<p className="text-[10px] uppercase tracking-[0.08em] text-cyan-200/75">Locations Visited</p>
 						<p className="text-lg font-semibold text-cyan-300">{visitedLocations.length}</p>
+					</div>
+					<div className="rounded-lg border border-cyan-400/25 bg-neutral-900/75 px-3 py-2 text-center">
+						<p className="text-[10px] uppercase tracking-[0.08em] text-cyan-200/75">Saved Coupons</p>
+						<p className="text-lg font-semibold text-cyan-300">{savedCouponKeys.length}</p>
 					</div>
 					<div className="rounded-lg border border-cyan-400/25 bg-neutral-900/75 px-3 py-2 text-center">
 						<p className="text-[10px] uppercase tracking-[0.08em] text-cyan-200/75">Distance Travelled</p>
@@ -545,20 +709,53 @@ const Dashboard = () => {
 						)}
                     </div>
                 </Card>
-				<Card title='Saved Coupons:'cardClassName='w-[89%] ease-in-out hover:shadow-cyan-500/20 hover:shadow-2xl hover:scale-102 transition-all duration-500'>
+				<Card
+					title={
+						<div className="flex items-center justify-between gap-3 text-3xl font-bold text-[#406386] line-clamp-2">
+							<span>Saved Coupons:</span>
+							<div className="flex items-center gap-2">
+								<button
+									onClick={() => setShowCouponsSidebar((prev) => !prev)}
+									className="rounded-full border border-cyan-400/40 bg-cyan-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-cyan-200 hover:bg-cyan-500/25 transition-colors"
+								>
+									{showCouponsSidebar ? 'Hide Sidebar' : 'View Saved'}
+								</button>
+								<button
+									onClick={() => navigate('/discount', { state: { from: 'dashboard' } })}
+									className="rounded-full border border-cyan-400/40 bg-cyan-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-cyan-200 hover:bg-cyan-500/25 transition-colors"
+								>
+									Go to Coupons
+								</button>
+							</div>
+						</div>
+					}
+					cardClassName='w-[89%] ease-in-out hover:shadow-cyan-500/20 hover:shadow-2xl hover:scale-102 transition-all duration-500'
+				>
 					 <div className="flex flex-col gap-4 ">
-						<div style={{color:"white"}} className="bg-neutral-800/50 p-4 rounded-xl border border-white/10 flex flex-col md:flex-row justify-between items-start md:items-center hover:bg-neutral-800/80 transition-colors">
-							<div>Coupon 1</div>
-						</div>
-						<div style={{color:"white"}} className="bg-neutral-800/50 p-4 rounded-xl border border-white/10 flex flex-col md:flex-row justify-between items-start md:items-center hover:bg-neutral-800/80 transition-colors">
-							<div>Coupon 2</div>
-						</div>
-						<div style={{color:"white"}} className="bg-neutral-800/50 p-4 rounded-xl border border-white/10 flex flex-col md:flex-row justify-between items-start md:items-center hover:bg-neutral-800/80 transition-colors">
-							<div>Coupon 3</div>
-						</div>
-						<div style={{color:"white"}} className="bg-neutral-800/50 p-4 rounded-xl border border-white/10 flex flex-col md:flex-row justify-between items-start md:items-center hover:bg-neutral-800/80 transition-colors">
-							<div>Coupon 4</div>
-						</div>
+						{couponPreviews.length === 0 ? (
+							<p className="text-gray-400 text-center py-4">No saved coupons yet. Save them from the Coupons page.</p>
+						) : couponPreviews.map((coupon) => (
+							<div
+								key={`coupon-preview-${coupon.index}-${coupon.loc.lid}`}
+								className="bg-neutral-800/50 p-4 rounded-xl border border-white/10 flex flex-col md:flex-row justify-between items-start md:items-center gap-3 hover:bg-neutral-800/80 transition-colors"
+							>
+								<div className="min-w-0">
+									<p className="text-cyan-200 font-semibold">{coupon.loc.name}</p>
+									<p className="text-xs text-gray-300">{coupon.title} • {coupon.label}</p>
+									<p className="text-xs text-gray-400">Code: {coupon.code}</p>
+								</div>
+								<div className="flex items-center gap-2">
+									<button
+										onClick={() => unsaveCouponByKey(coupon.key)}
+										className="flex h-8 w-8 items-center justify-center rounded-full border border-cyan-400/35 bg-cyan-500/12 text-cyan-200 hover:bg-cyan-500/22 transition-colors"
+										aria-label="Unsave coupon"
+										title="Unsave coupon"
+									>
+										<BookmarkCheck size={16} className="text-cyan-200" />
+									</button>
+								</div>
+							</div>
+						))}
 					</div>
                 </Card>
 				</div>
@@ -607,12 +804,29 @@ const Dashboard = () => {
 											
 										)}
 									</div>
-									<button
-										onClick={() => navigate(`/reviews?locationId=${encodeURIComponent(String(loc.lid))}`)}
-										className="mt-3 md:mt-0 md:self-center shrink-0 rounded-md border border-cyan-400/40 bg-cyan-500/15 px-3 py-1.5 text-xs text-cyan-200 hover:bg-cyan-500/25 transition-colors"
-									>
-										Review This Visit
-									</button>
+									<div className="mt-3 md:mt-0 md:self-center shrink-0 flex flex-col gap-2">
+										<button
+											onClick={() => navigate(`/reviews?locationId=${encodeURIComponent(String(loc.lid))}`)}
+											className="rounded-md border border-cyan-400/40 bg-cyan-500/15 px-3 py-1.5 text-xs text-cyan-200 hover:bg-cyan-500/25 transition-colors"
+										>
+											Review This Visit
+										</button>
+										<div className="flex items-center gap-2">
+											<button
+												onClick={() => navigate('/discount', { state: { from: 'dashboard', locationId: loc.lid } })}
+												className="rounded-md border border-emerald-400/40 bg-emerald-500/15 px-3 py-1.5 text-xs text-emerald-200 hover:bg-emerald-500/25 transition-colors"
+											>
+												Get Coupon
+											</button>
+											<button
+												onClick={() => handleFavoriteVisitedLocation(loc)}
+												className="flex h-8 w-8 items-center justify-center rounded-full border border-emerald-400/40 bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25 transition-colors"
+												aria-label="Favorite visited location"
+											>
+												<HeartPlus size={16} className="text-emerald-300" />
+											</button>
+										</div>
+									</div>
 								</div>
 							))
 						)
@@ -655,6 +869,56 @@ const Dashboard = () => {
 											aria-label="Remove favorite"
 										>
 											<HeartMinus size={16} className="text-red-400" />
+										</button>
+									</div>
+								</div>
+							))
+						)}
+					</div>
+				</div>
+			)}
+			{showCouponsSidebar && (
+				<div className={`fixed top-20 bottom-3 z-[1500] w-[360px] rounded-2xl border border-cyan-500/30 bg-neutral-900/90 p-4 shadow-2xl backdrop-blur-xl ${showFavoritesSidebar ? 'right-[370px]' : 'right-2'}`}>
+					<div className="mb-3 flex items-center justify-between border-b border-white/10 pb-2">
+						<h3 className="text-cyan-300 text-lg font-semibold">Saved Coupons</h3>
+						<button
+							onClick={() => setShowCouponsSidebar(false)}
+							className="h-7 w-7 rounded-full bg-white/5 text-neutral-300 hover:text-white hover:bg-white/10"
+						>
+							✕
+						</button>
+					</div>
+					<div className="h-[calc(100%-48px)] overflow-y-auto pr-1">
+						{couponPreviews.length === 0 ? (
+							<p className="text-gray-400 text-center py-4">No saved coupons yet.</p>
+						) : (
+							couponPreviews.map((coupon) => (
+								<div
+									key={`saved-coupon-${coupon.loc.lid}-${coupon.code}`}
+									className="mb-3 rounded-xl border border-white/10 bg-neutral-800/55 p-3 hover:bg-neutral-800/80 transition-colors"
+								>
+									<div className="flex items-center justify-between gap-3">
+										<div
+											className="cursor-pointer flex-1 min-w-0 pr-2"
+											onClick={() => {
+												navigate('/discount', { state: { from: 'dashboard', locationId: coupon.loc.lid } });
+												setShowCouponsSidebar(false);
+											}}
+										>
+											<h4 className="text-cyan-300 text-lg font-semibold">{coupon.loc.name}</h4>
+											<p className="text-gray-300 text-xs">{coupon.title} • {coupon.label}</p>
+											<p className="text-gray-400 text-xs">Code: {coupon.code}</p>
+										</div>
+										<button
+											onClick={(e) => {
+												e.stopPropagation();
+												unsaveCouponByKey(coupon.key);
+											}}
+											className="flex h-8 w-8 items-center justify-center rounded-full border border-cyan-400/35 bg-cyan-500/12 text-cyan-200 hover:bg-cyan-500/22 transition-colors"
+											aria-label="Unsave coupon"
+											title="Unsave coupon"
+										>
+											<BookmarkCheck size={16} className="text-cyan-200" />
 										</button>
 									</div>
 								</div>

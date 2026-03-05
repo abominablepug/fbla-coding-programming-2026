@@ -4,14 +4,17 @@ import Links from '../components/links';
 import Navbar from '../components/navbar';
 import {useNavigate } from 'react-router-dom';
 import Body from '../components/body';
+import HCaptchaWidget from '../components/hcaptchaWidget';
 
 const Login = () => {
 	const AUTH_BASE_URL = (import.meta.env.VITE_AUTH_BASE_URL || import.meta.env.PUBLIC_AUTH_BASE_URL || 'http://localhost:5173').trim();
 	const loginUrl = AUTH_BASE_URL ? `${AUTH_BASE_URL}/auth/login` : '/auth/login';
+	const HCAPTCHA_SITE_KEY = (import.meta.env.VITE_HCAPTCHA_SITE_KEY || import.meta.env.PUBLIC_HCAPTCHA_SITE_KEY || '').trim();
 	const [username, setUsername] = useState('');
 	const [password, setPassword] = useState('');
 	const [submitError, setSubmitError] = useState('');
 	const [isSubmitting, setIsSubmitting] = useState(false);
+	const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 	const navigate = useNavigate();
 
 	return (
@@ -27,9 +30,11 @@ const Login = () => {
 					onSubmit={async (e) => {
 						e.preventDefault();
 						setSubmitError('');
+						if (!captchaToken) return;
 						const formData = new FormData();
 						formData.append('username', username.trim());
 						formData.append('password', password);
+						formData.append('captcha_token', captchaToken);
 
 						try {
 							setIsSubmitting(true);
@@ -83,11 +88,12 @@ const Login = () => {
 							onChange={(e) => setPassword(e.target.value)}
 						/>
 					</div>
+					<HCaptchaWidget siteKey={HCAPTCHA_SITE_KEY} onVerifyToken={setCaptchaToken} />
 					{submitError && <p className="text-red-400 text-sm text-center">{submitError}</p>}
 					<div className="grid grid-cols-2 flex-col text-center transition-transform gap-6">
 					<button
 						type="submit"
-						disabled={isSubmitting}
+						disabled={isSubmitting || !captchaToken}
 						className="w-full rounded-lg bg-sky-500 py-3 font-semibold text-white hover:bg-sky-400 active:scale-[0.98] transition-all shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
 					>
 						{isSubmitting ? 'Signing In...' : 'Sign In'}
@@ -100,7 +106,7 @@ const Login = () => {
 					</button>
 					</div>
 				</form>
-			</Card> 
+			</Card>
 		</Body>
 	);
 };
