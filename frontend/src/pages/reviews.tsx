@@ -715,7 +715,7 @@ const ReviewsPage = () => {
                     <button
                       onClick={generateAiReview}
                       disabled={generatingReview || !reviewPrompt.trim()}
-                      className="rounded-md bg-cyan-500 px-3 py-1.5 text-sm font-semibold text-black hover:bg-cyan-400 disabled:opacity-60"
+                      className="rounded-md bg-cyan-500 px-3 py-1.5 text-sm font-semibold text-white hover:bg-cyan-400 disabled:opacity-60"
                     >
                       {generatingReview ? 'Generating...' : 'Generate AI Review'}
                     </button>
@@ -725,7 +725,7 @@ const ReviewsPage = () => {
                     <button
                       onClick={submitReview}
                       disabled={submittingReview}
-                      className="rounded-md bg-cyan-500 px-4 py-2 text-sm font-semibold text-black hover:bg-cyan-400 disabled:opacity-60"
+                      className="rounded-md bg-cyan-500 px-4 py-2 text-sm font-semibold text-white hover:bg-cyan-400 disabled:opacity-60"
                     >
                       {submittingReview ? 'Submitting...' : 'Submit Rating & Review'}
                     </button>

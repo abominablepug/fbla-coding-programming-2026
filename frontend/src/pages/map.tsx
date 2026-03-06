@@ -1087,7 +1087,7 @@ useEffect(() => {
     
     const el = document.createElement('div');
     el.className = 'user-dot';
-    el.innerHTML = '<div class="w-5 h-5 bg-[#2F80ED] border-[4px] border-white rounded-full shadow-[0_0_15px_#2F80ED]"></div>';
+    el.innerHTML = '<div class="w-5 h-5 bg-[#3F92FF] border-[4px] border-white rounded-full shadow-[0_0_15px_#3F92FF]"></div>';
     
     userMarkerRef.current = new tt.Marker({ element: el })
       .setLngLat([loc.lng, loc.lat])
@@ -1935,7 +1935,7 @@ useEffect(() => {
         id: 'route',
         type: 'line',
         source: 'route',
-        paint: { 'line-color': '#2F80ED', 'line-width': 8, 'line-opacity': 0.9 }
+        paint: { 'line-color': '#3F92FF', 'line-width': 8, 'line-opacity': 0.9 }
       });
 
       // Build instructions array from guidance
@@ -2079,7 +2079,7 @@ useEffect(() => {
           {/*Animation for loading map*/}
           {!mapLoaded && !mapError && (
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-cyan-500 text-lg flex flex-col items-center gap-4">
-              <div className="w-10 h-10 border-[3px] border-neutral-800 border-t-[#2F80ED] rounded-full animate-spin"></div>
+              <div className="w-10 h-10 border-[3px] border-neutral-800 border-t-[#3F92FF] rounded-full animate-spin"></div>
               <span>Loading Map...</span>
             </div>
           )}
@@ -2144,7 +2144,7 @@ useEffect(() => {
                 </div>
               </div>
 
-              <div className="p-4 bg-gradient-to-br from-[#2F80ED1A] to-[#2467C20D]"> 
+              <div className="p-4 bg-gradient-to-br from-[#3F92FF1A] to-[#2F75D90D]"> 
                 <div className="rounded-lg border border-cyan-400/20 bg-black/20 px-3 py-2">
                   <p className="m-0 text-cyan-300 text-xs font-semibold">Step {navStep + 1}</p>
                   <p className="m-0 mt-1 text-white text-sm font-bold">{stats.instructions[navStep]?.streetName || stats.instructions[navStep]?.message || 'Unknown Address'}</p>
@@ -2166,7 +2166,7 @@ useEffect(() => {
                   {stats.instructions.map((inst, idx) => (
                     <div 
                       key={idx} 
-                      className={`p-2.5 px-4 cursor-pointer border-b border-neutral-800 hover:bg-white/5 ${idx === navStep ? 'bg-[#2F80ED26] border-l-[3px] border-l-[#2F80ED]' : ''} ${idx < navStep ? 'opacity-50' : ''}`}
+                      className={`p-2.5 px-4 cursor-pointer border-b border-neutral-800 hover:bg-white/5 ${idx === navStep ? 'bg-[#3F92FF26] border-l-[3px] border-l-[#3F92FF]' : ''} ${idx < navStep ? 'opacity-50' : ''}`}
                       onClick={() => jumpToStep(idx)}
                     >
                       <p className="m-0 text-white text-xs">
@@ -2208,7 +2208,7 @@ useEffect(() => {
                 >
                   {speechToTextListening ? <MicOff size={16} /> : <Mic size={16} />}
                 </button>
-                <button className="bg-[#2F80ED] border-none text-black p-2 px-3 rounded-lg cursor-pointer text-sm font-bold hover:bg-[#2467C2]" onClick={handleSearch}>🔍</button>
+                <button className="bg-[#3F92FF] border-none text-white p-2 px-3 rounded-lg cursor-pointer text-sm font-bold hover:bg-[#2F75D9]" onClick={handleSearch}>🔍</button>
               </div>
 
               {suggestions.length > 0 && (
@@ -2285,7 +2285,7 @@ useEffect(() => {
             <div className="relative mt-2.5 text-[14px]">
               <button
                 onClick={() => setIsPoiDropdownOpen(!isPoiDropdownOpen)}
-                className="w-full bg-neutral-900/95 text-white border border-neutral-800 p-3 rounded-xl flex justify-between items-center hover:border-[#2F80ED] transition-colors"
+                className="w-full bg-neutral-900/95 text-white border border-neutral-800 p-3 rounded-xl flex justify-between items-center hover:border-[#3F92FF] transition-colors"
               >
                 <span className="font-large">{activePoiType ? `Selected: ${activePoiType.replace('_', ' ')}` : 'Select Category'}</span>
                 <span className={`transition-transform duration-200 ${isPoiDropdownOpen ? 'rotate-180' : ''}`}>▼</span>
@@ -2573,7 +2573,7 @@ useEffect(() => {
                 <LocationDetailBlock details={routeFavoriteLocation || undefined} />
               </div>
               <div className="flex flex-nowrap items-center gap-2">
-                <button className="flex-1 min-w-0 whitespace-nowrap bg-cyan-500 text-neutral-950 border-none px-3 py-2.5 rounded-lg font-bold cursor-pointer hover:bg-cyan-400 transition-colors text-xs sm:text-sm" onClick={startNavigation}>Start Navigation</button>
+                <button className="flex-1 min-w-0 whitespace-nowrap bg-cyan-500 text-white border-none px-3 py-2.5 rounded-lg font-bold cursor-pointer hover:bg-cyan-400 transition-colors text-xs sm:text-sm" onClick={startNavigation}>Start Navigation</button>
                 <button className="shrink-0 whitespace-nowrap bg-neutral-800 text-white border-none px-3 py-2.5 rounded-lg cursor-pointer hover:bg-neutral-700 text-xs sm:text-sm" onClick={() => { setStats(null); clearMap(); }}>Close</button>
                 <LocationReviewsPopup
                   location={{
@@ -2621,7 +2621,7 @@ useEffect(() => {
                 <p className="text-white text-xs sm:text-sm leading-relaxed p-2 bg-white/5 rounded-lg m-0">📍 {selectedLocation?.address}</p>
                 <LocationDetailBlock details={selectedLocation} />
                 <div className="flex flex-nowrap items-center justify-center pt-1 gap-2">
-                  <button className="min-w-0 whitespace-nowrap bg-cyan-500 text-neutral-950 border-none px-4 py-2.5 rounded-lg font-bold cursor-pointer text-xs sm:text-sm flex-1 transition-all hover:bg-cyan-400 hover:scale-[1.02]" onClick={navigateToSelectedLocation}>Navigate ➤</button>
+                  <button className="min-w-0 whitespace-nowrap bg-cyan-500 text-white border-none px-4 py-2.5 rounded-lg font-bold cursor-pointer text-xs sm:text-sm flex-1 transition-all hover:bg-cyan-400 hover:scale-[1.02]" onClick={navigateToSelectedLocation}>Navigate ➤</button>
                   <LocationReviewsPopup
                     location={{
                       lid: selectedLocation?.lid,
@@ -2655,7 +2655,7 @@ useEffect(() => {
                 }
                 setTrafficOn(!trafficOn);
               }} 
-              className={`w-[55px] h-[40px] md:w-[60px] md:h-[50px] bg-neutral-900/95 text-white border border-neutral-800 rounded-xl cursor-pointer text-[22px] flex flex-col items-center justify-center shadow-lg transition-all hover:scale-105 hover:border-[#2F80ED] ${trafficOn ? 'border-[#2F80ED] text-cyan-500 bg-[#2F80ED1A]' : ''}`} 
+              className={`w-[55px] h-[40px] md:w-[60px] md:h-[50px] bg-neutral-900/95 text-white border border-neutral-800 rounded-xl cursor-pointer text-[22px] flex flex-col items-center justify-center shadow-lg transition-all hover:scale-105 hover:border-[#3F92FF] ${trafficOn ? 'border-[#3F92FF] text-cyan-500 bg-[#3F92FF1A]' : ''}`} 
               title={trafficOn ? 'Hide Traffic' : 'Show Traffic'}
             >
               🚦
@@ -2666,7 +2666,7 @@ useEffect(() => {
                   mapRef.current.flyTo({ center: [userLoc.lng, userLoc.lat], zoom: 15 });
                 }
               }}
-              className="text-[14px] w-[55px] h-[40px] md:w-[60px] md:h-[50px] bg-neutral-900/95 text-white border border-neutral-800 rounded-xl cursor-pointer text-[22px] flex flex-col items-center justify-center shadow-lg transition-all hover:scale-105 hover:border-[#2F80ED]"
+              className="text-[14px] w-[55px] h-[40px] md:w-[60px] md:h-[50px] bg-neutral-900/95 text-white border border-neutral-800 rounded-xl cursor-pointer text-[22px] flex flex-col items-center justify-center shadow-lg transition-all hover:scale-105 hover:border-[#3F92FF]"
               title="My Location"
             >
               📍
@@ -2675,7 +2675,7 @@ useEffect(() => {
               onClick={() => {
                 setMapPerspective(prev => prev === '2d' ? '3d' : '2d');
               }}
-              className={`text-[14px] w-[55px] h-[40px] md:w-[60px] md:h-[50px] bg-neutral-900/95 text-white border border-neutral-800 rounded-xl cursor-pointer text-sm flex flex-col items-center justify-center shadow-lg transition-all hover:scale-105 hover:border-[#2F80ED] ${mapPerspective === '3d' ? 'border-[#2F80ED] text-cyan-500 bg-[#2F80ED1A]' : ''}`}
+              className={`text-[14px] w-[55px] h-[40px] md:w-[60px] md:h-[50px] bg-neutral-900/95 text-white border border-neutral-800 rounded-xl cursor-pointer text-sm flex flex-col items-center justify-center shadow-lg transition-all hover:scale-105 hover:border-[#3F92FF] ${mapPerspective === '3d' ? 'border-[#3F92FF] text-cyan-500 bg-[#3F92FF1A]' : ''}`}
               title={mapPerspective === '2d' ? 'Switch to 3D View' : 'Switch to 2D View'}
             >
               <span className="text-[14px] font-bold tracking-wide">{mapPerspective === '2d' ? '2D' : '3D'}</span>
@@ -2689,7 +2689,7 @@ useEffect(() => {
                   return styles[nextIndex] as 'regular' | 'satellite' | 'dark' | 'hybrid';
                 });
               }}
-              className={`w-[55px] h-[40px] md:w-[60px] md:h-[50px] bg-neutral-900/95 text-white border border-neutral-800 rounded-xl cursor-pointer text-sm flex flex-col items-center justify-center shadow-lg transition-all hover:scale-105 hover:border-[#2F80ED] ${mapStyle !== 'regular' ? 'border-[#2F80ED] text-cyan-500 bg-[#2F80ED1A]' : ''}`}
+              className={`w-[55px] h-[40px] md:w-[60px] md:h-[50px] bg-neutral-900/95 text-white border border-neutral-800 rounded-xl cursor-pointer text-sm flex flex-col items-center justify-center shadow-lg transition-all hover:scale-105 hover:border-[#3F92FF] ${mapStyle !== 'regular' ? 'border-[#3F92FF] text-cyan-500 bg-[#3F92FF1A]' : ''}`}
               title={`Current: ${mapStyle}`}
             > 
               <span className="text-sm font-bold tracking-wide">{mapStyle.charAt(0).toUpperCase() + mapStyle.slice(1)}</span>
@@ -2700,7 +2700,7 @@ useEffect(() => {
                 setShowPoiSidebar(false);
                 fetchFavoriteLocations();
               }}
-              className={`w-[55px] h-[40px] md:w-[60px] md:h-[50px] bg-neutral-900/95 text-white border border-neutral-800 rounded-xl cursor-pointer text-sm flex flex-col items-center justify-center shadow-lg transition-all hover:scale-105 hover:border-[#2F80ED]`}
+              className={`w-[55px] h-[40px] md:w-[60px] md:h-[50px] bg-neutral-900/95 text-white border border-neutral-800 rounded-xl cursor-pointer text-sm flex flex-col items-center justify-center shadow-lg transition-all hover:scale-105 hover:border-[#3F92FF]`}
               title={'Favorite Locations'}
             > 
               <span className="text-xs font-bold -tracking-wide">{`${showSidebar?'Close Sidebar':'Favorite Locations'}`}</span>

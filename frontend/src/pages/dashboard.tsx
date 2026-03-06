@@ -494,10 +494,10 @@ const Dashboard = () => {
 			}}>
 				<input className="mt-1 w-full rounded-lg bg-white/10 border border-white/20 p-3 text-slate-300 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400 transition-all" type="file" accept='image/png' id="image" name="image"/>
 				<div className="flex justify-center gap-2">
-					<button className="px-3 py-1 rounded-full bg-cyan-500 text-neutral-950 max-w-fit text-md transition-all hover:bg-cyan-400 shadow-lg" type="submit">
+					<button className="px-3 py-1 rounded-full bg-cyan-500 text-white max-w-fit text-md transition-all hover:bg-cyan-400 shadow-lg" type="submit">
 						Upload New Picture
 					</button>
-					<button className="px-3 py-1 rounded-full bg-cyan-500 text-neutral-950 max-w-fit text-md transition-all hover:bg-cyan-400 shadow-lg" onClick={() => {setOpenForm(false); setPwSubmitError('');}}>Close X</button>
+					<button className="px-3 py-1 rounded-full bg-cyan-500 text-white max-w-fit text-md transition-all hover:bg-cyan-400 shadow-lg" onClick={() => {setOpenForm(false); setPwSubmitError('');}}>Close X</button>
 				</div>
 			</form>
 		</div>);
@@ -553,10 +553,10 @@ const Dashboard = () => {
 				</div>
 				{pwSubmitError && <p className="text-red-400 text-sm text-center">{pwSubmitError}</p>}
 			   <div className="flex justify-center gap-2">
-				   <button className="px-3 py-1 rounded-full bg-cyan-500 text-neutral-950 max-w-fit text-md transition-all hover:bg-cyan-400 shadow-lg" type="submit">
+				   <button className="px-3 py-1 rounded-full bg-cyan-500 text-white max-w-fit text-md transition-all hover:bg-cyan-400 shadow-lg" type="submit">
 					   Change Password
 				   </button>
-				   <button className="px-3 py-1 rounded-full bg-cyan-500 text-neutral-950 max-w-fit text-md transition-all hover:bg-cyan-400 shadow-lg" onClick={() => {setOpenForm(false); setPwSubmitError('');}}>Close X</button>
+				   <button className="px-3 py-1 rounded-full bg-cyan-500 text-white max-w-fit text-md transition-all hover:bg-cyan-400 shadow-lg" onClick={() => {setOpenForm(false); setPwSubmitError('');}}>Close X</button>
 			   </div>
 			</form>
 		</div>);
@@ -1103,8 +1103,8 @@ const Dashboard = () => {
 								<div className="max-w-md w-full align-items-center justify-items-center">
 									<img  className="rounded-full border-4 w-40 h-40 object-cover shadow-w-auto border-cyan-600 mb-4 align-center" src={imageSrc} alt="Profile" />
 									{!openForm&&(<div className="items-center align-items-center justify-center">
-										<button className="mt-4 px-4 py-2 bg-cyan-500 text-neutral-950 rounded-lg hover:bg-cyan-400 transition-colors inline-block mr-3" onClick={() => {setOpenForm(true); setPfpChange(false);}}>Change Password</button>
-										<button className="mt-4 px-4 py-2 bg-cyan-500 text-neutral-950 rounded-lg hover:bg-cyan-400 transition-colors inline-block" onClick={() => {setOpenForm(true); setPfpChange(true);}}>Change Profile Picture</button>
+										<button className="mt-4 px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-400 transition-colors inline-block mr-3" onClick={() => {setOpenForm(true); setPfpChange(false);}}>Change Password</button>
+										<button className="mt-4 px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-400 transition-colors inline-block" onClick={() => {setOpenForm(true); setPfpChange(true);}}>Change Profile Picture</button>
 									</div>)}
 									{openForm &&(
 										<div className={`flex flex-col items-center justify-center gap-4 mt-4 w-full`}>
@@ -1188,7 +1188,7 @@ const Dashboard = () => {
 							</div>
 							<div className="grid grid-cols-1 gap-y-3 place-items-center text-center pt-1">
 							<img onClick={handlePopup} className="rounded-full border-4 w-32 h-32 object-cover shadow-w-auto border-cyan-600 hover:border-cyan-700 transition-transform" src={imageSrc} alt="Profile" />
-							<p className="text-black-400 text-3xl tracking-wider">Welcome back {user.username}</p>
+							<p className="text-gray-200 text-3xl tracking-wider">Welcome back {user.username}</p>
 							</div>
 						</div>
 				</div> 

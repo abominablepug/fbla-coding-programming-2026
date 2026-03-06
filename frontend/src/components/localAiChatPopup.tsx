@@ -637,7 +637,7 @@ const LocalAiChatPopup = ({
                       <div
                         className={`whitespace-pre-wrap rounded-xl px-3 py-2.5 text-sm leading-relaxed ${
                           msg.role === 'user'
-                            ? 'bg-cyan-500 font-medium text-black'
+                            ? 'bg-cyan-500 font-medium text-white'
                             : 'border border-neutral-700 bg-neutral-800 text-neutral-100'
                         }`}
                       >
@@ -690,7 +690,7 @@ const LocalAiChatPopup = ({
               <button
                 onClick={handleSendChat}
                 disabled={chatLoading || !chatInput.trim()}
-                className="rounded-xl bg-cyan-500 px-4 py-2.5 text-sm font-semibold text-black transition-colors hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-xl bg-cyan-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Send
               </button>

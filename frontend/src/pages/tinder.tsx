@@ -491,7 +491,7 @@ const TinderPage = () => {
                                     <Card
                                         title={currentBusiness.name || 'Unknown Business'}
                                         cardClassName="w-[1040px] max-w-[97vw]"
-                                        bgcolor="#2467C2FF"
+                                        bgcolor="#2F75D9FF"
                                         titleClassName='text-white'
                                     >
                                         <div className="space-y-4">
@@ -563,7 +563,7 @@ const TinderPage = () => {
                             className="text-red-500 drop-shadow-lg"
                         />
                     </motion.button>
-                    <button className="px-4 py-4 rounded-full bg-cyan-500 text-neutral-950 max-w-fit text-md transition-all hover:bg-cyan-400 shadow-lg" onClick={()=>setShowSidebar(!showSidebar)}>
+                    <button className="px-4 py-4 rounded-full bg-cyan-500 text-white max-w-fit text-md transition-all hover:bg-cyan-400 shadow-lg" onClick={()=>setShowSidebar(!showSidebar)}>
                         Show Favorite Locations
                     </button>
                     <motion.button
