@@ -6,7 +6,7 @@ import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion'
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import Navbar from '../components/navbar';
 import Links from '../components/links';
-import {House, Heart, HeartPlus, Star, TicketPercent} from 'lucide-react';
+import {House, Heart, HeartPlus, Mic, MicOff, Star, TicketPercent} from 'lucide-react';
 import { enqueueAlert } from '../components/alerts';
 import LocalAiChatPopup from '../components/localAiChatPopup';
 import LocationReviewsPopup from '../components/locationReviewsPopup';
@@ -169,6 +169,9 @@ interface PoiListItem {
   type: string;
   categories: string[];
   distanceMeters: number;
+  rating?: number;
+  isOpenNow?: boolean;
+  hasCoupon: boolean;
   phone?: string;
   email?: string;
   website?: string;
@@ -176,7 +179,371 @@ interface PoiListItem {
   socials?: SocialLink[];
 }
 
-const LocationDetailBlock = ({ details }: { details?: Pick<Business, 'phone' | 'email' | 'website' | 'businessHours' | 'socials'> }) => {
+type PoiOpenFilter = 'all' | 'open' | 'closed';
+type PoiCouponFilter = 'all' | 'with' | 'without';
+
+const normalizePoiRating = (value: any): number | undefined => {
+  if (!Number.isFinite(Number(value))) return undefined;
+  const raw = Number(value);
+  if (raw <= 0) return undefined;
+  const mapped =
+    raw <= 1 ? raw * 5 :
+    raw <= 5 ? raw :
+    raw <= 10 ? raw / 2 : 5;
+  return Math.max(1, Math.min(5, Math.round(mapped * 10) / 10));
+};
+
+const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6] as const;
+
+const dayIndexFromToken = (token: string): number | null => {
+  const value = token.toLowerCase().replace(/\./g, '').trim();
+  if (!value) return null;
+  if (/^su(n(day)?)?$/.test(value)) return 0;
+  if (/^mo(n(day)?)?$/.test(value)) return 1;
+  if (/^tu(e(s(day)?)?)?$/.test(value)) return 2;
+  if (/^we(d(nesday)?)?$/.test(value)) return 3;
+  if (/^th(u(r(s(day)?)?)?)?$/.test(value)) return 4;
+  if (/^fr(i(day)?)?$/.test(value)) return 5;
+  if (/^sa(t(urday)?)?$/.test(value)) return 6;
+  return null;
+};
+
+const expandDayRange = (start: number, end: number): number[] => {
+  const days: number[] = [];
+  let current = start;
+  for (let i = 0; i < 7; i += 1) {
+    days.push(current);
+    if (current === end) break;
+    current = (current + 1) % 7;
+  }
+  return days;
+};
+
+const parseDaySegment = (segment: string): number[] => {
+  const value = segment
+    .toLowerCase()
+    .replace(/[–—]/g, '-')
+    .replace(/\./g, '')
+    .trim();
+  if (!value) return [];
+  if (/(daily|every day|all days)/.test(value)) return [...ALL_DAYS];
+  if (/weekdays?/.test(value)) return [1, 2, 3, 4, 5];
+  if (/weekends?/.test(value)) return [0, 6];
+
+  const rangeMatch = value.match(/^([a-z]+)\s*-\s*([a-z]+)$/);
+  if (rangeMatch) {
+    const start = dayIndexFromToken(rangeMatch[1]);
+    const end = dayIndexFromToken(rangeMatch[2]);
+    if (start !== null && end !== null) {
+      return expandDayRange(start, end);
+    }
+  }
+
+  const single = dayIndexFromToken(value);
+  return single === null ? [] : [single];
+};
+
+const parseDaysFromRowPrefix = (prefix: string): number[] => {
+  const cleaned = prefix
+    .toLowerCase()
+    .replace(/[()]/g, ' ')
+    .replace(/\b(open|hours?|closed)\b/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!cleaned) return [];
+
+  const daySet = new Set<number>();
+  cleaned
+    .split(/[,/&]+/)
+    .map((segment) => segment.trim())
+    .filter(Boolean)
+    .forEach((segment) => {
+      parseDaySegment(segment).forEach((day) => daySet.add(day));
+    });
+
+  return [...daySet];
+};
+
+const parseTimeToMinutes = (raw: string): number | null => {
+  const value = raw.toLowerCase().replace(/\./g, '').replace(/\s+/g, '').trim();
+  if (!value) return null;
+  if (value === 'noon') return 12 * 60;
+  if (value === 'midnight') return 0;
+
+  const ampm = value.match(/^(\d{1,2})(?::?(\d{2}))?(am|pm)$/);
+  if (ampm) {
+    let hour = Number(ampm[1]);
+    const minute = Number(ampm[2] || '0');
+    const meridiem = ampm[3];
+    if (!Number.isFinite(hour) || !Number.isFinite(minute) || hour < 1 || hour > 12 || minute < 0 || minute > 59) {
+      return null;
+    }
+    if (meridiem === 'am') {
+      if (hour === 12) hour = 0;
+    } else if (hour !== 12) {
+      hour += 12;
+    }
+    return hour * 60 + minute;
+  }
+
+  const plain = value.match(/^(\d{1,2})(?::(\d{2}))?$/);
+  if (plain) {
+    const hour = Number(plain[1]);
+    const minute = Number(plain[2] || '0');
+    if (!Number.isFinite(hour) || !Number.isFinite(minute) || hour < 0 || hour > 24 || minute < 0 || minute > 59) {
+      return null;
+    }
+    if (hour === 24 && minute !== 0) return null;
+    return hour * 60 + minute;
+  }
+
+  const compact = value.match(/^(\d{2})(\d{2})$/);
+  if (compact) {
+    const hour = Number(compact[1]);
+    const minute = Number(compact[2]);
+    if (!Number.isFinite(hour) || !Number.isFinite(minute) || hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+      return null;
+    }
+    return hour * 60 + minute;
+  }
+
+  return null;
+};
+
+const extractTimeRangesFromRow = (row: string): Array<[number, number]> => {
+  const normalized = row
+    .toLowerCase()
+    .replace(/[–—]/g, '-')
+    .replace(/\bto\b/g, '-');
+  const ranges: Array<[number, number]> = [];
+  const timeRangeRegex =
+    /(\d{1,2}(?::?\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)?|\bnoon\b|\bmidnight\b)\s*-\s*(\d{1,2}(?::?\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)?|\bnoon\b|\bmidnight\b)/gi;
+
+  let match: RegExpExecArray | null;
+  while ((match = timeRangeRegex.exec(normalized)) !== null) {
+    const start = parseTimeToMinutes(match[1] || '');
+    const end = parseTimeToMinutes(match[2] || '');
+    if (start === null || end === null) continue;
+    ranges.push([start, end]);
+  }
+
+  return ranges;
+};
+
+const inferOpenNowFromBusinessHours = (hours?: string[]): boolean | undefined => {
+  if (!Array.isArray(hours) || hours.length === 0) return undefined;
+  const intervalsByDay: Array<Array<[number, number]>> = Array.from({ length: 7 }, () => []);
+  let parsedAnyRanges = false;
+
+  for (const rawRow of hours) {
+    if (typeof rawRow !== 'string') continue;
+    const row = rawRow.toLowerCase().replace(/\s+/g, ' ').trim();
+    if (!row) continue;
+
+    const firstTimeMatch = row.match(/\d{1,2}(?::?\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)?|\bnoon\b|\bmidnight\b/i);
+    const dayPrefix =
+      firstTimeMatch && typeof firstTimeMatch.index === 'number'
+        ? row.slice(0, firstTimeMatch.index)
+        : row;
+    let dayIndexes = parseDaysFromRowPrefix(dayPrefix);
+    if (dayIndexes.length === 0) dayIndexes = [...ALL_DAYS];
+
+    if (/24\s*hours?|open\s*24/.test(row)) {
+      dayIndexes.forEach((day) => intervalsByDay[day].push([0, 24 * 60]));
+      parsedAnyRanges = true;
+      continue;
+    }
+
+    const ranges = extractTimeRangesFromRow(row);
+    if (ranges.length === 0) continue;
+    parsedAnyRanges = true;
+
+    dayIndexes.forEach((day) => {
+      ranges.forEach(([start, end]) => {
+        if (start === end) {
+          intervalsByDay[day].push([0, 24 * 60]);
+          return;
+        }
+        if (end > start) {
+          intervalsByDay[day].push([start, end]);
+          return;
+        }
+        // Overnight window (example: 9:00 PM - 2:00 AM)
+        intervalsByDay[day].push([start, 24 * 60]);
+        intervalsByDay[(day + 1) % 7].push([0, end]);
+      });
+    });
+  }
+
+  if (!parsedAnyRanges) return undefined;
+  const now = new Date(); // Uses the user's local timezone.
+  const nowDay = now.getDay();
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  return intervalsByDay[nowDay].some(([start, end]) => nowMinutes >= start && nowMinutes < end);
+};
+
+const parseAbsoluteDateTime = (value: any): Date | null => {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    const ts = value > 1e12 ? value : value * 1000;
+    const date = new Date(ts);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+  if (typeof value !== 'string') return null;
+  const input = value.trim();
+  if (!input) return null;
+  const looksAbsolute =
+    /\d{4}-\d{2}-\d{2}/.test(input) ||
+    /T\d{1,2}:\d{2}/.test(input) ||
+    /[+-]\d{2}:?\d{2}$/.test(input) ||
+    /Z$/.test(input);
+  if (!looksAbsolute) return null;
+  const date = new Date(input);
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
+const inferOpenNowFromOpeningHoursObject = (openingHours: any): boolean | undefined => {
+  if (!openingHours || typeof openingHours !== 'object') return undefined;
+
+  const now = new Date();
+  const nowMs = now.getTime();
+  const nowDay = now.getDay();
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  let parsedAnyRanges = false;
+  const intervalsByDay: Array<Array<[number, number]>> = Array.from({ length: 7 }, () => []);
+
+  const allRanges = [
+    ...(Array.isArray(openingHours?.timeRanges) ? openingHours.timeRanges : []),
+    ...(Array.isArray(openingHours?.periods) ? openingHours.periods : []),
+    ...(Array.isArray(openingHours?.ranges) ? openingHours.ranges : []),
+  ];
+
+  for (const range of allRanges) {
+    if (!range || typeof range !== 'object') continue;
+
+    const absoluteStart = parseAbsoluteDateTime(
+      range.startDateTime || range.startDate || range.startTime || range.start
+    );
+    const absoluteEnd = parseAbsoluteDateTime(
+      range.endDateTime || range.endDate || range.endTime || range.end
+    );
+    if (absoluteStart && absoluteEnd) {
+      parsedAnyRanges = true;
+      if (nowMs >= absoluteStart.getTime() && nowMs < absoluteEnd.getTime()) return true;
+      continue;
+    }
+
+    const dayToken = `${range.dayOfWeek || range.day || range.weekday || ''}`.trim();
+    const startRaw = `${range.startTime || range.open || range.from || range.start || ''}`.trim();
+    const endRaw = `${range.endTime || range.close || range.to || range.end || ''}`.trim();
+    const startMinutes = parseTimeToMinutes(startRaw);
+    const endMinutes = parseTimeToMinutes(endRaw);
+    if (startMinutes === null || endMinutes === null) continue;
+
+    let dayIndexes = dayToken ? parseDaysFromRowPrefix(dayToken) : [];
+    if (dayIndexes.length === 0) dayIndexes = [...ALL_DAYS];
+    parsedAnyRanges = true;
+    dayIndexes.forEach((day) => {
+      if (startMinutes === endMinutes) {
+        intervalsByDay[day].push([0, 24 * 60]);
+        return;
+      }
+      if (endMinutes > startMinutes) {
+        intervalsByDay[day].push([startMinutes, endMinutes]);
+        return;
+      }
+      intervalsByDay[day].push([startMinutes, 24 * 60]);
+      intervalsByDay[(day + 1) % 7].push([0, endMinutes]);
+    });
+  }
+
+  if (parsedAnyRanges) {
+    if (intervalsByDay[nowDay].some(([start, end]) => nowMinutes >= start && nowMinutes < end)) return true;
+    return false;
+  }
+
+  const textRows: string[] = [];
+  if (Array.isArray(openingHours?.text)) {
+    textRows.push(...openingHours.text.map((entry: any) => `${entry ?? ''}`).filter(Boolean));
+  }
+  if (Array.isArray(openingHours?.weekdayText)) {
+    textRows.push(...openingHours.weekdayText.map((entry: any) => `${entry ?? ''}`).filter(Boolean));
+  }
+  if (Array.isArray(openingHours?.hours)) {
+    textRows.push(...openingHours.hours.map((entry: any) => `${entry ?? ''}`).filter(Boolean));
+  }
+  return inferOpenNowFromBusinessHours(textRows);
+};
+
+const normalizeCouponLookupValue = (value?: string): string => {
+  if (!value || typeof value !== 'string') return '';
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+};
+
+const buildCouponLocationKey = (name?: string, address?: string): string => {
+  return `${normalizeCouponLookupValue(name)}|${normalizeCouponLookupValue(address)}`;
+};
+
+const NON_COUPON_CATEGORY_PATTERN =
+  /\b(parking|garage|fuel|gas station|ev charging|hospital|clinic|doctor|dentist|pharmacy|urgent care|school|university|college|government|city hall|police|fire station|courthouse|library|post office|airport|train station|bus station|bank|atm|church|temple|mosque|synagogue|cemetery|warehouse|storage|repair|mechanic|tire|dmv)\b/i;
+const COUPON_FRIENDLY_PATTERN =
+  /\b(restaurant|food|cafe|coffee|bakery|pizza|bar|pub|grill|diner|shop|store|retail|mall|outlet|boutique|fashion|beauty|salon|spa|gym|fitness|cinema|movie|theater|hotel|resort|museum|arcade|bowling|amusement)\b/i;
+const PROMO_HINT_PATTERN =
+  /\b(coupon|promo|discount|deal|offer|special|sale|save|rewards?|loyalty|outlet)\b/i;
+
+const inferPoiHasCoupon = (
+  poi: { name: string; address?: string; categories: string[]; website?: string },
+  savedCouponLocationKeys: Set<string>
+): boolean => {
+  const exactKey = buildCouponLocationKey(poi.name, poi.address);
+  const nameOnlyKey = `${normalizeCouponLookupValue(poi.name)}|`;
+  if (savedCouponLocationKeys.has(exactKey) || savedCouponLocationKeys.has(nameOnlyKey)) return true;
+
+  const combined = `${(poi.categories || []).join(' ')} ${poi.name || ''} ${poi.address || ''} ${poi.website || ''}`
+    .toLowerCase()
+    .replace(/[_-]/g, ' ');
+
+  if (NON_COUPON_CATEGORY_PATTERN.test(combined)) return false;
+  if (PROMO_HINT_PATTERN.test(combined)) return true;
+  return COUPON_FRIENDLY_PATTERN.test(combined);
+};
+
+const inferPoiOpenNow = (poi: any, businessHours?: string[]): boolean | undefined => {
+  const openingHours = poi?.poi?.openingHours || poi?.openingHours;
+  const objectOpenNow = inferOpenNowFromOpeningHoursObject(openingHours);
+  if (typeof objectOpenNow === 'boolean') return objectOpenNow;
+
+  const scheduleOpenNow = inferOpenNowFromBusinessHours(businessHours);
+  if (typeof scheduleOpenNow === 'boolean') return scheduleOpenNow;
+
+  const candidates = [
+    openingHours?.isOpen,
+    openingHours?.isOpenNow,
+    openingHours?.openNow,
+    poi?.isOpen,
+    poi?.openNow,
+  ];
+  for (const candidate of candidates) {
+    if (typeof candidate === 'boolean') return candidate;
+  }
+  const status = `${openingHours?.status || openingHours?.state || ''}`.toLowerCase();
+  if (status.includes('open')) return true;
+  if (status.includes('closed')) return false;
+  return undefined;
+};
+
+const getStarFillPercent = (value: number, star: number): number => {
+  const raw = value - (star - 1);
+  if (raw <= 0) return 0;
+  if (raw >= 1) return 100;
+  return raw * 100;
+};
+
+const getSpeechRecognitionCtor = (): any => {
+  if (typeof window === 'undefined') return null;
+  return (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition || null;
+};
+
+const LocationDetailBlock = ({ details }: { details?: Pick<Business, 'phone' | 'email' | 'website' | 'businessHours'> }) => {
   const formattedHours = formatBusinessHoursForDisplay(details?.businessHours, 2);
 
   return (
@@ -201,11 +568,7 @@ const LocationDetailBlock = ({ details }: { details?: Pick<Business, 'phone' | '
           </a>
         ) : 'N/A'}
       </div>
-      <div className="col-span-1 rounded-md border border-white/10 bg-white/5 px-2 py-1 text-gray-400">
-        Socials: {' '}
-        {details?.socials && details.socials.length > 0 ? details.socials.slice(0, 3).map((social) => social.platform).join(', ') : 'N/A'}
-      </div>
-      <div className="col-span-2 rounded-md border border-white/10 bg-white/5 px-2 py-1 text-gray-400">
+      <div className="col-span-3 rounded-md border border-white/10 bg-white/5 px-2 py-1 text-gray-400">
         Hours: {formattedHours.length > 0 ? formattedHours.join(' | ') : 'N/A'}
       </div>
     </div>
@@ -244,16 +607,24 @@ const Map = () => {
   const [showPoiSidebar, setShowPoiSidebar] = useState(false);
   const [poiResults, setPoiResults] = useState<PoiListItem[]>([]);
   const [poiRadiusFilter, setPoiRadiusFilter] = useState<'5' | '10' | '20'>('20');
-  const poiMarkerEntriesRef = useRef<Array<{ marker: any; distanceMeters: number }>>([]);
+  const [poiMinRating, setPoiMinRating] = useState<number>(0);
+  const [poiOpenFilter, setPoiOpenFilter] = useState<PoiOpenFilter>('all');
+  const [poiCouponFilter, setPoiCouponFilter] = useState<PoiCouponFilter>('all');
+  const poiMarkerEntriesRef = useRef<Array<{ marker: any; poi: PoiListItem }>>([]);
   const {scrollY} = useScroll();
   const marginTop = useTransform(scrollY, [0, 100], ["0px", "12px"]);
   const marginBottom = useTransform(scrollY, [0, 100], ["0px", "12px"]);
-	const borderRadius = useTransform(scrollY, [0, 100], ["0px", "24px"]);
 	const right = useTransform(scrollY, [0, 100], ["0px", "1%"]);
 	const bgColor = useTransform(scrollY, [0, 100], ["rgba(23, 23, 23, 1)", "rgba(30, 30, 30, 0.7)"]);
   const [loadingFavorites, setLoadingFavorites] = useState(false);
   const [favoriteLocations, setFavoriteLocations] = useState<Location[]>([]);
+  const [savedCouponLocationKeys, setSavedCouponLocationKeys] = useState<Set<string>>(new Set());
   const [likedLocations] = useState<Business[]>([]);
+  const [speechToTextSupported, setSpeechToTextSupported] = useState(false);
+  const [speechToTextListening, setSpeechToTextListening] = useState(false);
+  const speechRecognitionRef = useRef<any>(null);
+  const runSearchQueryRef = useRef<(query: string) => Promise<void>>(async () => {});
+  const latestFinalSpeechRef = useRef('');
   const geolocationWatchRef = useRef<number | null>(null);
   const markerAnimationRef = useRef<number | null>(null);
   const displayedUserLocRef = useRef<{ lat: number; lng: number } | null>(null);
@@ -261,6 +632,7 @@ const Map = () => {
   const isNavigatingRef = useRef(false);
   const activeRouteRef = useRef<RouteInfo | null>(null);
   const lastSpokenInstructionRef = useRef<string | null>(null);
+  const voiceSpeakTimeoutRef = useRef<number | null>(null);
   const hasSelectedLocationImage = !!selectedLocation?.imageUrl;
   const showImageLocationPopup = !!selectedLocation && hasSelectedLocationImage && !isNavigating;
   const isVoiceSupported = typeof window !== 'undefined' && 'speechSynthesis' in window;
@@ -328,6 +700,54 @@ const Map = () => {
     fetchProfile();
   }, [navigate, AUTH_BASE_URL]);
 
+  useEffect(() => {
+    if (!user?.uid) {
+      setSavedCouponLocationKeys(new Set());
+      return;
+    }
+    try {
+      const storageKey = `bizmatch_saved_coupon_meta_${Number(user.uid)}`;
+      const raw = window.localStorage.getItem(storageKey);
+      const parsed = raw ? JSON.parse(raw) : {};
+      const nextKeys = new Set<string>();
+      if (parsed && typeof parsed === 'object') {
+        Object.values(parsed as Record<string, any>).forEach((entry: any) => {
+          const name = typeof entry?.name === 'string' ? entry.name : '';
+          const address = typeof entry?.address === 'string' ? entry.address : '';
+          const fullKey = buildCouponLocationKey(name, address);
+          const nameOnlyKey = `${normalizeCouponLookupValue(name)}|`;
+          if (fullKey !== '|') nextKeys.add(fullKey);
+          if (nameOnlyKey !== '|') nextKeys.add(nameOnlyKey);
+        });
+      }
+      setSavedCouponLocationKeys(nextKeys);
+    } catch {
+      setSavedCouponLocationKeys(new Set());
+    }
+  }, [user?.uid]);
+
+  useEffect(() => {
+    setPoiResults((prev) => {
+      if (prev.length === 0) return prev;
+      let changed = false;
+      const next = prev.map((poi) => {
+        const hasCoupon = inferPoiHasCoupon(
+          {
+            name: poi.name,
+            address: poi.address,
+            categories: poi.categories || [],
+            website: poi.website,
+          },
+          savedCouponLocationKeys
+        );
+        if (hasCoupon === poi.hasCoupon) return poi;
+        changed = true;
+        return { ...poi, hasCoupon };
+      });
+      return changed ? next : prev;
+    });
+  }, [savedCouponLocationKeys]);
+
   const getMapStyle = () => {
     switch (mapStyle) {
       case 'satellite':
@@ -346,6 +766,94 @@ const Map = () => {
       textColor: isError ? 'text-red-300' : 'text-green-300',
     });
   };
+
+  useEffect(() => {
+    const SpeechRecognitionCtor = getSpeechRecognitionCtor();
+    if (!SpeechRecognitionCtor) {
+      setSpeechToTextSupported(false);
+      return;
+    }
+
+    setSpeechToTextSupported(true);
+    const recognition = new SpeechRecognitionCtor();
+    recognition.lang = 'en-US';
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 1;
+
+    recognition.onstart = () => {
+      latestFinalSpeechRef.current = '';
+      setSpeechToTextListening(true);
+    };
+    recognition.onresult = (event: any) => {
+      let interimTranscript = '';
+      let finalTranscript = '';
+      const results = Array.from(event.results || []);
+      for (let i = Number(event.resultIndex) || 0; i < results.length; i += 1) {
+        const result: any = results[i];
+        const transcript = result?.[0]?.transcript?.trim() || '';
+        if (!transcript) continue;
+        if (result?.isFinal) {
+          finalTranscript = `${finalTranscript} ${transcript}`.trim();
+        } else {
+          interimTranscript = `${interimTranscript} ${transcript}`.trim();
+        }
+      }
+      const liveTranscript = finalTranscript || interimTranscript;
+      if (liveTranscript) setInputValue(liveTranscript);
+      if (finalTranscript) {
+        latestFinalSpeechRef.current = finalTranscript;
+        void runSearchQueryRef.current(finalTranscript);
+      }
+    };
+    recognition.onerror = (event: any) => {
+      setSpeechToTextListening(false);
+      const code = `${event?.error || ''}`.toLowerCase();
+      if (code === 'no-speech') {
+        showToastNotice('No speech detected. Try again and speak closer to the microphone.', true);
+      } else if (code === 'not-allowed' || code === 'service-not-allowed') {
+        showToastNotice('Microphone permission is blocked. Enable mic permission for this site.', true);
+      } else {
+        showToastNotice('Voice input failed. Please try again.', true);
+      }
+    };
+    recognition.onend = () => setSpeechToTextListening(false);
+
+    speechRecognitionRef.current = recognition;
+    return () => {
+      try {
+        recognition.stop();
+      } catch {
+        // ignore stop errors
+      }
+      recognition.onstart = null;
+      recognition.onresult = null;
+      recognition.onerror = null;
+      recognition.onend = null;
+      if (speechRecognitionRef.current === recognition) {
+        speechRecognitionRef.current = null;
+      }
+    };
+  }, []);
+
+  const toggleSpeechToText = () => {
+    if (!speechToTextSupported || !speechRecognitionRef.current) {
+      showToastNotice('Speech-to-text is not supported on this browser.', true);
+      return;
+    }
+
+    if (speechToTextListening) {
+      speechRecognitionRef.current.stop();
+      return;
+    }
+
+    try {
+      speechRecognitionRef.current.start();
+    } catch {
+      showToastNotice('Unable to start microphone input right now.', true);
+    }
+  };
+
   const buildStaticMapImage = (lng: number, lat: number) =>
     `https://api.tomtom.com/map/1/staticimage?key=${API_KEY}&layer=basic&style=main&center=${lng},${lat}&zoom=16&width=400&height=200&format=png`;
   const metersToMiles = (meters: number): number => meters * 0.000621371;
@@ -355,14 +863,30 @@ const Map = () => {
     if (poiRadiusFilter === '10') return miles <= 10;
     return miles <= 20;
   };
+  const matchesPoiFilters = (poi: PoiListItem): boolean => {
+    if (!isPoiWithinRadius(poi.distanceMeters)) return false;
+
+    if (poiMinRating > 0) {
+      if (typeof poi.rating !== 'number' || poi.rating < poiMinRating) return false;
+    }
+
+    if (poiOpenFilter === 'open' && poi.isOpenNow !== true) return false;
+    if (poiOpenFilter === 'closed' && poi.isOpenNow !== false) return false;
+
+    if (poiCouponFilter === 'with' && !poi.hasCoupon) return false;
+    if (poiCouponFilter === 'without' && poi.hasCoupon) return false;
+
+    return true;
+  };
+
   const filteredPoiResults = poiResults.filter((poi) => {
-    return isPoiWithinRadius(poi.distanceMeters);
+    return matchesPoiFilters(poi);
   });
-  const applyPoiRadiusToMarkers = () => {
-    poiMarkerEntriesRef.current.forEach(({ marker, distanceMeters }) => {
+  const applyPoiFiltersToMarkers = () => {
+    poiMarkerEntriesRef.current.forEach(({ marker, poi }) => {
       const markerEl = marker?.getElement?.();
       if (!markerEl) return;
-      markerEl.style.display = isPoiWithinRadius(distanceMeters) ? '' : 'none';
+      markerEl.style.display = matchesPoiFilters(poi) ? '' : 'none';
     });
   };
 
@@ -714,6 +1238,10 @@ useEffect(() => {
   };
 
   const cancelNavigation = (clearRoute = false) => {
+    if (voiceSpeakTimeoutRef.current !== null) {
+      window.clearTimeout(voiceSpeakTimeoutRef.current);
+      voiceSpeakTimeoutRef.current = null;
+    }
     if (isVoiceSupported) {
       window.speechSynthesis.cancel();
     }
@@ -864,9 +1392,14 @@ useEffect(() => {
       .trim();
     const speechFriendlyMessage = cleanedMessage
       .replace(/\bdr\.\b/gi, 'Drive')
-      .replace(/\bdr\b/gi, 'Drive');
+      .replace(/\bdr\b/gi, 'Drive')
+      .replace(/\bst\b/gi, 'Street')
+      .replace(/\bave\b/gi, 'Avenue')
+      .replace(/\brd\b/gi, 'Road')
+      .replace(/\bblvd\b/gi, 'Boulevard')
+      .replace(/\bhwy\b/gi, 'Highway');
     if (instruction.maneuverType?.toLowerCase() === 'arrive') {
-      return `${stepLabel} You have arrived at ${destinationName || 'your destination'}.`;
+      return `${stepLabel} You are arriving at ${destinationName || 'your destination'}.`;
     }
     return `${stepLabel} ${speechFriendlyMessage}. Continue for ${distance}.`;
   };
@@ -877,7 +1410,9 @@ useEffect(() => {
     if (voices.length === 0) return null;
     const preferredNames = [
       'Google US English',
+      'Microsoft Jenny Online (Natural) - English (United States)',
       'Microsoft Aria Online (Natural) - English (United States)',
+      'Microsoft Guy Online (Natural) - English (United States)',
       'Samantha',
       'Alex',
     ];
@@ -900,19 +1435,37 @@ useEffect(() => {
     if (lastSpokenInstructionRef.current === text) return;
     lastSpokenInstructionRef.current = text;
 
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    const voice = pickBestVoice();
-    if (voice) utterance.voice = voice;
-    utterance.lang = 'en-US';
-    utterance.rate = 0.96;
-    utterance.pitch = 1;
-    utterance.volume = 1;
-    window.speechSynthesis.speak(utterance);
+    if (voiceSpeakTimeoutRef.current !== null) {
+      window.clearTimeout(voiceSpeakTimeoutRef.current);
+      voiceSpeakTimeoutRef.current = null;
+    }
+
+    voiceSpeakTimeoutRef.current = window.setTimeout(() => {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      const voice = pickBestVoice();
+      if (voice) utterance.voice = voice;
+      utterance.lang = 'en-US';
+      utterance.rate = 0.92;
+      utterance.pitch = 1.03;
+      utterance.volume = 0.96;
+      window.speechSynthesis.speak(utterance);
+    }, 160);
+
+    return () => {
+      if (voiceSpeakTimeoutRef.current !== null) {
+        window.clearTimeout(voiceSpeakTimeoutRef.current);
+        voiceSpeakTimeoutRef.current = null;
+      }
+    };
   }, [voiceGuidanceEnabled, isNavigating, stats, navStep, isVoiceSupported]);
 
   useEffect(() => {
     return () => {
+      if (voiceSpeakTimeoutRef.current !== null) {
+        window.clearTimeout(voiceSpeakTimeoutRef.current);
+        voiceSpeakTimeoutRef.current = null;
+      }
       if (isVoiceSupported) {
         window.speechSynthesis.cancel();
       }
@@ -1023,7 +1576,7 @@ useEffect(() => {
 
 
       const newMarkers: any[] = [];
-      const newMarkerEntries: Array<{ marker: any; distanceMeters: number }> = [];
+      const newMarkerEntries: Array<{ marker: any; poi: PoiListItem }> = [];
       const nextPoiResults: PoiListItem[] = [];
       const bounds = new tt.LngLatBounds();
 
@@ -1035,6 +1588,31 @@ useEffect(() => {
           const poiAddress = poi.address?.freeformAddress || 'Unknown Address';
           const poiCategories = poi.poi?.categories || [];
           const details = extractTomTomPoiDetails(poi);
+          const isOpenNow = inferPoiOpenNow(poi, details.businessHours);
+          const hasCoupon = inferPoiHasCoupon(
+            {
+              name: poiName,
+              address: poiAddress,
+              categories: poiCategories,
+              website: details.website,
+            },
+            savedCouponLocationKeys
+          );
+          const mappedPoi: PoiListItem = {
+            id: poi.id || `${type}-${lat}-${lng}`,
+            name: poiName,
+            address: poiAddress,
+            lat,
+            lng,
+            icon,
+            type,
+            categories: poiCategories,
+            distanceMeters: poi.dist || 0,
+            rating: normalizePoiRating(poi.poi?.rating ?? poi.rating ?? poi.score),
+            isOpenNow,
+            hasCoupon,
+            ...details
+          };
           
           const el = document.createElement('div');
           const innerEl = document.createElement('div');
@@ -1064,19 +1642,8 @@ useEffect(() => {
             calculateRoute(lat, lng, poiName, false, mappedLocation);
           });
 
-          newMarkerEntries.push({ marker, distanceMeters: poi.dist || 0 });
-          nextPoiResults.push({
-            id: poi.id || `${type}-${lat}-${lng}`,
-            name: poiName,
-            address: poiAddress,
-            lat,
-            lng,
-            icon,
-            type,
-            categories: poiCategories,
-            distanceMeters: poi.dist || 0,
-            ...details
-          });
+          newMarkerEntries.push({ marker, poi: mappedPoi });
+          nextPoiResults.push(mappedPoi);
           newMarkers.push(marker);
           bounds.extend([lng, lat]);
         }
@@ -1087,7 +1654,7 @@ useEffect(() => {
       poiMarkerEntriesRef.current = newMarkerEntries;
       setPoiMarkers(newMarkers);
       setPoiResults(nextPoiResults);
-      applyPoiRadiusToMarkers();
+      applyPoiFiltersToMarkers();
       if (nextPoiResults.length > 0) {
         setShowSidebar(false);
         setShowPoiSidebar(true);
@@ -1103,8 +1670,16 @@ useEffect(() => {
   };
 
   useEffect(() => {
-    applyPoiRadiusToMarkers();
-  }, [poiRadiusFilter, poiResults]);
+    applyPoiFiltersToMarkers();
+  }, [poiRadiusFilter, poiMinRating, poiOpenFilter, poiCouponFilter, poiResults]);
+
+  const handlePoiRatingSelect = (star: number, event: React.MouseEvent<HTMLButtonElement>) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    const clickX = event.clientX - rect.left;
+    const isHalf = clickX <= rect.width / 2;
+    const next = Math.max(0.5, Math.min(5, star - (isHalf ? 0.5 : 0)));
+    setPoiMinRating((prev) => (Math.abs(prev - next) < 0.001 ? 0 : next));
+  };
 
   const handlePoiResultClick = (poi: PoiListItem) => {
     setShowSidebar(false);
@@ -1174,13 +1749,14 @@ useEffect(() => {
     });
   };
 
-  const handleSearch = async () => {
-    if (!inputValue.trim()) return;
+  const runSearchByQuery = async (queryRaw: string) => {
+    const query = queryRaw.trim();
+    if (!query) return;
 
     try {
       const res = await services.fuzzySearch({
         key: API_KEY,
-        query: inputValue,
+        query,
         center: [userLoc.lng, userLoc.lat],
         limit: 1,
         openingHours: 'nextSevenDays'
@@ -1189,12 +1765,20 @@ useEffect(() => {
       if (res.results && res.results.length > 0) {
         handleSelectSuggestion(res.results[0]);
       } else {
-        alert('No locations found for: ' + inputValue);
+        showToastNotice(`No locations found for: ${query}`, true);
       }
     } catch (e) {
       console.error('Search failed:', e);
-      alert('Search failed. Please try again.');
+      showToastNotice('Search failed. Please try again.', true);
     }
+  };
+
+  useEffect(() => {
+    runSearchQueryRef.current = runSearchByQuery;
+  }, [runSearchByQuery]);
+
+  const handleSearch = async () => {
+    await runSearchByQuery(inputValue);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -1522,6 +2106,10 @@ useEffect(() => {
                       setVoiceGuidanceEnabled((prev) => {
                         const next = !prev;
                         if (!next) {
+                          if (voiceSpeakTimeoutRef.current !== null) {
+                            window.clearTimeout(voiceSpeakTimeoutRef.current);
+                            voiceSpeakTimeoutRef.current = null;
+                          }
                           window.speechSynthesis.cancel();
                         }
                         lastSpokenInstructionRef.current = null;
@@ -1586,6 +2174,20 @@ useEffect(() => {
                 {inputValue && (
                   <button className="bg-transparent border-none text-slate-400 cursor-pointer text-lg p-1 px-2 hover:text-white" onClick={() => setInputValue('')}>x</button>
                 )}
+                <button
+                  className={`border-none p-2 rounded-lg cursor-pointer text-sm transition-colors ${
+                    speechToTextListening
+                      ? 'bg-red-500/30 text-red-200 hover:bg-red-500/40'
+                      : speechToTextSupported
+                      ? 'bg-neutral-800 text-cyan-300 hover:bg-neutral-700'
+                      : 'bg-neutral-800/60 text-neutral-500 cursor-not-allowed'
+                  }`}
+                  onClick={toggleSpeechToText}
+                  disabled={!speechToTextSupported}
+                  title={speechToTextListening ? 'Stop voice input' : 'Start voice input'}
+                >
+                  {speechToTextListening ? <MicOff size={16} /> : <Mic size={16} />}
+                </button>
                 <button className="bg-[#00d4ff] border-none text-black p-2 px-3 rounded-lg cursor-pointer text-sm font-bold hover:bg-[#00b7db]" onClick={handleSearch}>🔍</button>
               </div>
 
@@ -1599,6 +2201,65 @@ useEffect(() => {
                   ))}
                 </div>
               )}
+            </div>
+
+            <div className="mt-2.5 grid grid-cols-3 gap-2 text-[11px]">
+              <label className="rounded-xl border border-neutral-800 bg-neutral-900/95 px-2 py-1.5">
+                <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-cyan-200/80">Rating</span>
+                <div className="flex items-center justify-between gap-1">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={`poi-rating-${star}`}
+                      onClick={(e) => handlePoiRatingSelect(star, e)}
+                      className="rounded-sm p-0.5 hover:bg-white/10 transition-colors"
+                      aria-label={`Set minimum rating ${star}`}
+                    >
+                      <span className="relative block h-4 w-4 leading-none">
+                        <span className="absolute inset-0 text-[16px] text-neutral-600">★</span>
+                        <span
+                          className="absolute inset-0 overflow-hidden text-[16px] text-amber-300"
+                          style={{ width: `${getStarFillPercent(poiMinRating, star)}%` }}
+                        >
+                          ★
+                        </span>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+                <div className="mt-1 flex items-center justify-between">
+                  <p className="text-[10px] text-gray-400">{poiMinRating > 0 ? `${poiMinRating.toFixed(1)}+` : 'Any'}</p>
+                  <button
+                    onClick={() => setPoiMinRating(0)}
+                    className="text-[10px] text-cyan-300 hover:text-cyan-200"
+                  >
+                    Clear
+                  </button>
+                </div>
+              </label>
+              <label className="rounded-xl border border-neutral-800 bg-neutral-900/95 px-2 py-1.5">
+                <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-cyan-200/80">Open</span>
+                <select
+                  value={poiOpenFilter}
+                  onChange={(e) => setPoiOpenFilter(e.target.value as PoiOpenFilter)}
+                  className="w-full border-none bg-transparent text-white outline-none text-xs"
+                >
+                  <option value="all" className="bg-neutral-900 text-white">Any</option>
+                  <option value="open" className="bg-neutral-900 text-white">Open now</option>
+                  <option value="closed" className="bg-neutral-900 text-white">Closed now</option>
+                </select>
+              </label>
+              <label className="rounded-xl border border-neutral-800 bg-neutral-900/95 px-2 py-1.5">
+                <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-cyan-200/80">Coupon</span>
+                <select
+                  value={poiCouponFilter}
+                  onChange={(e) => setPoiCouponFilter(e.target.value as PoiCouponFilter)}
+                  className="w-full border-none bg-transparent text-white outline-none text-xs"
+                >
+                  <option value="all" className="bg-neutral-900 text-white">Any</option>
+                  <option value="with" className="bg-neutral-900 text-white">Has coupon</option>
+                  <option value="without" className="bg-neutral-900 text-white">No coupon</option>
+                </select>
+              </label>
             </div>
 
             <div className="relative mt-2.5 text-[14px]">
@@ -1718,10 +2379,8 @@ useEffect(() => {
                   marginBottom,
                   right,
                   backgroundColor: bgColor,
-                  borderTopLeftRadius: borderRadius,
-                  borderBottomLeftRadius: borderRadius,
                 }}
-                className="fixed top-20 bottom-3 right-2 z-[1500] w-[400px] rounded-2xl border border-cyan-500/30 bg-neutral-900/90 p-4 shadow-2xl backdrop-blur-xl flex flex-col"
+                className="fixed top-20 bottom-3 right-2 z-[1500] w-[400px] rounded-2xl overflow-hidden border border-cyan-500/30 bg-neutral-900/90 p-4 shadow-2xl backdrop-blur-xl flex flex-col"
               >
                 <div className="mb-3 flex justify-between items-center border-b border-white/10 pb-2">
                   <h2 className="text-cyan-300 text-lg font-semibold">POI Locations</h2>
@@ -1731,6 +2390,57 @@ useEffect(() => {
                   >
                     ✕
                   </button>
+                </div>
+                <div className="px-1 pb-2 border-b border-white/10">
+                  <div className="grid grid-cols-3 gap-2 text-[10px]">
+                    <div className="rounded-lg border border-neutral-700 bg-neutral-800/60 px-2 py-1.5">
+                      <p className="mb-1 font-semibold uppercase tracking-wide text-cyan-200/80">Rating</p>
+                      <div className="flex items-center justify-between gap-0.5">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <button
+                            key={`sidebar-poi-rating-${star}`}
+                            onClick={(e) => handlePoiRatingSelect(star, e)}
+                            className="rounded-sm p-0.5 hover:bg-white/10 transition-colors"
+                            aria-label={`Set minimum rating ${star}`}
+                          >
+                            <span className="relative block h-3.5 w-3.5 leading-none">
+                              <span className="absolute inset-0 text-[13px] text-neutral-600">★</span>
+                              <span
+                                className="absolute inset-0 overflow-hidden text-[13px] text-amber-300"
+                                style={{ width: `${getStarFillPercent(poiMinRating, star)}%` }}
+                              >
+                                ★
+                              </span>
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <label className="rounded-lg border border-neutral-700 bg-neutral-800/60 px-2 py-1.5">
+                      <span className="mb-1 block font-semibold uppercase tracking-wide text-cyan-200/80">Open</span>
+                      <select
+                        value={poiOpenFilter}
+                        onChange={(e) => setPoiOpenFilter(e.target.value as PoiOpenFilter)}
+                        className="w-full border-none bg-transparent text-white outline-none text-[11px]"
+                      >
+                        <option value="all" className="bg-neutral-900 text-white">Any</option>
+                        <option value="open" className="bg-neutral-900 text-white">Open</option>
+                        <option value="closed" className="bg-neutral-900 text-white">Closed</option>
+                      </select>
+                    </label>
+                    <label className="rounded-lg border border-neutral-700 bg-neutral-800/60 px-2 py-1.5">
+                      <span className="mb-1 block font-semibold uppercase tracking-wide text-cyan-200/80">Coupon</span>
+                      <select
+                        value={poiCouponFilter}
+                        onChange={(e) => setPoiCouponFilter(e.target.value as PoiCouponFilter)}
+                        className="w-full border-none bg-transparent text-white outline-none text-[11px]"
+                      >
+                        <option value="all" className="bg-neutral-900 text-white">Any</option>
+                        <option value="with" className="bg-neutral-900 text-white">Has</option>
+                        <option value="without" className="bg-neutral-900 text-white">No</option>
+                      </select>
+                    </label>
+                  </div>
                 </div>
                 <div className="px-1 py-2 border-b border-white/10">
                   <div className="grid grid-cols-3 gap-2">
@@ -1751,7 +2461,7 @@ useEffect(() => {
                 </div>
                 <div className="flex-1 overflow-y-auto pt-3 pr-1">
                   {filteredPoiResults.length === 0 ? (
-                    <p className="text-gray-400 text-center py-4">No POI locations in this radius.</p>
+                    <p className="text-gray-400 text-center py-4">No POI locations match the selected filters.</p>
                   ) : (
                     filteredPoiResults.map((poi) => (
                       <div
@@ -1765,6 +2475,17 @@ useEffect(() => {
                             <h3 className="text-xl font-bold text-cyan-400/80">{poi.name}</h3>
                             <p className="text-gray-400 text-sm">{poi.address}</p>
                             <p className="text-gray-500 text-xs mt-1">{metersToMiles(poi.distanceMeters).toFixed(1)} mi away</p>
+                            <div className="mt-2 grid grid-cols-3 gap-1 text-[10px]">
+                              <p className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-gray-300">
+                                Rating: {typeof poi.rating === 'number' ? `${poi.rating.toFixed(1)}★` : 'N/A'}
+                              </p>
+                              <p className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-gray-300">
+                                Open: {typeof poi.isOpenNow === 'boolean' ? (poi.isOpenNow ? 'Yes' : 'No') : 'N/A'}
+                              </p>
+                              <p className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-gray-300">
+                                Coupon: {poi.hasCoupon ? 'Yes' : 'No'}
+                              </p>
+                            </div>
                             {poi.categories.length > 0 && (
                               <p className="text-gray-500 text-xs mt-2">
                                 {poi.categories.join(', ')}
@@ -1773,7 +2494,17 @@ useEffect(() => {
                             <LocationDetailBlock details={poi} />
                             <div className="mt-2" onClick={(e) => e.stopPropagation()}>
                               <LocationReviewsPopup
-                                location={{ name: poi.name, address: poi.address }}
+                                location={{
+                                  name: poi.name,
+                                  address: poi.address,
+                                  latitude: poi.lat,
+                                  longitude: poi.lng,
+                                  categories: poi.categories,
+                                  phone: poi.phone,
+                                  email: poi.email,
+                                  website: poi.website,
+                                  businessHours: poi.businessHours,
+                                }}
                                 buttonClassName="rounded-md border border-white/20 bg-white/5 px-2.5 py-1.5 text-xs text-gray-200 hover:bg-white/10"
                               />
                             </div>
@@ -1829,6 +2560,13 @@ useEffect(() => {
                     lid: routeFavoriteLocation?.lid,
                     name: stats.name,
                     address: routeFavoriteLocation?.address || stats.name,
+                    latitude: routeFavoriteLocation?.latitude,
+                    longitude: routeFavoriteLocation?.longitude,
+                    categories: routeFavoriteLocation?.category,
+                    phone: routeFavoriteLocation?.phone,
+                    email: routeFavoriteLocation?.email,
+                    website: routeFavoriteLocation?.website,
+                    businessHours: routeFavoriteLocation?.businessHours,
                   }}
                   buttonClassName="rounded-lg border border-neutral-700 bg-neutral-800 text-white px-2.5 py-2 text-xs hover:bg-neutral-700"
                 />
@@ -1838,7 +2576,7 @@ useEffect(() => {
           )}
           {/* Location Info Popup */}
           {showImageLocationPopup && selectedLocation && (
-            <div className="absolute top-[58%] left-1/2 -translate-x-1/2 -translate-y-1/2 bg-neutral-900/98 border border-neutral-800 rounded-2xl w-80 z-[3000] shadow-2xl max-h-[72vh] overflow-hidden">
+            <div className="absolute top-[64%] left-1/2 -translate-x-1/2 -translate-y-1/2 bg-neutral-900/98 border border-neutral-800 rounded-2xl w-[92vw] max-w-[430px] z-[3000] shadow-2xl max-h-[72vh] overflow-hidden">
               <div className="flex justify-between items-center p-4 border-b border-neutral-800">
                 <h3 className="m-0 text-[#00d4ff] text-lg">Location Details</h3> 
                 <div className="flex items-center gap-2">
@@ -1869,6 +2607,13 @@ useEffect(() => {
                       lid: selectedLocation?.lid,
                       name: selectedLocation?.name || 'Selected Location',
                       address: selectedLocation?.address,
+                      latitude: selectedLocation?.latitude,
+                      longitude: selectedLocation?.longitude,
+                      categories: selectedLocation?.category,
+                      phone: selectedLocation?.phone,
+                      email: selectedLocation?.email,
+                      website: selectedLocation?.website,
+                      businessHours: selectedLocation?.businessHours,
                     }}
                     buttonClassName="rounded-lg border border-white/20 bg-white/5 px-3 py-3 text-xs text-gray-200 hover:bg-white/10"
                   />

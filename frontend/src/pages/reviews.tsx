@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type MouseEvent } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Heart, House, MapPin, TicketPercent } from 'lucide-react';
 import Navbar from '../components/navbar';
@@ -80,9 +80,6 @@ const LocationDetailBlock = ({ loc }: { loc: Location }) => {
     });
   }
   if (formattedHours.length > 0) details.push({ label: 'Hours', value: formattedHours.join(' | ') });
-  if (loc.socials && loc.socials.length > 0) {
-    details.push({ label: 'Socials', value: loc.socials.slice(0, 3).map((social) => social.platform).join(', ') });
-  }
   if (loc.categories && loc.categories.length > 0) {
     details.push({
       label: 'Categories',
@@ -104,6 +101,29 @@ const LocationDetailBlock = ({ loc }: { loc: Location }) => {
     </div>
   );
 };
+
+const getStarFillPercent = (value: number, star: number): number => {
+  const raw = value - (star - 1);
+  if (raw <= 0) return 0;
+  if (raw >= 1) return 100;
+  return raw * 100;
+};
+
+const StarRatingDisplay = ({ value, sizeClass = 'text-[14px]' }: { value: number; sizeClass?: string }) => (
+  <span className="inline-flex items-center gap-0.5 align-middle">
+    {[1, 2, 3, 4, 5].map((star) => (
+      <span key={`display-star-${star}`} className={`relative block h-4 w-4 leading-none ${sizeClass}`}>
+        <span className="absolute inset-0 text-neutral-600">★</span>
+        <span
+          className="absolute inset-0 overflow-hidden text-amber-300"
+          style={{ width: `${getStarFillPercent(value, star)}%` }}
+        >
+          ★
+        </span>
+      </span>
+    ))}
+  </span>
+);
 
 const ReviewsPage = () => {
   const navigate = useNavigate();
@@ -170,6 +190,11 @@ const ReviewsPage = () => {
       sampleGoogleReviewsForSelected.length;
     return avg;
   }, [sampleGoogleReviewsForSelected]);
+  const communityAverageRating = useMemo(() => {
+    if (backendReviews.length === 0) return null;
+    const avg = backendReviews.reduce((sum, review) => sum + review.star_rating, 0) / backendReviews.length;
+    return avg;
+  }, [backendReviews]);
   const requestedLocationId = useMemo(() => {
     const raw = searchParams.get('locationId');
     const parsed = Number(raw);
@@ -276,6 +301,10 @@ const ReviewsPage = () => {
 
   const fetchBackendReviews = async (locationId: number, currentUser?: { uid: number; username: string } | null) => {
     setLoadingReviews(true);
+    if (currentUser) {
+      setMyRating(5);
+      setMyReviewText('');
+    }
     try {
       const response = await fetch(`http://localhost:5173/rate/loc/${locationId}/reviews`, {
         credentials: 'include',
@@ -306,13 +335,10 @@ const ReviewsPage = () => {
       setBackendReviews(reviews);
 
       if (currentUser) {
-        const mine = reviews.find((r: BackendReview) => r.user_id === currentUser.uid || r.username === currentUser.username);
+        const mine = [...reviews].reverse().find((r: BackendReview) => r.user_id === currentUser.uid);
         if (mine) {
           setMyRating(Math.max(1, Math.min(5, Number(mine.star_rating) || 5)));
           setMyReviewText(mine.content || '');
-        } else {
-          setMyRating(5);
-          setMyReviewText('');
         }
       }
     } catch (error) {
@@ -346,17 +372,23 @@ const ReviewsPage = () => {
     if (!selectedLocation || !user) return;
     setSubmittingReview(true);
     try {
-      const response = await fetch('http://localhost:5173/rate/review', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          user_id: user.uid,
-          location_id: selectedLocation.lid,
-          star_rating: myRating,
-          content: myReviewText,
-        }),
-      });
+      const submitPayload = async (ratingValue: number) =>
+        fetch('http://localhost:5173/rate/review', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            user_id: user.uid,
+            location_id: selectedLocation.lid,
+            star_rating: ratingValue,
+            content: myReviewText,
+          }),
+        });
+
+      let response = await submitPayload(myRating);
+      if (!response.ok && Math.round(myRating) !== myRating) {
+        response = await submitPayload(Math.round(myRating));
+      }
 
       if (!response.ok) {
         enqueueAlert({ message: 'Failed to submit review.', textColor: 'text-red-300' });
@@ -409,6 +441,14 @@ const ReviewsPage = () => {
     } finally {
       setGeneratingReview(false);
     }
+  };
+
+  const handleMyRatingClick = (star: number, event: MouseEvent<HTMLButtonElement>) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    const clickX = event.clientX - rect.left;
+    const isHalf = clickX <= rect.width / 2;
+    const next = Math.max(0.5, Math.min(5, star - (isHalf ? 0.5 : 0)));
+    setMyRating(next);
   };
 
   if (!user) {
@@ -589,7 +629,7 @@ const ReviewsPage = () => {
                             <p className="text-sm text-cyan-200">
                               {review.name}
                               {' • '}
-                              {'★'.repeat(Math.max(1, Math.min(5, review.star_rating)))}
+                              <StarRatingDisplay value={review.star_rating} sizeClass="text-[13px]" />
                             </p>
                             <p className="text-xs text-gray-500 mt-1">{review.relative_time}</p>
                             <p className="text-sm text-gray-300 mt-1">{review.content}</p>
@@ -601,6 +641,10 @@ const ReviewsPage = () => {
 
                   <div className="rounded-xl border border-white/10 bg-neutral-800/55 p-4">
                     <h3 className="text-cyan-300 font-semibold">Community Reviews</h3>
+                    <p className="mt-1 text-xs text-gray-400">
+                      {backendReviews.length} review{backendReviews.length === 1 ? '' : 's'}
+                      {communityAverageRating != null ? ` • ${communityAverageRating.toFixed(1)} ★ avg` : ''}
+                    </p>
                     {loadingReviews ? (
                       <p className="text-gray-400 text-sm mt-2">Loading reviews...</p>
                     ) : backendReviews.length === 0 ? (
@@ -608,12 +652,12 @@ const ReviewsPage = () => {
                     ) : (
                       <div className="mt-2 space-y-2 max-h-[300px] overflow-y-auto pr-1">
                         {backendReviews.map((review, idx) => (
-                          <div key={idx} className="rounded-lg border border-white/10 p-3">
+                          <div key={`${review.user_id}-${idx}-${review.content}`} className="rounded-lg border border-white/10 p-3">
                             <p className="text-sm text-cyan-200">
                               {review.username}
                               {review.user_id === user.uid ? ' (you)' : ''}
                               {' • '}
-                              {'★'.repeat(Math.max(1, Math.min(5, review.star_rating)))}
+                              <StarRatingDisplay value={review.star_rating} sizeClass="text-[13px]" />
                             </p>
                             <p className="text-sm text-gray-300 mt-1">{review.content}</p>
                           </div>
@@ -635,14 +679,24 @@ const ReviewsPage = () => {
                     {[1, 2, 3, 4, 5].map((star) => (
                       <button
                         key={star}
-                        onClick={() => setMyRating(star)}
-                        className={`text-2xl ${star <= myRating ? 'text-amber-300' : 'text-neutral-500'}`}
+                        onClick={(e) => handleMyRatingClick(star, e)}
+                        className="rounded-sm p-0.5 hover:bg-white/10 transition-colors"
                         aria-label={`Set rating ${star}`}
                       >
-                        ★
+                        <span className="relative block h-7 w-7 leading-none text-[28px]">
+                          <span className="absolute inset-0 text-neutral-600">★</span>
+                          <span
+                            className="absolute inset-0 overflow-hidden text-amber-300"
+                            style={{ width: `${getStarFillPercent(myRating, star)}%` }}
+                          >
+                            ★
+                          </span>
+                        </span>
                       </button>
                     ))}
+                    <p className="ml-2 text-sm text-cyan-200">{myRating.toFixed(1)} / 5.0</p>
                   </div>
+                  <p className="text-xs text-gray-400">Click the left half of a star for `.5` ratings.</p>
 
                   <textarea
                     value={myReviewText}

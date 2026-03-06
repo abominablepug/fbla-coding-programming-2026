@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {motion, useScroll, useTransform} from "framer-motion";
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
 interface NavBarProps {
     page?: React.ReactNode;
@@ -13,10 +13,39 @@ interface NavBarProps {
 
 const Navbar: React.FC<NavBarProps> = ({ page, children, className = ""}) => {
     const { scrollY } = useScroll();
+    const location = useLocation();
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
 	const width = useTransform(scrollY, [0, 100], ["100%", "98%"]);
 	const borderRadius = useTransform(scrollY, [0, 100], ["0px", "40px"]);
 	const marginTop = useTransform(scrollY, [0, 100], ["0px", "12px"]);
 	const bgColor = useTransform(scrollY, [0, 100], ["rgba(23, 23, 23, 1)", "rgba(30, 30, 30, 0.7)"]);
+    const authBaseUrl = import.meta.env.VITE_AUTH_BASE_URL || 'http://localhost:5173';
+
+    useEffect(() => {
+        let cancelled = false;
+        const checkAuth = async () => {
+            try {
+                const response = await fetch(`${authBaseUrl}/auth/dashboard`, { credentials: 'include' });
+                if (!cancelled) {
+                    setIsAuthenticated(response.ok);
+                }
+            } catch {
+                if (!cancelled) {
+                    setIsAuthenticated(false);
+                }
+            }
+        };
+        void checkAuth();
+        return () => {
+            cancelled = true;
+        };
+    }, [authBaseUrl, location.pathname]);
+
+    const brandLink = useMemo(() => {
+        const appPages = new Set(['/dashboard', '/map', '/tinder', '/discount', '/reviews']);
+        if (appPages.has(location.pathname)) return '/dashboard';
+        return isAuthenticated ? '/dashboard' : '/';
+    }, [isAuthenticated, location.pathname]);
 
     return (
         <div className="fixed z-50 w-full top-0 pointer-events-none flex justify-center">
@@ -26,7 +55,7 @@ const Navbar: React.FC<NavBarProps> = ({ page, children, className = ""}) => {
                         style={{ fontFamily: 'var(--font-brand)' }}
                         className="bg-linear-to-r from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent font-bold tracking-widest text-lg md:text-xl"
                     >
-                        <Link to="/">
+                        <Link to={brandLink}>
                             BizMatch
                         </Link>
                     </span>

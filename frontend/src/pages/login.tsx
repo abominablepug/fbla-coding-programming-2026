@@ -15,6 +15,11 @@ const Login = () => {
 	const [submitError, setSubmitError] = useState('');
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+	const [showForgotPassword, setShowForgotPassword] = useState(false);
+	const [forgotEmail, setForgotEmail] = useState('');
+	const [forgotError, setForgotError] = useState('');
+	const [forgotSuccess, setForgotSuccess] = useState('');
+	const [isForgotSubmitting, setIsForgotSubmitting] = useState(false);
 	const navigate = useNavigate();
 
 	return (
@@ -100,6 +105,11 @@ const Login = () => {
 					</button>
 					<button
 						type="button"
+						onClick={() => {
+							setShowForgotPassword(true);
+							setForgotError('');
+							setForgotSuccess('');
+						}}
 						className="w-full rounded-lg bg-sky-500 py-3 font-semibold text-white hover:bg-sky-400 active:scale-[0.98] transition-all shadow-lg"
 					>
 						Forgot Password
@@ -107,6 +117,85 @@ const Login = () => {
 					</div>
 				</form>
 			</Card>
+			{showForgotPassword && (
+				<div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 px-4">
+					<Card
+						title="Forgot Password"
+						cardClassName="w-full max-w-lg"
+						titleClassName="text-cyan-500"
+					>
+						<form
+							className="space-y-4"
+							onSubmit={async (e) => {
+								e.preventDefault();
+								setForgotError('');
+								setForgotSuccess('');
+								const email = forgotEmail.trim().toLowerCase();
+								if (!email) {
+									setForgotError('Please enter your account email.');
+									return;
+								}
+								try {
+									setIsForgotSubmitting(true);
+									const response = await fetch(`${AUTH_BASE_URL}/auth/forgot_password`, {
+										method: 'POST',
+										headers: { 'Content-Type': 'application/json' },
+										credentials: 'include',
+										body: JSON.stringify({ email }),
+									});
+									const data = await response.json().catch(() => ({}));
+									if (!response.ok) {
+										setForgotError(data?.message || 'Unable to send reset email right now.');
+										return;
+									}
+									setForgotSuccess(data?.message || 'If an account exists for this email, a reset link was sent.');
+								} catch (error) {
+									console.error('Forgot password request failed:', error);
+									setForgotError('Unable to send reset email right now.');
+								} finally {
+									setIsForgotSubmitting(false);
+								}
+							}}
+						>
+							<p className="text-sm text-gray-300">
+								Enter your account email. We will send a secure reset link to change your password.
+							</p>
+							<div>
+								<label className="block text-sm font-medium text-white">Email</label>
+								<input
+									type="email"
+									className="mt-1 w-full rounded-lg bg-white/10 border border-white/20 p-3 text-gray-300 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-400 transition-all"
+									placeholder="email@example.com"
+									value={forgotEmail}
+									onChange={(e) => setForgotEmail(e.target.value)}
+								/>
+							</div>
+							{forgotError && <p className="text-red-400 text-sm">{forgotError}</p>}
+							{forgotSuccess && <p className="text-green-300 text-sm">{forgotSuccess}</p>}
+							<div className="flex items-center justify-end gap-2">
+								<button
+									type="button"
+									onClick={() => {
+										setShowForgotPassword(false);
+										setForgotError('');
+										setForgotSuccess('');
+									}}
+									className="rounded-lg border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20"
+								>
+									Close
+								</button>
+								<button
+									type="submit"
+									disabled={isForgotSubmitting}
+									className="rounded-lg bg-sky-500 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-400 disabled:opacity-60"
+								>
+									{isForgotSubmitting ? 'Sending...' : 'Send Reset Link'}
+								</button>
+							</div>
+						</form>
+					</Card>
+				</div>
+			)}
 		</Body>
 	);
 };

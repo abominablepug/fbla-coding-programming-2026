@@ -346,7 +346,6 @@ const TinderPage = () => {
     const getOtherDetailsLine = (business: Business): string => {
         const parts: string[] = [];
         if (business.website) parts.push(`Website: ${prettyUrl(business.website)}`);
-        if (business.socials && business.socials.length > 0) parts.push(`Social: ${business.socials[0]}`);
         if (business.phone) parts.push(`Phone: ${business.phone}`);
         if (business.email) parts.push(`Email: ${business.email}`);
         return parts.length > 0 ? parts.join(' | ') : 'Other Details: N/A';
@@ -354,9 +353,6 @@ const TinderPage = () => {
     const renderFavoriteDetails = (loc: Partial<Location & Business>) => {
         const hours = loc.businessHours && loc.businessHours.length > 0
             ? loc.businessHours.slice(0, 2).join(' | ')
-            : 'N/A';
-        const socials = loc.socials && loc.socials.length > 0
-            ? loc.socials.slice(0, 2).join(', ')
             : 'N/A';
         return (
             <div className="mt-2.5 grid grid-cols-3 gap-1.5 text-[11px] leading-snug">
@@ -376,8 +372,7 @@ const TinderPage = () => {
                         </a>
                     ) : 'N/A'}
                 </div>
-                <div className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-gray-400">Socials: {socials}</div>
-                <div className="col-span-2 rounded-md border border-white/10 bg-white/5 px-2 py-1 text-gray-400">Hours: {hours}</div>
+                <div className="col-span-3 rounded-md border border-white/10 bg-white/5 px-2 py-1 text-gray-400">Hours: {hours}</div>
             </div>
         );
     };
@@ -511,7 +506,18 @@ const TinderPage = () => {
                                                     <p className="text-cyan-50 text-sm mt-2 truncate"><strong>{getOtherDetailsLine(currentBusiness)}</strong></p>
                                                     <div className="mt-3">
                                                         <LocationReviewsPopup
-                                                            location={{ lid: currentBusiness.lid, name: currentBusiness.name, address: currentBusiness.address }}
+                                                            location={{
+                                                                lid: currentBusiness.lid,
+                                                                name: currentBusiness.name,
+                                                                address: currentBusiness.address,
+                                                                latitude: currentBusiness.latitude,
+                                                                longitude: currentBusiness.longitude,
+                                                                categories: currentBusiness.category,
+                                                                phone: currentBusiness.phone,
+                                                                email: currentBusiness.email,
+                                                                website: currentBusiness.website,
+                                                                businessHours: currentBusiness.businessHours,
+                                                            }}
                                                             buttonClassName="rounded-md border border-white/20 bg-white/5 px-3 py-2 text-xs text-gray-100 hover:bg-white/10"
                                                         />
                                                     </div>

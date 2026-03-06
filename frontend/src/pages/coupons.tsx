@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Bookmark, BookmarkCheck, Heart, House, MapPin, Star, TicketPercent } from 'lucide-react';
@@ -8,7 +8,8 @@ import Links from '../components/links';
 import Card from '../components/card';
 import LocalAiChatPopup from '../components/localAiChatPopup';
 import { enqueueAlert } from '../components/alerts';
-import LocationReviewsPopup from '../components/locationReviewsPopup';
+import { getSampleGoogleReviewsForLocation } from '../utils/googleReviews';
+import { resolveLocationId } from '../utils/locationResolver';
 
 interface Location {
   lid: number;
@@ -58,6 +59,15 @@ interface SavedCouponMeta {
   address?: string;
 }
 
+interface ReviewModalLocation {
+  lid: number;
+  name: string;
+  address?: string;
+  latitude?: number;
+  longitude?: number;
+  categories?: string[];
+}
+
 const AUTH_BASE_URL = import.meta.env.VITE_AUTH_BASE_URL || 'http://localhost:5173';
 const FOURSQUARE_API_KEY =
   import.meta.env.VITE_FOURSQUARE_API_KEY || import.meta.env.PUBLIC_FOURSQUARE_API_KEY;
@@ -90,6 +100,7 @@ const formatDate = (iso?: string) => {
 };
 
 const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
+const stars = (rating: number) => '★'.repeat(Math.max(1, Math.min(5, Math.round(rating))));
 
 const dedupeLocations = (locations: Location[]): Location[] => {
   const seen = new Set<string>();
@@ -134,8 +145,28 @@ const Coupons = () => {
   const [savedCouponKeys, setSavedCouponKeys] = useState<string[]>([]);
   const [savedCouponMeta, setSavedCouponMeta] = useState<Record<string, SavedCouponMeta>>({});
   const [loading, setLoading] = useState(true);
+  const [reviewModalLocation, setReviewModalLocation] = useState<ReviewModalLocation | null>(null);
+  const [reviewModalLoading, setReviewModalLoading] = useState(false);
+  const [reviewModalReviews, setReviewModalReviews] = useState<BackendReview[]>([]);
+  const [reviewModalResolvedLid, setReviewModalResolvedLid] = useState<number | null>(null);
+  const nearbySectionRef = useRef<HTMLDivElement | null>(null);
+  const personalSectionRef = useRef<HTMLDivElement | null>(null);
 
   const requestedLocationId = typeof routeState?.locationId === 'number' ? routeState.locationId : null;
+  const scrollToSection = (ref: React.RefObject<HTMLDivElement | null>) => {
+    ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+  const reviewModalGoogleReviews = useMemo(
+    () =>
+      reviewModalLocation
+        ? getSampleGoogleReviewsForLocation({
+            lid: reviewModalLocation.lid,
+            name: reviewModalLocation.name,
+            address: reviewModalLocation.address,
+          })
+        : [],
+    [reviewModalLocation]
+  );
 
   const fetchFoursquareSnapshot = async (loc: Location): Promise<FsqSnapshot> => {
     if (!FOURSQUARE_API_KEY) return { rating: null, tipCount: 0, topTip: null };
@@ -190,6 +221,54 @@ const Coupons = () => {
       return Array.isArray(data?.reviews) ? data.reviews : [];
     } catch {
       return [];
+    }
+  };
+
+  const openCommunityReviewsModal = async (loc: ReviewModalLocation) => {
+    setReviewModalLocation(loc);
+    setReviewModalReviews([]);
+    setReviewModalLoading(true);
+    setReviewModalResolvedLid(null);
+    try {
+      let resolvedLid = loc.lid > 0 ? loc.lid : null;
+      if (!resolvedLid) {
+        resolvedLid = await resolveLocationId({
+          lid: loc.lid,
+          name: loc.name,
+          address: loc.address,
+          latitude: loc.latitude,
+          longitude: loc.longitude,
+          type: 1,
+          categories: loc.categories || [],
+        });
+      }
+
+      setReviewModalResolvedLid(resolvedLid);
+      if (!resolvedLid) {
+        setReviewModalReviews([]);
+        return;
+      }
+
+      const reviews = await fetchCommunityReviews(resolvedLid);
+      const cleaned = reviews
+        .filter(
+          (review) =>
+            review &&
+            Number.isFinite(Number(review.user_id)) &&
+            typeof review.username === 'string' &&
+            Number.isFinite(Number(review.star_rating)) &&
+            typeof review.content === 'string'
+        )
+        .map((review) => ({
+          user_id: Number(review.user_id),
+          username: review.username.trim() || 'Unknown user',
+          star_rating: clamp(Math.round(Number(review.star_rating) || 1), 1, 5),
+          content: review.content.trim(),
+        }))
+        .filter((review) => review.content.length > 0);
+      setReviewModalReviews(cleaned);
+    } finally {
+      setReviewModalLoading(false);
     }
   };
 
@@ -552,15 +631,21 @@ const Coupons = () => {
                 >
                   Route to Location
                 </button>
-                <LocationReviewsPopup
-                  location={{
-                    lid: coupon.location.lid,
-                    name: coupon.location.name,
-                    address: coupon.location.address,
-                  }}
-                  buttonLabel="Review"
-                  popupVariant="card"
-                />
+                <button
+                  onClick={() =>
+                    void openCommunityReviewsModal({
+                      lid: coupon.location.lid,
+                      name: coupon.location.name,
+                      address: coupon.location.address,
+                      latitude: coupon.location.latitude,
+                      longitude: coupon.location.longitude,
+                      categories: coupon.location.categories,
+                    })
+                  }
+                  className="rounded-md border border-white/20 bg-white/5 px-3 py-2 text-xs text-gray-200 hover:bg-white/10"
+                >
+                  Review
+                </button>
                 {coupon.location.lid > 0 && (
                   <button
                     onClick={() => navigate(`/reviews?locationId=${encodeURIComponent(String(coupon.location.lid))}`)}
@@ -612,6 +697,20 @@ const Coupons = () => {
                 {showSavedCouponsSidebar ? 'Hide Sidebar' : 'View Saved'}
               </button>
             </div>
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <button
+                onClick={() => scrollToSection(nearbySectionRef)}
+                className="rounded-full border border-cyan-400/40 bg-cyan-500/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-cyan-200 hover:bg-cyan-500/25 transition-colors"
+              >
+                Nearby You
+              </button>
+              <button
+                onClick={() => scrollToSection(personalSectionRef)}
+                className="rounded-full border border-cyan-400/40 bg-cyan-500/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-cyan-200 hover:bg-cyan-500/25 transition-colors"
+              >
+                Favorites + Recently Visited
+              </button>
+            </div>
           </div>
         </Card>
 
@@ -621,6 +720,7 @@ const Coupons = () => {
           </Card>
         ) : (
           <div className="space-y-5">
+            <div ref={nearbySectionRef}>
             <Card
               title={
                 <div className="flex items-center justify-between gap-3">
@@ -637,7 +737,9 @@ const Coupons = () => {
             >
               {showNearbyCoupons && renderCouponCards(nearbyCoupons)}
             </Card>
+            </div>
 
+            <div ref={personalSectionRef}>
             <Card
               title={
                 <div className="flex items-center justify-between gap-3">
@@ -654,6 +756,7 @@ const Coupons = () => {
             >
               {showPersonalCoupons && renderCouponCards(personalCoupons)}
             </Card>
+            </div>
           </div>
         )}
       </motion.div>
@@ -689,16 +792,21 @@ const Coupons = () => {
                     >
                       Route
                     </button>
-                    <LocationReviewsPopup
-                      location={{
-                        lid: coupon.location.lid,
-                        name: coupon.location.name,
-                        address: coupon.location.address,
-                      }}
-                      buttonLabel="Review"
-                      buttonClassName="rounded-md border border-white/20 bg-white/5 px-2.5 py-1.5 text-xs text-gray-200 hover:bg-white/10"
-                      popupVariant="card"
-                    />
+                    <button
+                      onClick={() =>
+                        void openCommunityReviewsModal({
+                          lid: coupon.location.lid,
+                          name: coupon.location.name,
+                          address: coupon.location.address,
+                          latitude: coupon.location.latitude,
+                          longitude: coupon.location.longitude,
+                          categories: coupon.location.categories,
+                        })
+                      }
+                      className="rounded-md border border-white/20 bg-white/5 px-2.5 py-1.5 text-xs text-gray-200 hover:bg-white/10"
+                    >
+                      Review
+                    </button>
                     <button
                       onClick={() => toggleSavedCoupon(coupon)}
                       className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-cyan-400/35 bg-cyan-500/12 text-cyan-200 hover:bg-cyan-500/22 transition-colors"
@@ -716,6 +824,77 @@ const Coupons = () => {
               ))
             )}
           </div>
+        </div>
+      )}
+      {reviewModalLocation && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[1700] px-4">
+          <Card
+            title={(
+              <div className="grid grid-cols-[1fr_auto] items-start gap-3">
+                <div>
+                  <h1 className="text-2xl font-bold text-[#406386] line-clamp-2">Location Reviews</h1>
+                  <p className="mt-1 text-sm text-cyan-200 line-clamp-1">{reviewModalLocation.name}</p>
+                  <p className="mt-0.5 text-xs text-gray-400 line-clamp-1">{reviewModalLocation.address || 'Address unavailable'}</p>
+                </div>
+                <button
+                  className="px-3 py-1 w-fit rounded-full text-white hover:bg-neutral-900 transition-colors"
+                  onClick={() => {
+                    setReviewModalLocation(null);
+                    setReviewModalResolvedLid(null);
+                  }}
+                >
+                  X
+                </button>
+              </div>
+            )}
+            cardClassName="w-full max-w-2xl"
+          >
+            <div className="space-y-4 max-h-[62vh] overflow-y-auto pr-1">
+              <div>
+                <h3 className="mb-2 text-sm font-semibold text-cyan-300">Google Reviews</h3>
+                {reviewModalGoogleReviews.length === 0 ? (
+                  <p className="text-sm text-gray-300">No Google reviews for this location yet.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {reviewModalGoogleReviews.map((review, idx) => (
+                      <div key={`google-${review.name}-${idx}`} className="rounded-xl border border-white/10 bg-neutral-800/60 p-3">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-sm font-semibold text-cyan-200">{review.name}</p>
+                          <p className="text-xs text-gray-400">{review.relative_time}</p>
+                        </div>
+                        <p className="mt-1 text-xs text-amber-300">{stars(review.star_rating)}</p>
+                        <p className="mt-2 text-sm text-gray-200">{review.content}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <h3 className="mb-2 text-sm font-semibold text-cyan-300">Community Reviews</h3>
+                {reviewModalLoading ? (
+                  <p className="text-sm text-gray-300">Loading location reviews...</p>
+                ) : !reviewModalResolvedLid ? (
+                  <p className="text-sm text-gray-300">This location is not yet stored in the database.</p>
+                ) : reviewModalReviews.length === 0 ? (
+                  <p className="text-sm text-gray-300">No reviews for this location yet.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {reviewModalReviews.map((review, idx) => (
+                      <div key={`${review.user_id}-${idx}-${review.content}`} className="rounded-xl border border-white/10 bg-neutral-800/60 p-3">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-sm font-semibold text-cyan-200">{review.username}</p>
+                          <p className="text-xs text-gray-400">User #{review.user_id}</p>
+                        </div>
+                        <p className="mt-1 text-xs text-amber-300">{stars(review.star_rating)}</p>
+                        <p className="mt-2 text-sm text-gray-200">{review.content}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </Card>
         </div>
       )}
 

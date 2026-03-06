@@ -1,12 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import googleSampleReviews from '../data/googleSampleReviews.json';
-
-interface SampleGoogleReview {
-  name: string;
-  star_rating: number;
-  content: string;
-  relative_time: string;
-}
+import { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
+import Card from './card';
+import { getSampleGoogleReviewsForLocation } from '../utils/googleReviews';
+import { resolveLocationId } from '../utils/locationResolver';
 
 interface BackendReview {
   user_id: number;
@@ -19,6 +15,13 @@ interface LocationRef {
   lid?: number;
   name: string;
   address?: string;
+  latitude?: number;
+  longitude?: number;
+  categories?: string[];
+  phone?: string;
+  email?: string;
+  website?: string;
+  businessHours?: string[];
 }
 
 interface LocationReviewsPopupProps {
@@ -36,44 +39,57 @@ const LocationReviewsPopup = ({
   buttonLabel = 'Reviews',
   buttonClassName = 'rounded-md border border-white/20 bg-white/5 px-3 py-2 text-xs text-gray-200 hover:bg-white/10',
   onOpen,
-  popupVariant = 'dropdown',
 }: LocationReviewsPopupProps) => {
   const [open, setOpen] = useState(false);
   const [loadingCommunity, setLoadingCommunity] = useState(false);
   const [communityReviews, setCommunityReviews] = useState<BackendReview[]>([]);
-  const popupRef = useRef<HTMLDivElement | null>(null);
+  const [resolvedLocationId, setResolvedLocationId] = useState<number | null>(location.lid && location.lid > 0 ? location.lid : null);
+  const [communityError, setCommunityError] = useState<string>('');
 
-  const sampleGoogleReviews = useMemo(() => {
-    const base = googleSampleReviews as SampleGoogleReview[];
-    if (!Array.isArray(base) || base.length === 0) return [];
+  const googleReviews = useMemo(
+    () => getSampleGoogleReviewsForLocation({ name: location.name, address: location.address, lid: location.lid }),
+    [location.name, location.address, location.lid]
+  );
 
-    const seedSource = `${location.name}|${location.address || ''}|${location.lid || 0}`;
-    const seed = seedSource.split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
-    const count = Math.min(4, base.length);
-
-    return Array.from({ length: count }).map((_, i) => {
-      const idx = (seed + i * 3) % base.length;
-      const item = base[idx];
-      const variation = ((seed + i) % 3) - 1;
-      return {
-        ...item,
-        star_rating: Math.max(3, Math.min(5, item.star_rating + variation)),
-      };
-    });
-  }, [location.name, location.address, location.lid]);
+  useEffect(() => {
+    setResolvedLocationId(location.lid && location.lid > 0 ? location.lid : null);
+    setCommunityError('');
+  }, [location.lid, location.name, location.address]);
 
   const loadCommunityReviews = async () => {
-    if (!location.lid || location.lid <= 0) {
-      setCommunityReviews([]);
-      return;
-    }
     setLoadingCommunity(true);
+    setCommunityError('');
     try {
-      const res = await fetch(`http://localhost:5173/rate/loc/${location.lid}/reviews`, {
+      let targetLocationId = resolvedLocationId && resolvedLocationId > 0 ? resolvedLocationId : null;
+
+      if (!targetLocationId) {
+        const resolvedId = await resolveLocationId({
+          lid: location.lid,
+          name: location.name,
+          address: location.address,
+          latitude: location.latitude,
+          longitude: location.longitude,
+          type: 1,
+          categories: location.categories || [],
+        });
+        if (resolvedId) {
+          targetLocationId = resolvedId;
+          setResolvedLocationId(resolvedId);
+        }
+      }
+
+      if (!targetLocationId) {
+        setCommunityReviews([]);
+        setCommunityError('Unable to resolve this location in the database yet.');
+        return;
+      }
+
+      const res = await fetch(`http://localhost:5173/rate/loc/${targetLocationId}/reviews`, {
         credentials: 'include',
       });
       if (!res.ok) {
         setCommunityReviews([]);
+        setCommunityError('Unable to load community reviews right now.');
         return;
       }
       const data = await res.json();
@@ -93,37 +109,15 @@ const LocationReviewsPopup = ({
             star_rating: Math.max(1, Math.min(5, Number(review.star_rating) || 1)),
             content: review.content.trim(),
           }))
+          .filter((review: BackendReview) => review.content.length > 0)
       );
     } catch {
       setCommunityReviews([]);
+      setCommunityError('Unable to load community reviews right now.');
     } finally {
       setLoadingCommunity(false);
     }
   };
-
-  const featuredReview = useMemo(() => {
-    if (communityReviews.length > 0) {
-      const review = communityReviews[0];
-      return {
-        source: 'Community Review',
-        author: review.username,
-        rating: review.star_rating,
-        content: review.content,
-        meta: null as string | null,
-      };
-    }
-    if (sampleGoogleReviews.length > 0) {
-      const review = sampleGoogleReviews[0];
-      return {
-        source: 'Google Review',
-        author: review.name,
-        rating: review.star_rating,
-        content: review.content,
-        meta: review.relative_time,
-      };
-    }
-    return null;
-  }, [communityReviews, sampleGoogleReviews]);
 
   const handleOpen = () => {
     setOpen((prev) => {
@@ -136,20 +130,8 @@ const LocationReviewsPopup = ({
     });
   };
 
-  useEffect(() => {
-    if (!open || popupVariant !== 'dropdown') return;
-    const onDocumentClick = (event: MouseEvent) => {
-      if (!popupRef.current) return;
-      if (!popupRef.current.contains(event.target as Node)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', onDocumentClick);
-    return () => document.removeEventListener('mousedown', onDocumentClick);
-  }, [open, popupVariant]);
-
   return (
-    <div className="relative" ref={popupRef}>
+    <div className="relative">
       <button
         onClick={(e) => {
           e.stopPropagation();
@@ -159,103 +141,78 @@ const LocationReviewsPopup = ({
       >
         {buttonLabel}
       </button>
-      {open && popupVariant === 'dropdown' && (
-        <div
-          className="absolute right-0 bottom-full mb-2 w-[360px] max-w-[80vw] z-[5200] rounded-2xl border border-cyan-500/30 bg-neutral-900/98 shadow-2xl"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="flex items-center justify-between gap-2 border-b border-white/10 px-3 py-2">
-            <span className="text-cyan-300 text-sm font-semibold line-clamp-1">{location.name} Reviews</span>
-            <button
-              onClick={() => setOpen(false)}
-              className="h-7 w-7 rounded-full bg-white/5 text-neutral-300 hover:text-white hover:bg-white/10"
-            >
-              ✕
-            </button>
-          </div>
-          <div className="space-y-3 max-h-[320px] overflow-y-auto p-3">
-            <div className="rounded-lg border border-cyan-400/30 bg-cyan-500/10 px-3 py-2">
-              <p className="text-xs text-cyan-100">{location.address || 'Address unavailable'}</p>
-            </div>
-
-            <div>
-              <h4 className="text-cyan-300 font-semibold mb-2 text-xs">Google Reviews</h4>
-              <div className="space-y-2">
-                {sampleGoogleReviews.map((review, idx) => (
-                  <div key={`sample-${idx}`} className="rounded-lg border border-white/10 bg-neutral-800/55 p-2.5">
-                    <p className="text-xs text-cyan-200 font-medium">{review.name}</p>
-                    <p className="text-[11px] text-amber-300">{stars(review.star_rating)}</p>
-                    <p className="text-xs text-gray-200 mt-1">{review.content}</p>
-                    <p className="text-[11px] text-gray-400 mt-1">{review.relative_time}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <h4 className="text-cyan-300 font-semibold mb-2 text-xs">Community Reviews</h4>
-              {loadingCommunity ? (
-                <p className="text-xs text-gray-400">Loading community reviews...</p>
-              ) : communityReviews.length === 0 ? (
-                <p className="text-xs text-gray-400">No community reviews available yet.</p>
-              ) : (
-                <div className="space-y-2">
-                  {communityReviews.map((review, idx) => (
-                    <div key={`community-${idx}`} className="rounded-lg border border-white/10 bg-neutral-800/55 p-2.5">
-                      <p className="text-xs text-cyan-200 font-medium">{review.username}</p>
-                      <p className="text-[11px] text-amber-300">{stars(review.star_rating)}</p>
-                      <p className="text-xs text-gray-200 mt-1">{review.content}</p>
+      {open &&
+        createPortal(
+          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[5600] px-4" onClick={() => setOpen(false)}>
+            <div className="w-full max-w-2xl" onClick={(e) => e.stopPropagation()}>
+              <Card
+                title={(
+                  <div className="grid grid-cols-[1fr_auto] items-start gap-3">
+                    <div>
+                      <h1 className="text-2xl font-bold text-[#406386] line-clamp-2">Location Reviews</h1>
+                      <p className="mt-1 text-sm text-cyan-200 line-clamp-1">{location.name}</p>
+                      <p className="mt-0.5 text-xs text-gray-400 line-clamp-1">{location.address || 'Address unavailable'}</p>
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-      {open && popupVariant === 'card' && (
-        <div
-          className="fixed inset-0 z-[5600] flex items-center justify-center bg-black/60 px-4"
-          onClick={() => setOpen(false)}
-        >
-          <div
-            className="w-full max-w-md rounded-2xl border border-cyan-500/35 bg-neutral-900 p-4 shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-[11px] uppercase tracking-wide text-cyan-300/85">
-                  {featuredReview?.source || 'Review'}
-                </p>
-                <h4 className="mt-1 text-base font-semibold text-cyan-200">{location.name}</h4>
-                <p className="mt-1 text-xs text-gray-400">{location.address || 'Address unavailable'}</p>
-              </div>
-              <button
-                onClick={() => setOpen(false)}
-                className="h-7 w-7 rounded-full bg-white/5 text-neutral-300 hover:text-white hover:bg-white/10"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="mt-4 rounded-xl border border-white/10 bg-neutral-800/65 p-3">
-              {loadingCommunity ? (
-                <p className="text-sm text-gray-300">Loading review...</p>
-              ) : featuredReview ? (
-                <>
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="text-sm font-medium text-cyan-200">{featuredReview.author}</p>
-                    <p className="text-xs text-amber-300">{stars(featuredReview.rating)}</p>
+                    <button
+                      className="px-3 py-1 w-fit rounded-full text-white hover:bg-neutral-900 transition-colors"
+                      onClick={() => setOpen(false)}
+                    >
+                      X
+                    </button>
                   </div>
-                  <p className="mt-2 text-sm text-gray-200">{featuredReview.content}</p>
-                  {featuredReview.meta && <p className="mt-2 text-[11px] text-gray-400">{featuredReview.meta}</p>}
-                </>
-              ) : (
-                <p className="text-sm text-gray-300">No reviews available yet for this location.</p>
-              )}
+                )}
+                cardClassName="w-full max-w-2xl"
+              >
+                <div className="max-h-[62vh] overflow-y-auto space-y-4 pr-1">
+                  <div>
+                    <h3 className="mb-2 text-sm font-semibold text-cyan-300">Google Reviews</h3>
+                    {googleReviews.length === 0 ? (
+                      <p className="text-sm text-gray-300">No Google reviews for this location yet.</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {googleReviews.map((review, idx) => (
+                          <div key={`google-${review.name}-${idx}`} className="rounded-xl border border-white/10 bg-neutral-800/60 p-3">
+                            <div className="flex items-center justify-between gap-2">
+                              <p className="text-sm font-semibold text-cyan-200">{review.name}</p>
+                              <p className="text-xs text-gray-400">{review.relative_time}</p>
+                            </div>
+                            <p className="mt-1 text-xs text-amber-300">{stars(review.star_rating)}</p>
+                            <p className="mt-2 text-sm text-gray-200">{review.content}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <h3 className="mb-2 text-sm font-semibold text-cyan-300">Community Reviews</h3>
+                    {loadingCommunity ? (
+                      <p className="text-sm text-gray-300">Loading location reviews...</p>
+                    ) : communityError ? (
+                      <p className="text-sm text-gray-300">{communityError}</p>
+                    ) : communityReviews.length === 0 ? (
+                      <p className="text-sm text-gray-300">No reviews for this location yet.</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {communityReviews.map((review, idx) => (
+                          <div key={`${review.user_id}-${idx}-${review.content}`} className="rounded-xl border border-white/10 bg-neutral-800/60 p-3">
+                            <div className="flex items-center justify-between gap-2">
+                              <p className="text-sm font-semibold text-cyan-200">{review.username}</p>
+                              <p className="text-xs text-gray-400">User #{review.user_id}</p>
+                            </div>
+                            <p className="mt-1 text-xs text-amber-300">{stars(review.star_rating)}</p>
+                            <p className="mt-2 text-sm text-gray-200">{review.content}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </Card>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
     </div>
   );
 };

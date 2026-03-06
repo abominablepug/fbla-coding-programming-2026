@@ -9,6 +9,7 @@ import TinderPage from "./pages/tinder";
 import Coupons from "./pages/coupons";
 import Alerts from "./components/alerts";
 import ReviewsPage from "./pages/reviews";
+import ResetPassword from "./pages/resetPassword";
 
 
 function App() {
@@ -26,6 +27,7 @@ function App() {
 				<Route path="/reviews" element={<ReviewsPage />} />
 				<Route path="/welcome" element={<Landing/>} />
 				<Route path="/discount" element={<Coupons/>} />
+				<Route path="/reset-password" element={<ResetPassword />} />
 			</Routes>
 		</BrowserRouter>
 	);
