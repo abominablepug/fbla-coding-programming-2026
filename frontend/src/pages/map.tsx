@@ -6,7 +6,7 @@ import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion'
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import Navbar from '../components/navbar';
 import Links from '../components/links';
-import {House, Heart, HeartPlus, Mic, MicOff, Star, TicketPercent} from 'lucide-react';
+import {Heart, HeartPlus, Mic, MicOff, Star, TicketPercent} from 'lucide-react';
 import { enqueueAlert } from '../components/alerts';
 import LocalAiChatPopup from '../components/localAiChatPopup';
 import LocationReviewsPopup from '../components/locationReviewsPopup';
@@ -543,33 +543,41 @@ const getSpeechRecognitionCtor = (): any => {
   return (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition || null;
 };
 
-const LocationDetailBlock = ({ details }: { details?: Pick<Business, 'phone' | 'email' | 'website' | 'businessHours'> }) => {
+const extractSpeechFromEvent = (event: any): { finalText: string; interimText: string; combinedText: string } => {
+  const results = event?.results;
+  const total = typeof results?.length === 'number' ? results.length : 0;
+  let finalText = '';
+  let interimText = '';
+
+  for (let i = 0; i < total; i += 1) {
+    const result = results[i];
+    if (!result || typeof result.length !== 'number') continue;
+    const transcript = `${result[0]?.transcript || ''}`.trim();
+    if (!transcript) continue;
+    if (result.isFinal) {
+      finalText = `${finalText} ${transcript}`.trim();
+    } else {
+      interimText = `${interimText} ${transcript}`.trim();
+    }
+  }
+
+  const combinedText = finalText || interimText;
+  return { finalText, interimText, combinedText };
+};
+
+const LocationDetailBlock = ({ details }: { details?: Pick<Business, 'phone' | 'businessHours'> }) => {
   const formattedHours = formatBusinessHoursForDisplay(details?.businessHours, 2);
+  const hoursText = formattedHours.length > 0 ? formattedHours.join(' | ') : 'N/A';
 
   return (
-    <div className="mt-2.5 grid grid-cols-3 gap-1.5 text-[11px] leading-snug">
-      <div className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-gray-300">
-        Phone: {details?.phone || 'N/A'}
+    <div className="mt-2.5 space-y-1.5 text-[11px] leading-snug">
+      <div className="grid grid-cols-[72px_1fr] items-start gap-2 rounded-md border border-cyan-400/20 bg-white/5 px-2.5 py-1.5">
+        <p className="text-[10px] font-semibold uppercase tracking-wide text-cyan-200/85">Phone</p>
+        <p className="text-gray-200 break-words">{details?.phone || 'N/A'}</p>
       </div>
-      <div className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-gray-300">
-        Email: {details?.email || 'N/A'}
-      </div>
-      <div className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-gray-300">
-        Website:{' '}
-        {details?.website ? (
-          <a
-            href={details.website}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-cyan-300 hover:text-cyan-200 underline break-all"
-            onClick={(e) => e.stopPropagation()}
-          >
-            Open
-          </a>
-        ) : 'N/A'}
-      </div>
-      <div className="col-span-3 rounded-md border border-white/10 bg-white/5 px-2 py-1 text-gray-400">
-        Hours: {formattedHours.length > 0 ? formattedHours.join(' | ') : 'N/A'}
+      <div className="grid grid-cols-[72px_1fr] items-start gap-2 rounded-md border border-cyan-400/20 bg-white/5 px-2.5 py-1.5">
+        <p className="text-[10px] font-semibold uppercase tracking-wide text-cyan-200/85">Hours</p>
+        <p className="text-gray-300 break-words">{hoursText}</p>
       </div>
     </div>
   );
@@ -625,6 +633,8 @@ const Map = () => {
   const speechRecognitionRef = useRef<any>(null);
   const runSearchQueryRef = useRef<(query: string) => Promise<void>>(async () => {});
   const latestFinalSpeechRef = useRef('');
+  const speechDraftRef = useRef('');
+  const speechHadFinalRef = useRef(false);
   const geolocationWatchRef = useRef<number | null>(null);
   const markerAnimationRef = useRef<number | null>(null);
   const displayedUserLocRef = useRef<{ lat: number; lng: number } | null>(null);
@@ -783,28 +793,24 @@ const Map = () => {
 
     recognition.onstart = () => {
       latestFinalSpeechRef.current = '';
+      speechDraftRef.current = '';
+      speechHadFinalRef.current = false;
       setSpeechToTextListening(true);
     };
     recognition.onresult = (event: any) => {
-      let interimTranscript = '';
-      let finalTranscript = '';
-      const results = Array.from(event.results || []);
-      for (let i = Number(event.resultIndex) || 0; i < results.length; i += 1) {
-        const result: any = results[i];
-        const transcript = result?.[0]?.transcript?.trim() || '';
-        if (!transcript) continue;
-        if (result?.isFinal) {
-          finalTranscript = `${finalTranscript} ${transcript}`.trim();
-        } else {
-          interimTranscript = `${interimTranscript} ${transcript}`.trim();
-        }
+      const { finalText, combinedText } = extractSpeechFromEvent(event);
+      if (combinedText) {
+        speechDraftRef.current = combinedText;
+        setInputValue(combinedText);
       }
-      const liveTranscript = finalTranscript || interimTranscript;
-      if (liveTranscript) setInputValue(liveTranscript);
-      if (finalTranscript) {
-        latestFinalSpeechRef.current = finalTranscript;
-        void runSearchQueryRef.current(finalTranscript);
+      if (finalText) {
+        latestFinalSpeechRef.current = finalText;
+        speechHadFinalRef.current = true;
+        void runSearchQueryRef.current(finalText);
       }
+    };
+    recognition.onnomatch = () => {
+      showToastNotice('Could not understand that voice input. Please try again.', true);
     };
     recognition.onerror = (event: any) => {
       setSpeechToTextListening(false);
@@ -817,7 +823,13 @@ const Map = () => {
         showToastNotice('Voice input failed. Please try again.', true);
       }
     };
-    recognition.onend = () => setSpeechToTextListening(false);
+    recognition.onend = () => {
+      setSpeechToTextListening(false);
+      const draft = speechDraftRef.current.trim();
+      if (!speechHadFinalRef.current && draft) {
+        setInputValue(draft);
+      }
+    };
 
     speechRecognitionRef.current = recognition;
     return () => {
@@ -828,6 +840,7 @@ const Map = () => {
       }
       recognition.onstart = null;
       recognition.onresult = null;
+      recognition.onnomatch = null;
       recognition.onerror = null;
       recognition.onend = null;
       if (speechRecognitionRef.current === recognition) {
@@ -841,6 +854,10 @@ const Map = () => {
       showToastNotice('Speech-to-text is not supported on this browser.', true);
       return;
     }
+    if (typeof window !== 'undefined' && !window.isSecureContext) {
+      showToastNotice('Voice input requires HTTPS (or localhost) in this browser.', true);
+      return;
+    }
 
     if (speechToTextListening) {
       speechRecognitionRef.current.stop();
@@ -848,9 +865,15 @@ const Map = () => {
     }
 
     try {
+      speechRecognitionRef.current.abort?.();
       speechRecognitionRef.current.start();
-    } catch {
+    } catch (error: any) {
+      const code = `${error?.name || ''}`.toLowerCase();
+      if (code.includes('notallowed')) {
+        showToastNotice('Microphone permission is blocked. Enable mic permission and retry.', true);
+      } else {
       showToastNotice('Unable to start microphone input right now.', true);
+      }
     }
   };
 
@@ -1064,7 +1087,7 @@ useEffect(() => {
     
     const el = document.createElement('div');
     el.className = 'user-dot';
-    el.innerHTML = '<div class="w-5 h-5 bg-[#00d4ff] border-[4px] border-white rounded-full shadow-[0_0_15px_#00d4ff]"></div>';
+    el.innerHTML = '<div class="w-5 h-5 bg-[#2F80ED] border-[4px] border-white rounded-full shadow-[0_0_15px_#2F80ED]"></div>';
     
     userMarkerRef.current = new tt.Marker({ element: el })
       .setLngLat([loc.lng, loc.lat])
@@ -1912,7 +1935,7 @@ useEffect(() => {
         id: 'route',
         type: 'line',
         source: 'route',
-        paint: { 'line-color': '#B794F4', 'line-width': 8, 'line-opacity': 0.9 }
+        paint: { 'line-color': '#2F80ED', 'line-width': 8, 'line-opacity': 0.9 }
       });
 
       // Build instructions array from guidance
@@ -2043,9 +2066,6 @@ useEffect(() => {
 
           {/*hiding sidebar*/}
           <Navbar page={`Map`}> 
-            <Links link="dashboard" className="text-[15px]">
-              Dashboard <House size={18} />
-            </Links>
             <Links link="tinder" className="text-[15px]">
               Findr <Heart size={18}/>
             </Links>
@@ -2058,8 +2078,8 @@ useEffect(() => {
           </Navbar>        
           {/*Animation for loading map*/}
           {!mapLoaded && !mapError && (
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[#00d4ff] text-lg flex flex-col items-center gap-4">
-              <div className="w-10 h-10 border-[3px] border-neutral-800 border-t-[#00d4ff] rounded-full animate-spin"></div>
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-cyan-500 text-lg flex flex-col items-center gap-4">
+              <div className="w-10 h-10 border-[3px] border-neutral-800 border-t-[#2F80ED] rounded-full animate-spin"></div>
               <span>Loading Map...</span>
             </div>
           )}
@@ -2072,7 +2092,7 @@ useEffect(() => {
               <p className="text-gray-300 m-0 mb-5 leading-relaxed">{mapError}</p>
               <div className="text-xs text-gray-400 text-left bg-neutral-900 p-4 rounded-lg">
                 <strong>To fix this:</strong><br/>
-                1. Get a TomTom API key from <a href="https://developer.tomtom.com/" target="_blank" rel="noopener noreferrer" className="text-[#00d4ff]">developer.tomtom.com</a><br/>
+                1. Get a TomTom API key from <a href="https://developer.tomtom.com/" target="_blank" rel="noopener noreferrer" className="text-cyan-500">developer.tomtom.com</a><br/>
                 2. Create a .env file in the frontend directory<br/>
                 3. Add: VITE_TOMTOM_API_KEY=your_api_key<br/>
                 4. Restart the dev server
@@ -2087,7 +2107,7 @@ useEffect(() => {
                 <div className="flex items-center text-white gap-2.5 text-sm">
                   <span className="text-2xl">📍</span>
                   <div>
-                    <h4 className="m-0 text-[#00d4ff] text-md">{stats.name}</h4>
+                    <h4 className="m-0 text-cyan-500 text-md">{stats.name}</h4>
                     <p className="m-0 mt-0.5 text-gray-400 text-[11px]">{stats.miles} mi • {stats.mins} min</p>
                   </div>
                 </div>
@@ -2120,11 +2140,11 @@ useEffect(() => {
                   >
                     {voiceGuidanceEnabled ? 'Voice On' : 'Voice Off'}
                   </button>
-                  <button className="border-none text-[#00d4ff] w-7 h-7 rounded-full cursor-pointer text-sm hover:bg-white/5" onClick={() => cancelNavigation(true)}>✕</button>
+                  <button className="border-none text-cyan-500 w-7 h-7 rounded-full cursor-pointer text-sm hover:bg-white/5" onClick={() => cancelNavigation(true)}>✕</button>
                 </div>
               </div>
 
-              <div className="p-4 bg-gradient-to-br from-[#00d4ff1a] to-[#0096c80d]"> 
+              <div className="p-4 bg-gradient-to-br from-[#2F80ED1A] to-[#2467C20D]"> 
                 <div className="rounded-lg border border-cyan-400/20 bg-black/20 px-3 py-2">
                   <p className="m-0 text-cyan-300 text-xs font-semibold">Step {navStep + 1}</p>
                   <p className="m-0 mt-1 text-white text-sm font-bold">{stats.instructions[navStep]?.streetName || stats.instructions[navStep]?.message || 'Unknown Address'}</p>
@@ -2137,7 +2157,7 @@ useEffect(() => {
                 <button className="bg-neutral-800 border-none text-white py-2 px-4 rounded-lg cursor-pointer text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-neutral-700" onClick={nextNavStep} disabled={navStep >= stats.instructions.length - 1}>▶</button>
               </div>
 
-              <div className="text-center p-2.5 text-[#00d4ff] cursor-pointer text-xs border-t border-neutral-800 hover:bg-white/5" onClick={() => setShowFullDirections(!showFullDirections)}>
+              <div className="text-center p-2.5 text-cyan-500 cursor-pointer text-xs border-t border-neutral-800 hover:bg-white/5" onClick={() => setShowFullDirections(!showFullDirections)}>
                 {showFullDirections ? '▲ Hide all steps' : '▼ Show all steps'}
               </div>
 
@@ -2146,7 +2166,7 @@ useEffect(() => {
                   {stats.instructions.map((inst, idx) => (
                     <div 
                       key={idx} 
-                      className={`p-2.5 px-4 cursor-pointer border-b border-neutral-800 hover:bg-white/5 ${idx === navStep ? 'bg-[#00d4ff26] border-l-[3px] border-l-[#00d4ff]' : ''} ${idx < navStep ? 'opacity-50' : ''}`}
+                      className={`p-2.5 px-4 cursor-pointer border-b border-neutral-800 hover:bg-white/5 ${idx === navStep ? 'bg-[#2F80ED26] border-l-[3px] border-l-[#2F80ED]' : ''} ${idx < navStep ? 'opacity-50' : ''}`}
                       onClick={() => jumpToStep(idx)}
                     >
                       <p className="m-0 text-white text-xs">
@@ -2188,7 +2208,7 @@ useEffect(() => {
                 >
                   {speechToTextListening ? <MicOff size={16} /> : <Mic size={16} />}
                 </button>
-                <button className="bg-[#00d4ff] border-none text-black p-2 px-3 rounded-lg cursor-pointer text-sm font-bold hover:bg-[#00b7db]" onClick={handleSearch}>🔍</button>
+                <button className="bg-[#2F80ED] border-none text-black p-2 px-3 rounded-lg cursor-pointer text-sm font-bold hover:bg-[#2467C2]" onClick={handleSearch}>🔍</button>
               </div>
 
               {suggestions.length > 0 && (
@@ -2265,7 +2285,7 @@ useEffect(() => {
             <div className="relative mt-2.5 text-[14px]">
               <button
                 onClick={() => setIsPoiDropdownOpen(!isPoiDropdownOpen)}
-                className="w-full bg-neutral-900/95 text-white border border-neutral-800 p-3 rounded-xl flex justify-between items-center hover:border-[#00d4ff] transition-colors"
+                className="w-full bg-neutral-900/95 text-white border border-neutral-800 p-3 rounded-xl flex justify-between items-center hover:border-[#2F80ED] transition-colors"
               >
                 <span className="font-large">{activePoiType ? `Selected: ${activePoiType.replace('_', ' ')}` : 'Select Category'}</span>
                 <span className={`transition-transform duration-200 ${isPoiDropdownOpen ? 'rotate-180' : ''}`}>▼</span>
@@ -2288,7 +2308,7 @@ useEffect(() => {
                           <button
                             key={item.id}
                             onClick={() => searchPoi(item.id, item.type, item.icon, group.color)}
-                            className={`w-full text-left px-4 py-3 text-gray-300 hover:bg-white/10 flex items-center gap-3 transition-colors border-b border-neutral-800 last:border-none ${activePoiType === item.type ? 'bg-white/5 text-[#00d4ff]' : ''}`}
+                            className={`w-full text-left px-4 py-3 text-gray-300 hover:bg-white/10 flex items-center gap-3 transition-colors border-b border-neutral-800 last:border-none ${activePoiType === item.type ? 'bg-white/5 text-cyan-500' : ''}`}
                           >
                             <span className="text-xl">{item.icon}</span>
                             <span className="text-sm">{item.label}</span>
@@ -2310,10 +2330,10 @@ useEffect(() => {
                             animate={{ x: 0 }}
                             exit={{ x: '100%' }}
                             transition={{ duration: 0.3 }}
-                            className="fixed top-20 bottom-3 right-2 z-[1500] w-[360px] rounded-2xl border border-cyan-500/30 bg-neutral-900/90 p-4 shadow-2xl backdrop-blur-xl"
+                            className="fixed top-20 bottom-3 right-2 z-[1500] w-[92vw] max-w-[360px] rounded-2xl border border-cyan-500/30 bg-neutral-900/90 p-3 sm:p-4 shadow-2xl backdrop-blur-xl"
                         >
                             <div className="mb-3 flex items-center justify-between border-b border-white/10 pb-2">
-                                <h3 className="text-cyan-300 text-lg font-semibold">All Favorited Locations</h3>
+                                <h3 className="text-cyan-300 text-base sm:text-lg font-semibold">All Favorited Locations</h3>
                                 <button
                                     onClick={() => setShowSidebar(false)}
                                     className="h-7 w-7 rounded-full bg-white/5 text-neutral-300 hover:text-white hover:bg-white/10"
@@ -2328,16 +2348,16 @@ useEffect(() => {
                                     <p className="text-gray-400 text-center py-4">No favorite locations yet. Visit the map to add some!</p>
                                 ) : (
                                     favoriteLocations.map((loc, i) => (
-                                        <div key={i} className="mb-3 rounded-xl border border-white/10 bg-neutral-800/55 p-3 hover:bg-neutral-800/80 transition-colors">
+                                        <div key={i} className="mb-3 rounded-xl border border-white/10 bg-neutral-800/55 p-2.5 sm:p-3 hover:bg-neutral-800/80 transition-colors">
                                             <div className="flex-1 cursor-pointer " onClick={() => { setShowSidebar(false); setShowPoiSidebar(false); navigate(buildMapRouteUrl(loc)); }}>
-                                                <h4 className="text-cyan-300 text-lg font-semibold">{loc.name}</h4>
+                                                <h4 className="text-cyan-300 text-base sm:text-lg font-semibold">{loc.name}</h4>
                                                 <p className="text-gray-400 text-sm">{loc.address}</p>
                                                 <LocationDetailBlock details={loc} />
                                             </div>
                                             <div className="mt-2 flex justify-end">
                                               <LocationReviewsPopup
                                                 location={{ lid: loc.lid, name: loc.name, address: loc.address }}
-                                                buttonClassName="rounded-md border border-white/20 bg-white/5 px-2.5 py-1.5 text-xs text-gray-200 hover:bg-white/10"
+                                                buttonClassName="rounded-md border border-white/20 bg-white/5 px-2 py-1 text-[11px] text-gray-200 hover:bg-white/10"
                                               />
                                             </div>
                                         </div> 
@@ -2347,16 +2367,16 @@ useEffect(() => {
                                 {likedLocations.map((loc, index) => (
                                     <div
                                         key={index}
-                                        className="mb-3 rounded-xl border border-white/10 bg-neutral-800/55 p-3 cursor-pointer hover:bg-neutral-800/80 transition-colors"
+                                        className="mb-3 rounded-xl border border-white/10 bg-neutral-800/55 p-2.5 sm:p-3 cursor-pointer hover:bg-neutral-800/80 transition-colors"
                                         onClick={() => { setShowSidebar(false); setShowPoiSidebar(false); navigate(buildMapRouteUrl(loc)); }}
                                     >
-                                        <h4 className="text-cyan-300 text-lg font-semibold">{loc.name}</h4>
+                                        <h4 className="text-cyan-300 text-base sm:text-lg font-semibold">{loc.name}</h4>
                                         <p className="text-gray-400 text-sm">{loc.address}</p>
                                         <LocationDetailBlock details={loc} />
                                         <div className="mt-2 flex justify-end" onClick={(e) => e.stopPropagation()}>
                                           <LocationReviewsPopup
                                             location={{ lid: loc.lid, name: loc.name, address: loc.address }}
-                                            buttonClassName="rounded-md border border-white/20 bg-white/5 px-2.5 py-1.5 text-xs text-gray-200 hover:bg-white/10"
+                                            buttonClassName="rounded-md border border-white/20 bg-white/5 px-2 py-1 text-[11px] text-gray-200 hover:bg-white/10"
                                           />
                                         </div>
                                     </div>
@@ -2380,7 +2400,7 @@ useEffect(() => {
                   right,
                   backgroundColor: bgColor,
                 }}
-                className="fixed top-20 bottom-3 right-2 z-[1500] w-[400px] rounded-2xl overflow-hidden border border-cyan-500/30 bg-neutral-900/90 p-4 shadow-2xl backdrop-blur-xl flex flex-col"
+                className="fixed top-20 bottom-3 right-2 z-[1500] w-[94vw] max-w-[400px] rounded-2xl overflow-hidden border border-cyan-500/30 bg-neutral-900/90 p-3 sm:p-4 shadow-2xl backdrop-blur-xl flex flex-col"
               >
                 <div className="mb-3 flex justify-between items-center border-b border-white/10 pb-2">
                   <h2 className="text-cyan-300 text-lg font-semibold">POI Locations</h2>
@@ -2466,13 +2486,13 @@ useEffect(() => {
                     filteredPoiResults.map((poi) => (
                       <div
                         key={poi.id}
-                        className="mb-3 rounded-xl border border-white/10 bg-neutral-800/50 p-4 cursor-pointer hover:bg-neutral-800/80 transition-colors"
+                        className="mb-3 rounded-xl border border-white/10 bg-neutral-800/50 p-3 cursor-pointer hover:bg-neutral-800/80 transition-colors"
                         onClick={() => { setShowPoiSidebar(false); handlePoiResultClick(poi); }}
                       >
-                        <div className="flex items-start gap-3">
-                          <span className="text-2xl">{poi.icon}</span>
+                        <div className="flex items-start gap-2.5">
+                          <span className="text-xl">{poi.icon}</span>
                           <div className="flex-1">
-                            <h3 className="text-xl font-bold text-cyan-400/80">{poi.name}</h3>
+                            <h3 className="text-base sm:text-lg font-bold text-cyan-400/80">{poi.name}</h3>
                             <p className="text-gray-400 text-sm">{poi.address}</p>
                             <p className="text-gray-500 text-xs mt-1">{metersToMiles(poi.distanceMeters).toFixed(1)} mi away</p>
                             <div className="mt-2 grid grid-cols-3 gap-1 text-[10px]">
@@ -2505,7 +2525,7 @@ useEffect(() => {
                                   website: poi.website,
                                   businessHours: poi.businessHours,
                                 }}
-                                buttonClassName="rounded-md border border-white/20 bg-white/5 px-2.5 py-1.5 text-xs text-gray-200 hover:bg-white/10"
+                                buttonClassName="rounded-md border border-white/20 bg-white/5 px-2 py-1 text-[11px] text-gray-200 hover:bg-white/10"
                               />
                             </div>
                           </div>
@@ -2546,15 +2566,15 @@ useEffect(() => {
 
           {/* Route Card */}
           {stats && !isNavigating && !selectedLocation && (
-            <div className="absolute bottom-5 left-1/2 -translate-x-1/2 bg-neutral-900/95 border border-neutral-800 p-4 rounded-2xl w-[300px] z-[1000] shadow-xl">
+            <div className="absolute bottom-5 left-1/2 -translate-x-1/2 bg-neutral-900/95 border border-neutral-800 p-3.5 sm:p-4 rounded-2xl w-[min(92vw,440px)] z-[1000] shadow-xl">
               <div className="mb-3">
-                <h3 className="m-0 mb-1 text-[#00d4ff] text-sm">{stats.name}</h3>
+                <h3 className="m-0 mb-1 text-cyan-500 text-sm">{stats.name}</h3>
                 <p className="m-0 mb-3 text-gray-400 text-sm">{stats.miles} mi • {stats.mins} min</p>
                 <LocationDetailBlock details={routeFavoriteLocation || undefined} />
               </div>
-              <div className="flex gap-2.5">
-                <button className="flex-[2] bg-[#00d4ff] text-black border-none p-2.5 rounded-lg font-bold cursor-pointer hover:bg-[#00b7db]" onClick={startNavigation}>Start Navigation</button>                
-                <button className="flex-1 bg-neutral-800 text-white border-none p-2.5 rounded-lg cursor-pointer hover:bg-neutral-700" onClick={() => { setStats(null); clearMap(); }}>Close</button>
+              <div className="flex flex-nowrap items-center gap-2">
+                <button className="flex-1 min-w-0 whitespace-nowrap bg-cyan-500 text-neutral-950 border-none px-3 py-2.5 rounded-lg font-bold cursor-pointer hover:bg-cyan-400 transition-colors text-xs sm:text-sm" onClick={startNavigation}>Start Navigation</button>
+                <button className="shrink-0 whitespace-nowrap bg-neutral-800 text-white border-none px-3 py-2.5 rounded-lg cursor-pointer hover:bg-neutral-700 text-xs sm:text-sm" onClick={() => { setStats(null); clearMap(); }}>Close</button>
                 <LocationReviewsPopup
                   location={{
                     lid: routeFavoriteLocation?.lid,
@@ -2568,26 +2588,26 @@ useEffect(() => {
                     website: routeFavoriteLocation?.website,
                     businessHours: routeFavoriteLocation?.businessHours,
                   }}
-                  buttonClassName="rounded-lg border border-neutral-700 bg-neutral-800 text-white px-2.5 py-2 text-xs hover:bg-neutral-700"
+                  buttonClassName="shrink-0 whitespace-nowrap rounded-lg border border-neutral-700 bg-neutral-800 text-white px-2 py-1.5 text-[11px] hover:bg-neutral-700"
                 />
-                <button className="flex items-center justify-center bg-neutral-800 border-none w-8 h-8 text-white rounded-full cursor-pointer text-sm hover:bg-neutral-700" onClick={addRouteLocationToFavorites}><HeartPlus className="justify-center items-center text-green-500 drop-shadow-lg"/></button>
+                <button className="shrink-0 flex items-center justify-center bg-neutral-800 border-none w-8 h-8 text-white rounded-full cursor-pointer text-sm hover:bg-neutral-700" onClick={addRouteLocationToFavorites}><HeartPlus className="justify-center items-center text-green-500 drop-shadow-lg"/></button>
               </div>
             </div>
           )}
           {/* Location Info Popup */}
           {showImageLocationPopup && selectedLocation && (
-            <div className="absolute top-[64%] left-1/2 -translate-x-1/2 -translate-y-1/2 bg-neutral-900/98 border border-neutral-800 rounded-2xl w-[92vw] max-w-[430px] z-[3000] shadow-2xl max-h-[72vh] overflow-hidden">
-              <div className="flex justify-between items-center p-4 border-b border-neutral-800">
-                <h3 className="m-0 text-[#00d4ff] text-lg">Location Details</h3> 
+            <div className="absolute top-[66%] sm:top-[64%] left-1/2 -translate-x-1/2 -translate-y-1/2 bg-neutral-900/98 border border-neutral-800 rounded-2xl w-[92vw] max-w-[410px] sm:max-w-[430px] z-[3000] shadow-2xl max-h-[68vh] sm:max-h-[72vh] overflow-hidden">
+              <div className="flex justify-between items-center p-3.5 sm:p-4 border-b border-neutral-800">
+                <h3 className="m-0 text-cyan-500 text-base sm:text-lg">Location Details</h3> 
                 <div className="flex items-center gap-2">
                 <button className="flex items-center justify-center bg-neutral-800 border-none w-8 h-8 text-white rounded-full cursor-pointer text-sm hover:bg-neutral-700" onClick={addSelectedLocationToFavorites}><HeartPlus className="justify-center items-center text-green-500 drop-shadow-lg"/></button>
                 <button className="bg-neutral-800 border-none w-8 h-8 rounded-full cursor-pointer text-sm hover:bg-neutral-700 text-red-500/80" onClick={closeSelectedLocationPopup}>✕</button>
                 </div>
               </div>
-              <div className="p-4 space-y-3">
+              <div className="p-3.5 sm:p-4 space-y-2.5 sm:space-y-3">
                 <h4 className="text-cyan-300 text-base m-0">{selectedLocation.name}</h4>
                 {selectedLocation.imageUrl && (
-                  <div className="w-full h-[180px] bg-neutral-900 rounded-lg overflow-hidden flex items-center justify-center border border-neutral-800">
+                  <div className="w-full h-[150px] sm:h-[180px] bg-neutral-900 rounded-lg overflow-hidden flex items-center justify-center border border-neutral-800">
                     <img
                       src={selectedLocation.imageUrl} 
                       alt="Location" 
@@ -2598,10 +2618,10 @@ useEffect(() => {
                     />
                   </div>
                 )}
-                <p className="text-white text-sm leading-relaxed p-2.5 bg-white/5 rounded-lg m-0">📍 {selectedLocation?.address}</p>
+                <p className="text-white text-xs sm:text-sm leading-relaxed p-2 bg-white/5 rounded-lg m-0">📍 {selectedLocation?.address}</p>
                 <LocationDetailBlock details={selectedLocation} />
-                <div className="flex justify-center pt-1 gap-2">
-                  <button className="bg-gradient-to-br from-[#6fe7ff] to-[#0099cc] text-black border-none p-3 px-6 rounded-lg font-bold cursor-pointer text-sm flex-1 transition-transform hover:scale-[1.02]" onClick={navigateToSelectedLocation}>Navigate ➤</button>
+                <div className="flex flex-nowrap items-center justify-center pt-1 gap-2">
+                  <button className="min-w-0 whitespace-nowrap bg-cyan-500 text-neutral-950 border-none px-4 py-2.5 rounded-lg font-bold cursor-pointer text-xs sm:text-sm flex-1 transition-all hover:bg-cyan-400 hover:scale-[1.02]" onClick={navigateToSelectedLocation}>Navigate ➤</button>
                   <LocationReviewsPopup
                     location={{
                       lid: selectedLocation?.lid,
@@ -2615,7 +2635,7 @@ useEffect(() => {
                       website: selectedLocation?.website,
                       businessHours: selectedLocation?.businessHours,
                     }}
-                    buttonClassName="rounded-lg border border-white/20 bg-white/5 px-3 py-3 text-xs text-gray-200 hover:bg-white/10"
+                    buttonClassName="shrink-0 whitespace-nowrap rounded-lg border border-white/20 bg-white/5 px-2.5 py-2 text-[11px] text-gray-200 hover:bg-white/10"
                   />
                 </div>
               </div>
@@ -2635,7 +2655,7 @@ useEffect(() => {
                 }
                 setTrafficOn(!trafficOn);
               }} 
-              className={`w-[55px] h-[40px] md:w-[60px] md:h-[50px] bg-neutral-900/95 text-white border border-neutral-800 rounded-xl cursor-pointer text-[22px] flex flex-col items-center justify-center shadow-lg transition-all hover:scale-105 hover:border-[#00d4ff] ${trafficOn ? 'border-[#00d4ff] text-[#00d4ff] bg-[#00d4ff1a]' : ''}`} 
+              className={`w-[55px] h-[40px] md:w-[60px] md:h-[50px] bg-neutral-900/95 text-white border border-neutral-800 rounded-xl cursor-pointer text-[22px] flex flex-col items-center justify-center shadow-lg transition-all hover:scale-105 hover:border-[#2F80ED] ${trafficOn ? 'border-[#2F80ED] text-cyan-500 bg-[#2F80ED1A]' : ''}`} 
               title={trafficOn ? 'Hide Traffic' : 'Show Traffic'}
             >
               🚦
@@ -2646,7 +2666,7 @@ useEffect(() => {
                   mapRef.current.flyTo({ center: [userLoc.lng, userLoc.lat], zoom: 15 });
                 }
               }}
-              className="text-[14px] w-[55px] h-[40px] md:w-[60px] md:h-[50px] bg-neutral-900/95 text-white border border-neutral-800 rounded-xl cursor-pointer text-[22px] flex flex-col items-center justify-center shadow-lg transition-all hover:scale-105 hover:border-[#00d4ff]"
+              className="text-[14px] w-[55px] h-[40px] md:w-[60px] md:h-[50px] bg-neutral-900/95 text-white border border-neutral-800 rounded-xl cursor-pointer text-[22px] flex flex-col items-center justify-center shadow-lg transition-all hover:scale-105 hover:border-[#2F80ED]"
               title="My Location"
             >
               📍
@@ -2655,7 +2675,7 @@ useEffect(() => {
               onClick={() => {
                 setMapPerspective(prev => prev === '2d' ? '3d' : '2d');
               }}
-              className={`text-[14px] w-[55px] h-[40px] md:w-[60px] md:h-[50px] bg-neutral-900/95 text-white border border-neutral-800 rounded-xl cursor-pointer text-sm flex flex-col items-center justify-center shadow-lg transition-all hover:scale-105 hover:border-[#00d4ff] ${mapPerspective === '3d' ? 'border-[#00d4ff] text-[#00d4ff] bg-[#00d4ff1a]' : ''}`}
+              className={`text-[14px] w-[55px] h-[40px] md:w-[60px] md:h-[50px] bg-neutral-900/95 text-white border border-neutral-800 rounded-xl cursor-pointer text-sm flex flex-col items-center justify-center shadow-lg transition-all hover:scale-105 hover:border-[#2F80ED] ${mapPerspective === '3d' ? 'border-[#2F80ED] text-cyan-500 bg-[#2F80ED1A]' : ''}`}
               title={mapPerspective === '2d' ? 'Switch to 3D View' : 'Switch to 2D View'}
             >
               <span className="text-[14px] font-bold tracking-wide">{mapPerspective === '2d' ? '2D' : '3D'}</span>
@@ -2669,7 +2689,7 @@ useEffect(() => {
                   return styles[nextIndex] as 'regular' | 'satellite' | 'dark' | 'hybrid';
                 });
               }}
-              className={`w-[55px] h-[40px] md:w-[60px] md:h-[50px] bg-neutral-900/95 text-white border border-neutral-800 rounded-xl cursor-pointer text-sm flex flex-col items-center justify-center shadow-lg transition-all hover:scale-105 hover:border-[#00d4ff] ${mapStyle !== 'regular' ? 'border-[#00d4ff] text-[#00d4ff] bg-[#00d4ff1a]' : ''}`}
+              className={`w-[55px] h-[40px] md:w-[60px] md:h-[50px] bg-neutral-900/95 text-white border border-neutral-800 rounded-xl cursor-pointer text-sm flex flex-col items-center justify-center shadow-lg transition-all hover:scale-105 hover:border-[#2F80ED] ${mapStyle !== 'regular' ? 'border-[#2F80ED] text-cyan-500 bg-[#2F80ED1A]' : ''}`}
               title={`Current: ${mapStyle}`}
             > 
               <span className="text-sm font-bold tracking-wide">{mapStyle.charAt(0).toUpperCase() + mapStyle.slice(1)}</span>
@@ -2680,7 +2700,7 @@ useEffect(() => {
                 setShowPoiSidebar(false);
                 fetchFavoriteLocations();
               }}
-              className={`w-[55px] h-[40px] md:w-[60px] md:h-[50px] bg-neutral-900/95 text-white border border-neutral-800 rounded-xl cursor-pointer text-sm flex flex-col items-center justify-center shadow-lg transition-all hover:scale-105 hover:border-[#00d4ff]`}
+              className={`w-[55px] h-[40px] md:w-[60px] md:h-[50px] bg-neutral-900/95 text-white border border-neutral-800 rounded-xl cursor-pointer text-sm flex flex-col items-center justify-center shadow-lg transition-all hover:scale-105 hover:border-[#2F80ED]`}
               title={'Favorite Locations'}
             > 
               <span className="text-xs font-bold -tracking-wide">{`${showSidebar?'Close Sidebar':'Favorite Locations'}`}</span>

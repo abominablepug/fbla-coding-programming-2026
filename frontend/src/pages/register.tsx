@@ -106,7 +106,7 @@ const Register = () => {
 						<label className="block text-sm font-medium text-white-400">Username:</label>
 						<input
 							type="text"
-							className="mt-1 w-full rounded-lg bg-white/10 border border-white/20 p-3 text-white-300 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-400 transition-all"
+							className="mt-1 w-full rounded-lg bg-white/10 border border-white/20 p-3 text-white-300 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400 transition-all"
 							placeholder="username"
 							value={username}
 							onChange={(e) => setUsername(e.target.value)}
@@ -117,7 +117,7 @@ const Register = () => {
 						<label className="block text-sm font-medium text-white-400">Email:</label>
 						<input
 							type="text"
-							className="mt-1 w-full rounded-lg bg-white/10 border border-white/20 p-3 text-white-300 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-400 transition-all"
+							className="mt-1 w-full rounded-lg bg-white/10 border border-white/20 p-3 text-white-300 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400 transition-all"
 							placeholder="email@email.com"
 							value={email}
 							onChange={(e) => setEmail(e.target.value)}
@@ -128,7 +128,7 @@ const Register = () => {
 						<label className="block text-sm font-medium text-white-400">Password</label>
 						<input
 							type="password"
-							className="mt-1 w-full rounded-lg bg-white/10 border border-white/20 p-3 text-slate-300 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-400 transition-all"
+							className="mt-1 w-full rounded-lg bg-white/10 border border-white/20 p-3 text-slate-300 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400 transition-all"
 							placeholder="••••••••"
 							value={password}
 							onChange={(e) => setPassword(e.target.value)}
@@ -143,7 +143,7 @@ const Register = () => {
 						<label className="block text-sm font-medium text-white-400">Confirm Password</label>
 						<input
 							type="password"
-							className="mt-1 w-full rounded-lg bg-white/10 border border-white/20 p-3 text-slate-300 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-400 transition-all"
+							className="mt-1 w-full rounded-lg bg-white/10 border border-white/20 p-3 text-slate-300 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400 transition-all"
 							placeholder="••••••••"
 							value={confirmPassword}
 							onChange={(e) => setConfirmPassword(e.target.value)}
@@ -159,7 +159,7 @@ const Register = () => {
 					<button
 						type="submit"
 						disabled={isSubmitting || !captchaToken}
-						className="w-full rounded-lg bg-sky-500 py-3 font-semibold text-white hover:bg-sky-400 active:scale-[0.98] transition-all shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
+						className="w-full rounded-lg bg-cyan-500 py-3 font-semibold text-white hover:bg-cyan-400 active:scale-[0.98] transition-all shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
 					>
 						{isSubmitting ? 'Creating Account...' : 'Sign Up'}
 					</button>

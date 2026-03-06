@@ -35,13 +35,13 @@ const Card: React.FC<CardProps> = ({
                         <img src={image} alt={typeof title === 'string' ? title : 'Card image'} className="w-full h-full object-cover" />
                     </div>
                 )}
-                <div className="p-8 md:p-12 flex-1 flex flex-col">
+                <div className="p-4 sm:p-6 md:p-8 flex-1 flex flex-col">
                     {title && (
                         <div className={`${hasBodyContent ? 'mb-6' : 'mb-0'} border-b border-white/10 pb-4`}>
                             {typeof title === 'string' ? (
                                 <h1
                                     style={{ fontFamily: 'var(--font-heading)' }}
-                                    className={`text-3xl font-bold text-[#406386] line-clamp-2 ${titleClassName}`}
+                                    className={`text-2xl md:text-3xl font-bold text-cyan-500 line-clamp-2 ${titleClassName}`}
                                 >
                                     {title}
                                 </h1>

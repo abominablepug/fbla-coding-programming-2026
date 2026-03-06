@@ -176,7 +176,6 @@ const API_KEY =
 	import.meta.env.PUBLIC_TOMTOM_API_KEY ||
 	import.meta.env.TOMTOM_API_KEY;
 const AUTH_BASE_URL = import.meta.env.VITE_AUTH_BASE_URL || 'http://localhost:5173';
-
 const LocationDetailBlock = ({ loc }: { loc: Location }) => {
 	const formattedHours = formatBusinessHoursForDisplay(loc.businessHours, 2);
 
@@ -493,12 +492,12 @@ const Dashboard = () => {
 			const formData = new FormData(e.currentTarget);
 			handleFileChange(formData);
 			}}>
-				<input className="mt-1 w-full rounded-lg bg-white/10 border border-white/20 p-3 text-slate-300 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-400 transition-all" type="file" accept='image/png' id="image" name="image"/>
+				<input className="mt-1 w-full rounded-lg bg-white/10 border border-white/20 p-3 text-slate-300 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400 transition-all" type="file" accept='image/png' id="image" name="image"/>
 				<div className="flex justify-center gap-2">
-					<button className="px-3 py-1 rounded-full bg-sky-500 text-white max-w-fit text-md transition-all hover:bg-sky-400 shadow-lg" type="submit">
+					<button className="px-3 py-1 rounded-full bg-cyan-500 text-neutral-950 max-w-fit text-md transition-all hover:bg-cyan-400 shadow-lg" type="submit">
 						Upload New Picture
 					</button>
-					<button className="px-3 py-1 rounded-full bg-sky-500 text-white max-w-fit text-md transition-all hover:bg-sky-400 shadow-lg" onClick={() => {setOpenForm(false); setPwSubmitError('');}}>Close X</button>
+					<button className="px-3 py-1 rounded-full bg-cyan-500 text-neutral-950 max-w-fit text-md transition-all hover:bg-cyan-400 shadow-lg" onClick={() => {setOpenForm(false); setPwSubmitError('');}}>Close X</button>
 				</div>
 			</form>
 		</div>);
@@ -514,7 +513,7 @@ const Dashboard = () => {
 				<label className="block text-sm font-medium text-white-400">Current Password</label>
 				<input
 					type="password"
-					className="mt-1 w-fit rounded-lg bg-white/10 border border-white/20 p-3 text-slate-300 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-400 transition-all"
+					className="mt-1 w-fit rounded-lg bg-white/10 border border-white/20 p-3 text-slate-300 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400 transition-all"
 					placeholder="••••••••"
 					value={currentPassword}
 					name = "current_password"
@@ -525,7 +524,7 @@ const Dashboard = () => {
 				<label className="block text-sm font-medium text-white-400">New Password</label>
 				<input
 					type="password"
-					className="mt-1 w-fit rounded-lg bg-white/10 border border-white/20 p-3 text-slate-300 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-400 transition-all"
+					className="mt-1 w-fit rounded-lg bg-white/10 border border-white/20 p-3 text-slate-300 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400 transition-all"
 					placeholder="••••••••"
 					value={password}
 					name = "new_password"
@@ -541,7 +540,7 @@ const Dashboard = () => {
 					<label className="block text-sm font-medium text-white-400">Confirm Password</label>
 					<input
 						type="password"
-						className="mt-1 w-full rounded-lg bg-white/10 border border-white/20 p-3 text-slate-300 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-400 transition-all"
+						className="mt-1 w-full rounded-lg bg-white/10 border border-white/20 p-3 text-slate-300 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400 transition-all"
 						placeholder="••••••••"
 						value={confirmPassword}
 						onChange={(e) => setConfirmPassword(e.target.value)}
@@ -554,10 +553,10 @@ const Dashboard = () => {
 				</div>
 				{pwSubmitError && <p className="text-red-400 text-sm text-center">{pwSubmitError}</p>}
 			   <div className="flex justify-center gap-2">
-				   <button className="px-3 py-1 rounded-full bg-sky-500 text-white max-w-fit text-md transition-all hover:bg-sky-400 shadow-lg" type="submit">
+				   <button className="px-3 py-1 rounded-full bg-cyan-500 text-neutral-950 max-w-fit text-md transition-all hover:bg-cyan-400 shadow-lg" type="submit">
 					   Change Password
 				   </button>
-				   <button className="px-3 py-1 rounded-full bg-sky-500 text-white max-w-fit text-md transition-all hover:bg-sky-400 shadow-lg" onClick={() => {setOpenForm(false); setPwSubmitError('');}}>Close X</button>
+				   <button className="px-3 py-1 rounded-full bg-cyan-500 text-neutral-950 max-w-fit text-md transition-all hover:bg-cyan-400 shadow-lg" onClick={() => {setOpenForm(false); setPwSubmitError('');}}>Close X</button>
 			   </div>
 			</form>
 		</div>);
@@ -610,7 +609,16 @@ const Dashboard = () => {
 	useEffect(() => {
 		if (!user) return;
 		try {
-			const onboardingStorageKey = `bizmatch_onboarding_seen_${Number(user.uid)}`;
+			const numericUid = Number(user.uid);
+			const onboardingStorageKey = `bizmatch_onboarding_seen_${numericUid}`;
+			if (numericUid === 1) {
+				const resetMarkerKey = 'bizmatch_onboarding_reset_once_user_1_v1';
+				const hasReset = window.localStorage.getItem(resetMarkerKey);
+				if (hasReset !== '1') {
+					window.localStorage.removeItem(onboardingStorageKey);
+					window.localStorage.setItem(resetMarkerKey, '1');
+				}
+			}
 			const seen = window.localStorage.getItem(onboardingStorageKey);
 			if (seen !== '1') {
 				setOnboardingStepIndex(0);
@@ -1079,9 +1087,6 @@ const Dashboard = () => {
 				<Links link="reviews">
 					Reviews <Star size={18} />
 				</Links>
-				<Links link="/" onClick={handleLogout}>
-					Logout →
-				</Links>
 			</Navbar>
 			<div className="relative grid gap-11 pt-28">
 				<div className="text-cyan-500/80" >
@@ -1089,7 +1094,7 @@ const Dashboard = () => {
 							<div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 overscroll">
 								<Card title={(
 									<div className="grid grid-cols-2">
-									<h1 className={`text-2xl font-bold text-[#406386] line-clamp-2`}>
+									<h1 className={`text-2xl font-bold text-cyan-500 line-clamp-2`}>
 										Account Details
 									</h1>
 									<button className="ml-42 px-3 py-1 w-fit rounded-full text-white hover:bg-neutral-900 transition-colors" onClick={() => {setPopup(false); setOpenForm(false);}}>X</button>
@@ -1098,8 +1103,8 @@ const Dashboard = () => {
 								<div className="max-w-md w-full align-items-center justify-items-center">
 									<img  className="rounded-full border-4 w-40 h-40 object-cover shadow-w-auto border-cyan-600 mb-4 align-center" src={imageSrc} alt="Profile" />
 									{!openForm&&(<div className="items-center align-items-center justify-center">
-										<button className="mt-4 px-4 py-2 bg-sky-500 text-white rounded-lg hover:bg-sky-400 transition-colors inline-block mr-3" onClick={() => {setOpenForm(true); setPfpChange(false);}}>Change Password</button>
-										<button className="mt-4 px-4 py-2 bg-sky-500 text-white rounded-lg hover:bg-sky-400 transition-colors inline-block" onClick={() => {setOpenForm(true); setPfpChange(true);}}>Change Profile Picture</button>
+										<button className="mt-4 px-4 py-2 bg-cyan-500 text-neutral-950 rounded-lg hover:bg-cyan-400 transition-colors inline-block mr-3" onClick={() => {setOpenForm(true); setPfpChange(false);}}>Change Password</button>
+										<button className="mt-4 px-4 py-2 bg-cyan-500 text-neutral-950 rounded-lg hover:bg-cyan-400 transition-colors inline-block" onClick={() => {setOpenForm(true); setPfpChange(true);}}>Change Profile Picture</button>
 									</div>)}
 									{openForm &&(
 										<div className={`flex flex-col items-center justify-center gap-4 mt-4 w-full`}>
@@ -1116,7 +1121,7 @@ const Dashboard = () => {
 									title={(
 										<div className="grid grid-cols-[1fr_auto] items-start gap-3">
 											<div>
-												<h1 className="text-2xl font-bold text-[#406386] line-clamp-2">Welcome Tour</h1>
+												<h1 className="text-2xl font-bold text-cyan-500 line-clamp-2">Welcome Tour</h1>
 												<p className="mt-1 text-sm text-cyan-200 line-clamp-1">Step {onboardingStepIndex + 1} of {APP_ONBOARDING_STEPS.length}</p>
 											</div>
 											<button
@@ -1172,9 +1177,19 @@ const Dashboard = () => {
 								</Card>
 							</div>
 						)}
-						<div className="grid grid-cols-1 gap-y-3 place-items-center text-center">
+						<div className="relative mx-auto w-[95%]">
+							<div className="absolute right-2 top-0 z-20 flex items-center gap-2">
+								<button
+									onClick={handleLogout}
+									className="rounded-full border border-cyan-300/45 bg-cyan-500 px-4 py-1.5 text-sm font-medium text-white shadow-lg hover:bg-cyan-400 transition-colors"
+								>
+									Logout →
+								</button>
+							</div>
+							<div className="grid grid-cols-1 gap-y-3 place-items-center text-center pt-1">
 							<img onClick={handlePopup} className="rounded-full border-4 w-32 h-32 object-cover shadow-w-auto border-cyan-600 hover:border-cyan-700 transition-transform" src={imageSrc} alt="Profile" />
 							<p className="text-black-400 text-3xl tracking-wider">Welcome back {user.username}</p>
+							</div>
 						</div>
 				</div> 
 				<div className="mx-auto w-[95%] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
@@ -1228,7 +1243,7 @@ const Dashboard = () => {
 						<div ref={favoriteSectionRef} className="h-full">
 						<Card
 							title={(
-								<div className="flex items-center justify-between gap-3 text-3xl font-bold text-[#406386] line-clamp-2">
+								<div className="flex items-center justify-between gap-3 text-3xl font-bold text-cyan-500 line-clamp-2">
 									<span>Favorite Locations:</span>
 									<button
 										onClick={() => setShowFavoritesSidebar((prev) => !prev)}
@@ -1275,7 +1290,7 @@ const Dashboard = () => {
 						<div ref={savedCouponsSectionRef} className="h-full">
 						<Card
 							title={(
-								<div className="flex items-center justify-between gap-3 text-3xl font-bold text-[#406386] line-clamp-2">
+								<div className="flex items-center justify-between gap-3 text-3xl font-bold text-cyan-500 line-clamp-2">
 									<span>Saved Coupons:</span>
 									<button
 										onClick={() => navigate('/discount', { state: { from: 'dashboard' } })}
@@ -1301,7 +1316,6 @@ const Dashboard = () => {
 													<p className="text-xs text-gray-300 line-clamp-1">{coupon.title} • {coupon.label}</p>
 													<p className="text-xs text-gray-400">Code: {coupon.code}</p>
 													<p className="text-[11px] text-gray-500 mt-1 line-clamp-1">Address: {coupon.loc.address || 'N/A'}</p>
-													<CompactLocationMeta loc={coupon.loc} />
 												</div>
 											<button
 												onClick={() => unsaveCouponByKey(coupon.key)}
@@ -1521,7 +1535,7 @@ const Dashboard = () => {
 									title={(
 										<div className="grid grid-cols-[1fr_auto] items-start gap-3">
 											<div>
-												<h1 className="text-2xl font-bold text-[#406386] line-clamp-2">Location Reviews</h1>
+												<h1 className="text-2xl font-bold text-cyan-500 line-clamp-2">Location Reviews</h1>
 												<p className="mt-1 text-sm text-cyan-200 line-clamp-1">{aiReviewModalLocation.name}</p>
 												<p className="mt-0.5 text-xs text-gray-400 line-clamp-1">{aiReviewModalLocation.address || 'Address unavailable'}</p>
 											</div>

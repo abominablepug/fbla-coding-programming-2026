@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Bookmark, BookmarkCheck, Heart, House, MapPin, Star, TicketPercent } from 'lucide-react';
+import { Bookmark, BookmarkCheck, Heart, MapPin, Star, TicketPercent } from 'lucide-react';
 import Body from '../components/body';
 import Navbar from '../components/navbar';
 import Links from '../components/links';
@@ -583,7 +583,7 @@ const Coupons = () => {
             }`}
             title={
               <div className="flex items-center justify-between gap-3">
-                <h1 style={{ fontFamily: 'var(--font-heading)' }} className="text-2xl font-bold text-[#406386] line-clamp-2">
+                <h1 style={{ fontFamily: 'var(--font-heading)' }} className="text-2xl font-bold text-cyan-500 line-clamp-2">
                   {coupon.location.name}
                 </h1>
                 <span className="rounded-full border border-emerald-400/40 bg-emerald-500/15 px-3 py-1 text-xs font-bold text-emerald-200">
@@ -669,7 +669,6 @@ const Coupons = () => {
   return (
     <Body>
       <Navbar page="Coupons">
-        <Links link="/dashboard">Dashboard <House size={18} /></Links>
         <Links link="/map">Map <MapPin size={18} /></Links>
         <Links link="/tinder">Findr <Heart size={18} /></Links>
         <Links link="/reviews">Reviews <Star size={18} /></Links>
@@ -724,7 +723,7 @@ const Coupons = () => {
             <Card
               title={
                 <div className="flex items-center justify-between gap-3">
-                  <span style={{ fontFamily: 'var(--font-heading)' }} className="text-2xl font-bold text-[#406386]">Nearby You</span>
+                  <span style={{ fontFamily: 'var(--font-heading)' }} className="text-2xl font-bold text-cyan-500">Nearby You</span>
                   <button
                     onClick={() => setShowNearbyCoupons((prev) => !prev)}
                     className="rounded-full border border-cyan-400/40 bg-cyan-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-cyan-200 hover:bg-cyan-500/25 transition-colors"
@@ -743,7 +742,7 @@ const Coupons = () => {
             <Card
               title={
                 <div className="flex items-center justify-between gap-3">
-                  <span style={{ fontFamily: 'var(--font-heading)' }} className="text-2xl font-bold text-[#406386]">Your Favorites + Recently Visited</span>
+                  <span style={{ fontFamily: 'var(--font-heading)' }} className="text-2xl font-bold text-cyan-500">Your Favorites + Recently Visited</span>
                   <button
                     onClick={() => setShowPersonalCoupons((prev) => !prev)}
                     className="rounded-full border border-cyan-400/40 bg-cyan-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-cyan-200 hover:bg-cyan-500/25 transition-colors"
@@ -832,7 +831,7 @@ const Coupons = () => {
             title={(
               <div className="grid grid-cols-[1fr_auto] items-start gap-3">
                 <div>
-                  <h1 className="text-2xl font-bold text-[#406386] line-clamp-2">Location Reviews</h1>
+                  <h1 className="text-2xl font-bold text-cyan-500 line-clamp-2">Location Reviews</h1>
                   <p className="mt-1 text-sm text-cyan-200 line-clamp-1">{reviewModalLocation.name}</p>
                   <p className="mt-0.5 text-xs text-gray-400 line-clamp-1">{reviewModalLocation.address || 'Address unavailable'}</p>
                 </div>

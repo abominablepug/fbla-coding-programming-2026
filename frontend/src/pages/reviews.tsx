@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type MouseEvent } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Heart, House, MapPin, TicketPercent } from 'lucide-react';
+import { Heart, MapPin, TicketPercent } from 'lucide-react';
 import Navbar from '../components/navbar';
 import Links from '../components/links';
 import Body from '../components/body';
@@ -458,7 +458,6 @@ const ReviewsPage = () => {
   return (
     <Body>
       <Navbar page="Reviews">
-        <Links link="/dashboard">Dashboard <House size={18} /></Links>
         <Links link="/map">Map <MapPin size={18} /></Links>
         <Links link="/tinder">Findr <Heart size={18} /></Links>
         <Links link="/discount">Coupons <TicketPercent size={18} /></Links>
@@ -470,7 +469,7 @@ const ReviewsPage = () => {
           cardClassName="w-full border border-cyan-500/20 shadow-[0_12px_40px_rgba(0,0,0,0.28)]"
         >
           <div className="space-y-4">
-            <div className="rounded-xl border border-sky-400/40 bg-sky-500/16 px-4 py-3">
+            <div className="rounded-xl border border-sky-400/40 bg-cyan-500/16 px-4 py-3">
               <p className="text-sm leading-relaxed text-cyan-50">
                 Review flow: pick a place, check live details and community feedback, then submit your rating.
               </p>
@@ -479,7 +478,7 @@ const ReviewsPage = () => {
               Pick a location from Favorites or Recently Viewed, check available details and community feedback, then submit your rating and review.
             </p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs">
-              <div className="rounded-lg border border-sky-400/40 bg-sky-500/16 px-3 py-2 text-sky-50 font-medium">1. Select location</div>
+              <div className="rounded-lg border border-sky-400/40 bg-cyan-500/16 px-3 py-2 text-sky-50 font-medium">1. Select location</div>
               <div className="rounded-lg border border-cyan-400/40 bg-cyan-500/16 px-3 py-2 text-cyan-50 font-medium">2. Review tips and comments</div>
               <div className="rounded-lg border border-teal-400/40 bg-teal-500/16 px-3 py-2 text-teal-50 font-medium">3. Submit your review</div>
             </div>
@@ -493,7 +492,7 @@ const ReviewsPage = () => {
                 <div className="relative min-w-0 pr-32">
                   <h1
                     style={{ fontFamily: 'var(--font-heading)' }}
-                    className="text-2xl md:text-3xl font-bold text-[#406386] whitespace-nowrap"
+                    className="text-2xl md:text-3xl font-bold text-cyan-500 whitespace-nowrap"
                   >
                     Favorited Locations
                   </h1>
@@ -537,7 +536,7 @@ const ReviewsPage = () => {
                 <div className="relative min-w-0 pr-32">
                   <h1
                     style={{ fontFamily: 'var(--font-heading)' }}
-                    className="text-2xl md:text-3xl font-bold text-[#406386] whitespace-nowrap"
+                    className="text-2xl md:text-3xl font-bold text-cyan-500 whitespace-nowrap"
                   >
                     Recently Viewed
                   </h1>
@@ -584,7 +583,7 @@ const ReviewsPage = () => {
                   <div className="space-y-3">
                     <h1
                       style={{ fontFamily: 'var(--font-heading)' }}
-                      className="text-3xl font-bold text-[#406386] line-clamp-2"
+                      className="text-3xl font-bold text-cyan-500 line-clamp-2"
                     >
                       {selectedLocation.name}
                     </h1>

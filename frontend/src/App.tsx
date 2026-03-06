@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Login from './pages/login';
 import Landing from "./pages/loading";
@@ -13,6 +14,16 @@ import ResetPassword from "./pages/resetPassword";
 
 
 function App() {
+	useEffect(() => {
+		const root = document.documentElement;
+		root.setAttribute('data-theme', 'dark');
+		try {
+			window.localStorage.removeItem('bizmatch_theme_mode');
+		} catch {
+			// ignore storage errors
+		}
+	}, []);
+
 	return (
 		<BrowserRouter>
 			<Alerts />

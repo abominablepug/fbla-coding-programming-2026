@@ -149,7 +149,7 @@ const LocationReviewsPopup = ({
                 title={(
                   <div className="grid grid-cols-[1fr_auto] items-start gap-3">
                     <div>
-                      <h1 className="text-2xl font-bold text-[#406386] line-clamp-2">Location Reviews</h1>
+                      <h1 className="text-2xl font-bold text-cyan-500 line-clamp-2">Location Reviews</h1>
                       <p className="mt-1 text-sm text-cyan-200 line-clamp-1">{location.name}</p>
                       <p className="mt-0.5 text-xs text-gray-400 line-clamp-1">{location.address || 'Address unavailable'}</p>
                     </div>
