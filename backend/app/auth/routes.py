@@ -193,9 +193,9 @@ def forgot_password():
             frontend_base = frontend_base.rstrip('/')
             reset_url = f'{frontend_base}/reset-password?token={quote(token)}&username={quote(user.username)}'
 
-            msg = Message('Reset Your BizMatch Password', recipients=[user.email])
+            msg = Message('Reset Your LuminX Password', recipients=[user.email])
             msg.body = (
-                'A password reset was requested for your BizMatch account.\n\n'
+                'A password reset was requested for your LuminX account.\n\n'
                 f'Username: {user.username}\n'
                 f'Reset link (valid for 60 minutes): {reset_url}\n\n'
                 'If you did not request this, you can safely ignore this email.'

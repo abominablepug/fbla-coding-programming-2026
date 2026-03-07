@@ -1076,10 +1076,10 @@ const Dashboard = () => {
 		<Body>
 			<Navbar page="Dashboard">
 				<Links link="map">
-					Map <MapPin size={22} />
+					Map <MapPin size={18} />
 				</Links>
 				<Links link="tinder">
-					Findr <Heart size={22} />
+					Findr <Heart size={18} />
 				</Links>
 				<Links link="discount">
 					Coupons <TicketPercent size={18} />

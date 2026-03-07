@@ -409,7 +409,7 @@ const TinderPage = () => {
             <Body className="overscroll-none">
                 <Navbar page="Findr">
                     <Links link="/map">
-                        Map<MapPin size={22}/>
+                        Map <MapPin size={18} />
                     </Links>
                     <Links link="/discount">
                         Coupons <TicketPercent size={18} />

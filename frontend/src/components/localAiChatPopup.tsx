@@ -614,7 +614,7 @@ const LocalAiChatPopup = ({
     <div className="fixed bottom-5 right-5 z-[2000] w-[360px]">
       <div className="overflow-hidden rounded-2xl border border-cyan-500/30 bg-neutral-900/90 shadow-2xl backdrop-blur-xl">
         <div className="flex items-center justify-between border-b border-neutral-700 px-4 py-2.5">
-          <p className="text-sm font-semibold tracking-wide text-cyan-300">BizMatch AI Assistant</p>
+          <p className="text-sm font-semibold tracking-wide text-cyan-300">LuminX AI Assistant</p>
           <button
             className="rounded-md px-2.5 py-1 text-xs text-neutral-300 hover:bg-neutral-800 hover:text-white"
             onClick={() => setChatOpen((prev) => !prev)}

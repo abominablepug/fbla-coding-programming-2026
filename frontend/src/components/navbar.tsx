@@ -55,10 +55,10 @@ const Navbar: React.FC<NavBarProps> = ({ page, children, className = ""}) => {
                 <nav className="py-3 sm:py-4 px-1 sm:px-3 w-full flex items-center relative">
                     <span
                         style={{ fontFamily: 'var(--font-brand)' }}
-                        className="bg-linear-to-r from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent font-bold tracking-widest text-base sm:text-lg md:text-xl"
+                        className="bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent font-semibold tracking-widest text-base drop-shadow-[0_0_8px_rgba(56,189,248,0.42)] sm:text-lg md:text-xl"
                     >
                         <Link to={brandLink}>
-                            BizMatch
+                            LuminX
                         </Link>
                     </span>
                     <div className="absolute left-1/2 top-1/2 hidden md:block -translate-x-1/2 -translate-y-1/2">
@@ -70,7 +70,7 @@ const Navbar: React.FC<NavBarProps> = ({ page, children, className = ""}) => {
                         </span>
                     </div>
                     <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
-                        <div className="flex max-w-[64vw] items-center gap-1.5 overflow-x-auto whitespace-nowrap pr-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden sm:max-w-[68vw] sm:gap-2">
+                        <div className="my-[-2px] flex max-w-[64vw] items-center gap-1.5 overflow-x-auto py-[2px] whitespace-nowrap pr-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden sm:max-w-[68vw] sm:gap-2">
                             {children}
                         </div>
                         {showHomeShortcut && (
