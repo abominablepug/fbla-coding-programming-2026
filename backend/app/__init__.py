@@ -7,37 +7,56 @@ from app.extensions import db, bcrypt
 import os
 from dotenv import load_dotenv
 
+# Load environment variables from .env file
 load_dotenv()
+
 
 def create_app():
     app = Flask(__name__)
+    
+    # Enable CORS for frontend requests with credential support (cookies/sessions)
     CORS(app, supports_credentials=True)
     
+    # Set up the instance folder path for SQLite database
     basedir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
     instance_path = os.path.join(basedir, 'instance')
     if not os.path.exists(instance_path):
         os.makedirs(instance_path)
 
+    # Security: Secret key for session signing and CSRF protection
     app.config['SECRET_KEY'] = os.getenv('BACKEND_SECRET_KEY', 'default_secret_key')
+    
+    # Database: SQLite file location in instance folder
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(instance_path, 'db.sqlite3')
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-    app.config['SESSION_COOKIE_SECURE'] = False
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False  # Disable event tracking for performance
+    
+    # Session/Cookie Configuration
+    app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'  # CSRF protection while allowing normal navigation
+    app.config['SESSION_COOKIE_SECURE'] = False    # Set to True in production with HTTPS
+    
+    # Email Configuration for Flask-Mail (used for verification/password reset)
     app.config['MAIL_SERVER'] = 'smtp.gmail.com'
     app.config['MAIL_PORT'] = 587
     app.config['MAIL_USE_TLS'] = True
     app.config['MAIL_USERNAME'] = 'bizmatchofficial@gmail.com'
-    app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
+    app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')  # App password from env
     app.config['MAIL_DEFAULT_SENDER'] = 'bizmatchofficial@gmail.com'
-
+    
+    # Initialize Flask-Mail for email sending
     mail = Mail(app)
 
+    # Initialize SQLAlchemy database ORM
     db.init_app(app)
+    
+    # Initialize Bcrypt for password hashing
     bcrypt.init_app(app)
+    
+    # Initialize mail (redundant but ensures proper setup)
     mail.init_app(app)
 
+    # Import User model for Flask-Login user loader
     from app.models import User
-
+    
     login_manager = LoginManager()
     login_manager.init_app(app)
 
@@ -45,22 +64,27 @@ def create_app():
     def load_user(uid):
         return User.query.get(uid)
 
-    from app.auth import auth_bp
-    from app.rate import rate_bp 
-    from app.loc import loc_bp 
-    from app.recc import recc_bp
+    # Import and register blueprints for modular route organization
+    from app.auth import auth_bp  # Authentication routes
+    from app.rate import rate_bp  # Rating/review routes
+    from app.loc import loc_bp    # Location management routes
+    from app.recc import recc_bp  # Recommendation routes
+    
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(rate_bp, url_prefix='/rate')
     app.register_blueprint(loc_bp, url_prefix='/loc')
     app.register_blueprint(recc_bp, url_prefix='/recc')
 
+    # Initialize Flask-Migrate for database migrations
     Migrate(app, db)
 
+    # Create all database tables within the application context
     with app.app_context():
         db.create_all()
 
     @app.route('/')
     def index():
+        """Health check endpoint for the API root."""
         return "Hello, World!"
 
     return app

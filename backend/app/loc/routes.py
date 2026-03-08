@@ -23,6 +23,7 @@ def get_location_details(location_id):
 
     return jsonify(location_data), 200
 
+
 @loc_bp.route('/all', methods=['GET'])
 def get_all_locations():
     locations = Location.query.all()
@@ -56,6 +57,7 @@ def add_location():
 
     return jsonify({'message': 'Location added successfully', 'location_id': new_location.lid}), 201
 
+
 @loc_bp.route('/favorites', methods=['GET'])
 @login_required
 def get_favorite_locations():
@@ -76,6 +78,7 @@ def get_favorite_locations():
     
     return jsonify(favorites_data), 200
 
+
 @loc_bp.route('/<int:location_id>/favorite', methods=['POST'])
 @login_required
 def add_favorite(location_id):
@@ -83,12 +86,14 @@ def add_favorite(location_id):
     if not location:
         return jsonify({'message': 'Location not found'}), 404
     
+    # Check if already favorited to prevent duplicates
     if location not in current_user.favorite_locations:
         current_user.favorite_locations.append(location)
         db.session.commit()
         return jsonify({'message': 'Location added to favorites'}), 200
     else:
         return jsonify({'message': 'Location already in favorites'}), 400
+
 
 @loc_bp.route('/<int:location_id>/unfavorite', methods=['POST'])
 @login_required
@@ -97,13 +102,13 @@ def remove_favorite(location_id):
     if not location:
         return jsonify({'message': 'Location not found'}), 404
     
+    # Check if location is actually in favorites before removing
     if location in current_user.favorite_locations:
         current_user.favorite_locations.remove(location)
         db.session.commit()
         return jsonify({'message': 'Location removed from favorites'}), 200
     else:
         return jsonify({'message': 'Location not in favorites'}), 400
-
 
 @loc_bp.route('/<int:location_id>/visit', methods=['POST'])
 @login_required
@@ -112,6 +117,7 @@ def add_visit(location_id):
     if not location:
         return jsonify({'message': 'Location not found'}), 404
 
+    # Create visit record with current timestamp
     visit = VisitedLocation(user_id=current_user.uid, location_id=location.lid)
     db.session.add(visit)
     db.session.commit()
@@ -129,6 +135,7 @@ def add_visit_by_data():
     typeId = data.get('type', 1)
     categories = data.get('categories')
 
+    # Try to find existing location with matching details
     location = None
     if name and address and longitude is not None and latitude is not None:
         location = Location.query.filter_by(
@@ -138,12 +145,14 @@ def add_visit_by_data():
             latitude=latitude
         ).first()
 
+    # Create new location if not found
     if location is None:
         location = Location(name=name or 'Unnamed', address=address, longitude=longitude or 0.0,
                             latitude=latitude or 0.0, type=typeId, categories=categories)
         db.session.add(location)
         db.session.commit()
 
+    # Record the visit
     visit = VisitedLocation(user_id=current_user.uid, location_id=location.lid)
     db.session.add(visit)
     db.session.commit()
@@ -155,6 +164,7 @@ def add_visit_by_data():
 @login_required
 def get_visited_locations():
     user = current_user
+    # Get visits ordered by most recent first
     visits = VisitedLocation.query.filter_by(user_id=user.uid).order_by(VisitedLocation.timestamp.desc()).all()
     visited_data = []
     for v in visits:
@@ -168,6 +178,6 @@ def get_visited_locations():
                 'latitude': loc.latitude,
                 'type': loc.type,
                 'categories': loc.categories,
-                'visited_at': v.timestamp.isoformat()
+                'visited_at': v.timestamp.isoformat()  # ISO 8601 format for frontend parsing
             })
     return jsonify(visited_data), 200
