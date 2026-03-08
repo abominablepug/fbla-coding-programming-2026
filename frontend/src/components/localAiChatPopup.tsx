@@ -611,12 +611,12 @@ const LocalAiChatPopup = ({
   };
 
   return (
-    <div className="fixed bottom-5 right-5 z-[2000] w-[360px]">
+    <div className="fixed bottom-2 right-2 z-[2000] w-[calc(100vw-1rem)] max-w-[360px] max-[420px]:max-w-[300px] sm:bottom-5 sm:right-5">
       <div className="overflow-hidden rounded-2xl border border-cyan-500/30 bg-neutral-900/90 shadow-2xl backdrop-blur-xl">
-        <div className="flex items-center justify-between border-b border-neutral-700 px-4 py-2.5">
-          <p className="text-sm font-semibold tracking-wide text-cyan-300">LuminX AI Assistant</p>
+        <div className="flex items-center justify-between border-b border-neutral-700 px-3 py-2 max-[420px]:px-2.5 max-[420px]:py-1.5 sm:px-4 sm:py-2.5">
+          <p className="text-xs font-semibold tracking-wide text-cyan-300 max-[420px]:text-[11px] sm:text-sm">LuminX AI Assistant</p>
           <button
-            className="rounded-md px-2.5 py-1 text-xs text-neutral-300 hover:bg-neutral-800 hover:text-white"
+            className="rounded-md px-2 py-1 text-[11px] text-neutral-300 hover:bg-neutral-800 hover:text-white max-[420px]:px-1.5 max-[420px]:py-0.5 max-[420px]:text-[10px] sm:px-2.5 sm:text-xs"
             onClick={() => setChatOpen((prev) => !prev)}
           >
             {chatOpen ? 'Minimize' : 'Maximize'}
@@ -624,8 +624,8 @@ const LocalAiChatPopup = ({
         </div>
 
         {chatOpen && (
-          <div className="flex h-[440px] flex-col">
-            <div className="flex-1 space-y-2.5 overflow-y-auto bg-gradient-to-b from-neutral-900/30 to-transparent p-3.5">
+          <div className="flex h-[58vh] max-[420px]:h-[52vh] flex-col sm:h-[440px]">
+            <div className="flex-1 space-y-2 overflow-y-auto bg-gradient-to-b from-neutral-900/30 to-transparent p-2.5 sm:space-y-2.5 sm:p-3.5">
               {chatMessages.map((msg, idx) => {
                 const knownCandidates = msg.role === 'assistant' ? extractKnownPlaceCandidates(msg.content) : [];
                 const fallbackCandidates =
@@ -635,7 +635,7 @@ const LocalAiChatPopup = ({
                   <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                     <div className="max-w-[88%]">
                       <div
-                        className={`whitespace-pre-wrap rounded-xl px-3 py-2.5 text-sm leading-relaxed ${
+                        className={`whitespace-pre-wrap rounded-xl px-2.5 py-2 text-xs leading-relaxed sm:px-3 sm:py-2.5 sm:text-sm ${
                           msg.role === 'user'
                             ? 'bg-cyan-500 font-medium text-white'
                             : 'border border-neutral-700 bg-neutral-800 text-neutral-100'
@@ -654,10 +654,10 @@ const LocalAiChatPopup = ({
                               key={`${idx}-${candidate}`}
                               onClick={() => routeToLocationFromText(candidate)}
                               disabled={routingTarget === candidate}
-                              className="rounded-md border border-cyan-400/40 bg-cyan-500/15 px-2 py-1 text-xs text-cyan-200 hover:bg-cyan-500/25 disabled:opacity-50"
-                            >
-                              {routingTarget === candidate ? 'Routing...' : `Route: ${candidate}`}
-                            </button>
+                            className="rounded-md border border-cyan-400/40 bg-cyan-500/15 px-2 py-1 text-[11px] text-cyan-200 hover:bg-cyan-500/25 disabled:opacity-50 sm:text-xs"
+                          >
+                            {routingTarget === candidate ? 'Routing...' : `Route: ${candidate}`}
+                          </button>
                           ))}
                         </div>
                       )}
@@ -667,14 +667,14 @@ const LocalAiChatPopup = ({
               })}
               {chatLoading && (
                 <div className="flex justify-start">
-                  <div className="max-w-[85%] rounded-xl border border-neutral-700 bg-neutral-800 px-3 py-2 text-sm text-neutral-300">
+                  <div className="max-w-[85%] rounded-xl border border-neutral-700 bg-neutral-800 px-3 py-2 text-xs text-neutral-300 sm:text-sm">
                     Thinking...
                   </div>
                 </div>
               )}
             </div>
 
-            <div className="flex items-end gap-2 border-t border-neutral-700 p-2.5">
+            <div className="flex items-end gap-2 border-t border-neutral-700 p-2 sm:p-2.5">
               <textarea
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
@@ -685,12 +685,12 @@ const LocalAiChatPopup = ({
                   }
                 }}
                 placeholder="Ask about local places and routes..."
-                className="h-16 flex-1 resize-none rounded-xl border border-neutral-700 bg-neutral-800 p-2.5 text-sm text-white outline-none focus:border-cyan-500"
+                className="h-14 flex-1 resize-none rounded-xl border border-neutral-700 bg-neutral-800 p-2 text-xs text-white outline-none focus:border-cyan-500 sm:h-16 sm:p-2.5 sm:text-sm"
               />
               <button
                 onClick={handleSendChat}
                 disabled={chatLoading || !chatInput.trim()}
-                className="rounded-xl bg-cyan-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-xl bg-cyan-500 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 sm:py-2.5 sm:text-sm"
               >
                 Send
               </button>
