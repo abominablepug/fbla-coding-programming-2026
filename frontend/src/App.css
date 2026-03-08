@@ -13,10 +13,10 @@
   transition: filter 300ms;
 }
 .logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
+  filter: drop-shadow(0 0 2em #3F92FFAA);
 }
 .logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+  filter: drop-shadow(0 0 2em #06a77daa);
 }
 
 @keyframes logo-spin {
@@ -39,11 +39,10 @@
 }
 
 .read-the-docs {
-  color: #888;
+  color: #95afbd;
 }
 
 .scroll-morph-nav {
-  /* This links the animation to the scroll progress */
   animation: nav-morph linear both;
   animation-timeline: scroll();
   animation-range: 0px 150px;

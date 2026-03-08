@@ -12,12 +12,23 @@ import math
 tomtom_api_key = os.getenv('TOMTOM_API_KEY')
 
 def fetch_tomtom_data(latitude, longitude, radius_mi=5, limit=100):
+    if latitude is None or longitude is None:
+        return []
+    try:
+        lat = float(latitude)
+        lon = float(longitude)
+    except (TypeError, ValueError):
+        return []
+
     radius_meters = radius_mi * 1609.34
-    request_url = f"https://api.tomtom.com/search/2/nearbySearch/.json?key={tomtom_api_key}&lat={latitude}&lon={longitude}&radius={radius_meters}&limit={limit}"
-    
-    response = requests.get(request_url)
+    request_url = f"https://api.tomtom.com/search/2/nearbySearch/.json?key={tomtom_api_key}&lat={lat}&lon={lon}&radius={radius_meters}&limit={limit}"
+
+    try:
+        response = requests.get(request_url, timeout=8)
+    except requests.RequestException:
+        return []
     if response.status_code != 200:
-        return None
+        return []
 
     results = response.json().get('results', [])
     recommendations = []
@@ -177,10 +188,11 @@ def get_nearby_recommendations():
 
     reccs = fetch_tomtom_data(latitude, longitude, radius, limit)
 
-    if reccs is None:
-        return jsonify({'message': 'Error fetching data from TomTom API'}), 500
-
-    return jsonify({'recommendations': reccs, 'length': len(reccs)}), 200
+    return jsonify({
+        'recommendations': reccs or [],
+        'length': len(reccs or []),
+        'message': 'No nearby results available right now.' if not reccs else 'ok'
+    }), 200
 
 @recc_bp.route('/ranked', methods=['POST'])
 @login_required
@@ -193,10 +205,7 @@ def get_ranked_recommendations():
 
     reccs = fetch_tomtom_data(latitude, longitude, radius, limit)
 
-    if reccs is None:
-        return jsonify({'message': 'Error fetching data from TomTom API'}), 500
-
-    ranked_locations = rank_locations(current_user, reccs)
+    ranked_locations = rank_locations(current_user, reccs or [])
 
     return jsonify({'ranked_locations': ranked_locations}), 200
 

@@ -14,12 +14,17 @@ interface LinkProps {
 const Links: React.FC<LinkProps> = ({ title, children, link = "", className = "", linkClassName = "", titleClassName = "", onClick}) => {
     return (
         <div className={`relative z-10 flex justify-center ${className}`}>
-            <Link to={link.startsWith('/') ? link : `/${link}`} onClick={onClick} className={`${linkClassName} flex items-center gap-2 pointer-events-auto px-3 py-1 rounded-full bg-blue-400 text-orange-50 shadow-lg hover:bg-sky-400 transition-all duration-200 lg:hover:scale-[1.06] text-md`}>
+            <Link
+                to={link.startsWith('/') ? link : `/${link}`}
+                onClick={onClick}
+                style={{ fontFamily: 'var(--font-link)' }}
+                className={`${linkClassName} flex shrink-0 items-center gap-1.5 pointer-events-auto rounded-full bg-blue-400 px-2 py-0.5 text-[10px] text-white shadow-lg transition-all duration-200 hover:bg-sky-400 sm:px-2.5 sm:py-1 sm:text-[11px] lg:hover:scale-[1.04]`}
+            >
                         {title ? (
                             typeof title === 'string' ? (
-                            <h1 className={`text-xl md:text-xl font-bold text-[#406386] ${titleClassName}`}>
+                            <span style={{ fontFamily: 'var(--font-heading)' }} className={`text-sm font-normal text-white ${titleClassName}`}>
                                 {title}
-                            </h1>
+                            </span>
                         ) : (
                             <div className={titleClassName}>
                                 {title}
