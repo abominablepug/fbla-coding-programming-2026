@@ -7,37 +7,8 @@ import { ArrowRight, HeartPlus, LayoutDashboard, Code, Database, Globe, X } from
 import mapDisp from '../assets/mapdisp.png'; 
 import findr from '../assets/findr.png'; 
 import dashboard from '../assets/dashboard.png'; 
+import luminxLogo from '../assets/luminx-logo.png';
 import Body from '../components/body';
-
-const LuminXLogoMark = () => (
-	<svg
-		viewBox="0 0 64 64"
-		className="h-12 w-12 opacity-95 drop-shadow-[0_0_12px_rgba(56,189,248,0.34)] sm:h-14 sm:w-14 md:h-20 md:w-20"
-		fill="none"
-		aria-hidden="true"
-	>
-		<defs>
-			<linearGradient id="luminxLogoGradient" x1="8" y1="6" x2="54" y2="56" gradientUnits="userSpaceOnUse">
-				<stop offset="0%" stopColor="#2DE1FC" />
-				<stop offset="52%" stopColor="#449DD1" />
-				<stop offset="100%" stopColor="#446DF6" />
-			</linearGradient>
-		</defs>
-		<circle cx="32" cy="23" r="12" fill="url(#luminxLogoGradient)" opacity="0.12" />
-		<path
-			d="M32 6C22.611 6 15 13.611 15 23c0 13.365 12.25 28.47 15.571 32.32a2 2 0 0 0 2.858 0C36.75 51.47 49 36.365 49 23 49 13.611 41.389 6 32 6Z"
-			stroke="url(#luminxLogoGradient)"
-			strokeWidth="2.4"
-		/>
-		<path
-			d="M24 23c0-4.418 3.582-8 8-8s8 3.582 8 8c0 2.387-1.045 4.526-2.703 5.99-.885.782-1.297 1.38-1.297 2.01h-8c0-.63-.412-1.228-1.297-2.01A7.98 7.98 0 0 1 24 23Z"
-			stroke="url(#luminxLogoGradient)"
-			strokeWidth="1.95"
-			strokeLinejoin="round"
-		/>
-		<path d="M28.5 35h7M29 39h6" stroke="url(#luminxLogoGradient)" strokeWidth="1.95" strokeLinecap="round" />
-	</svg>
-);
 
 const Home = () => {
 	return (
@@ -53,12 +24,12 @@ const Home = () => {
 
 			<div className="relative z-10 flex flex-col items-center justify-center min-h-screen text-center px-4 transition-transform">
 				<motion.div initial={{ opacity: 0.5, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease: "easeOut" }} >
-					<div className="mb-6 flex items-center justify-center gap-2 md:gap-3">
-						<h1 className="shrink-0 pr-2 md:pr-3 text-6xl md:text-9xl font-extrabold bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent tracking-tighter drop-shadow-2xl">
+					<div className="mb-6 flex items-center justify-center gap-0.5 md:gap-1">
+						<h1 className="shrink-0 leading-none text-6xl md:text-9xl font-extrabold bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent tracking-tighter drop-shadow-2xl">
 							LuminX
 						</h1>
-						<div className="ml-2 flex h-full shrink-0 items-center md:ml-3">
-							<LuminXLogoMark />
+						<div className="inline-flex h-16 w-16 shrink-0 items-center justify-center self-center md:h-32 md:w-32">
+							<img src={luminxLogo} alt="LuminX logo" className="h-full w-full scale-115 object-contain drop-shadow-[0_0_18px_rgba(56,189,248,0.48)]" />
 						</div>
 					</div>
 				</motion.div>
@@ -115,21 +86,24 @@ const Home = () => {
 					<div className="grid md:grid-cols-2 gap-12 items-center">
 						<div className="space-y-6">
 							<p className="text-lg text-neutral-300 leading-relaxed">
-								Finding a location shouldn't be a chore. Our <span className="text-cyan-400 font-bold">Smart Matching Interface</span> allows you to rapidly browse through potential spots.
+								Finding a location shouldn't be a chore. Our <span className="text-cyan-400 font-bold">Smart Matching Interface</span> lets you rapidly review places with business context, ratings, and fit signals in one flow.
+							</p>
+							<p className="text-sm text-neutral-400 leading-relaxed">
+								Each location card is designed to support quick decisions while still exposing enough detail to compare options confidently.
 							</p>
 							<ul className="space-y-4">
 								<li className="flex items-start gap-3">
 									<div className="p-2 bg-green-500/10 rounded-lg text-green-400"><HeartPlus size={20} /></div>
 									<div>
 										<h4 className="font-bold text-white">Swipe Right to Like</h4>
-										<p className="text-sm text-neutral-400">Save locations you're interested in to your dashboard.</p>
+										<p className="text-sm text-neutral-400">Save strong matches to your dashboard for follow-up, routing, and review comparison.</p>
 									</div>
 								</li>
 								<li className="flex items-start gap-3">
 									<div className="p-2 bg-red-500/10 rounded-lg text-red-400"><X size={20} className="rotate-180" /></div>
 									<div>
 										<h4 className="font-bold text-white">Swipe Left to Pass</h4>
-										<p className="text-sm text-neutral-400">Skip locations that don't meet your criteria.</p>
+										<p className="text-sm text-neutral-400">Skip poor fits fast so your recommendation set stays focused and relevant.</p>
 									</div>
 								</li>
 							</ul>
@@ -159,16 +133,19 @@ const Home = () => {
 						</div>
 						<div className="order-1 md:order-2 space-y-6">
 							<p className="text-lg text-neutral-300 leading-relaxed">
-								Visualize your opportunities with our powerful map integration. Powered by <span className="text-purple-400 font-bold">TomTom API</span>.
+								Visualize your opportunities with our map integration powered by <span className="text-purple-400 font-bold">TomTom API</span>, including nearby POIs, navigation, and location-level context.
+							</p>
+							<p className="text-sm text-neutral-400 leading-relaxed">
+								Built-in filters help users narrow the map view by real-world criteria, making search results faster to act on.
 							</p>
 							<div className="grid grid-cols-2 gap-4">
 								<div className="bg-white/5 p-4 rounded-xl border border-white/5">
 									<h4 className="font-bold text-white mb-1">Traffic Data</h4>
-									<p className="text-xs text-neutral-400">Real-time traffic flow to assess accessibility.</p>
+									<p className="text-xs text-neutral-400">Live traffic flow for access planning and realistic travel expectations.</p>
 								</div>
 								<div className="bg-white/5 p-4 rounded-xl border border-white/5">
 									<h4 className="font-bold text-white mb-1">POI Search</h4>
-									<p className="text-xs text-neutral-400">Find nearby amenities and competitors.</p>
+									<p className="text-xs text-neutral-400">Find nearby amenities, nearby demand, and local competition quickly.</p>
 								</div>
 							</div>
 						</div>
@@ -187,11 +164,14 @@ const Home = () => {
 					<div className="grid md:grid-cols-2 gap-12 items-center">
 						<div className="space-y-6">
 							<p className="text-lg text-neutral-300 leading-relaxed">
-								Your command center. Manage your profile, view your saved "liked" locations, and access detailed analytics about your choices.
+								Your command center. Manage your profile, track liked and recently viewed locations, and monitor coupon activity in one place.
+							</p>
+							<p className="text-sm text-neutral-400 leading-relaxed">
+								The dashboard surfaces key counts and organized sections so users can return to high-value places without re-searching.
 							</p>
 							<div className="flex items-center gap-4 text-neutral-400">
 								<LayoutDashboard className="text-cyan-400" />
-								<span>Centralized control for all your data</span>
+								<span>Centralized control for saved places, reviews, and decision history</span>
 							</div>
 						</div>
 						<div className="relative h-80 w-130 bg-neutral-900 rounded-2xl border border-white/10 overflow-hidden shadow-2xl">

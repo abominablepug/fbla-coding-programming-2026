@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {motion, useScroll, useTransform} from "framer-motion";
 import { Link, useLocation } from 'react-router-dom';
 import { House } from 'lucide-react';
+import luminxLogo from '../assets/luminx-logo.png';
 
 interface NavBarProps {
     page?: React.ReactNode;
@@ -51,14 +52,21 @@ const Navbar: React.FC<NavBarProps> = ({ page, children, className = ""}) => {
 
     return (
         <div className="fixed z-50 w-full top-0 pointer-events-none flex justify-center">
-            <motion.div style={{ width, borderRadius, marginTop, backgroundColor: bgColor }} className="px-3 sm:px-5 flex items-center justify-between shadow-neutral-700 backdrop-blur-md pointer-events-auto shadow-md">
-                <nav className="py-3 sm:py-4 px-1 sm:px-3 w-full flex items-center relative">
+            <motion.div style={{ width, borderRadius, marginTop, backgroundColor: bgColor }} className="px-3 sm:px-4 flex items-center justify-between shadow-neutral-700 backdrop-blur-md pointer-events-auto shadow-md">
+                <nav className="py-2 sm:py-2.5 px-1 sm:px-2 w-full flex items-center relative">
                     <span
                         style={{ fontFamily: 'var(--font-brand)' }}
-                        className="bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent font-semibold tracking-widest text-base drop-shadow-[0_0_8px_rgba(56,189,248,0.42)] sm:text-lg md:text-xl"
+                        className="font-semibold tracking-widest text-base sm:text-lg md:text-xl"
                     >
-                        <Link to={brandLink}>
-                            LuminX
+                        <Link to={brandLink} className="inline-flex items-center gap-0.5 sm:gap-1">
+                            <img
+                                src={luminxLogo}
+                                alt="LuminX logo"
+                                className="h-9 w-9 scale-115 object-contain drop-shadow-[0_0_12px_rgba(56,189,248,0.42)] sm:h-10 sm:w-10"
+                            />
+                            <span className="bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent drop-shadow-[0_0_8px_rgba(56,189,248,0.42)]">
+                                LuminX
+                            </span>
                         </Link>
                     </span>
                     <div className="absolute left-1/2 top-1/2 hidden md:block -translate-x-1/2 -translate-y-1/2">
@@ -70,7 +78,7 @@ const Navbar: React.FC<NavBarProps> = ({ page, children, className = ""}) => {
                         </span>
                     </div>
                     <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
-                        <div className="my-[-2px] flex max-w-[64vw] items-center gap-1.5 overflow-x-auto py-[2px] whitespace-nowrap pr-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden sm:max-w-[68vw] sm:gap-2">
+                        <div className="flex max-w-[64vw] items-center gap-1.5 overflow-x-auto whitespace-nowrap pr-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden sm:max-w-[68vw] sm:gap-2">
                             {children}
                         </div>
                         {showHomeShortcut && (

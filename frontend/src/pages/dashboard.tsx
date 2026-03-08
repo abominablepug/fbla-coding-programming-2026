@@ -1101,7 +1101,7 @@ const Dashboard = () => {
 									</div>
 								)} cardClassName='w-lg'>
 								<div className="max-w-md w-full align-items-center justify-items-center">
-									<img  className="rounded-full border-4 w-40 h-40 object-cover shadow-w-auto border-cyan-600 mb-4 align-center" src={imageSrc} alt="Profile" />
+									<img  className="block aspect-square h-40 w-40 overflow-hidden rounded-full border-4 border-cyan-600 object-cover object-center shadow-w-auto mb-4 align-center" src={imageSrc} alt="Profile" />
 									{!openForm&&(<div className="items-center align-items-center justify-center">
 										<button className="mt-4 px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-400 transition-colors inline-block mr-3" onClick={() => {setOpenForm(true); setPfpChange(false);}}>Change Password</button>
 										<button className="mt-4 px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-400 transition-colors inline-block" onClick={() => {setOpenForm(true); setPfpChange(true);}}>Change Profile Picture</button>
@@ -1187,7 +1187,7 @@ const Dashboard = () => {
 								</button>
 							</div>
 							<div className="grid grid-cols-1 gap-y-3 place-items-center text-center pt-1">
-							<img onClick={handlePopup} className="rounded-full border-4 w-32 h-32 object-cover shadow-w-auto border-cyan-600 hover:border-cyan-700 transition-transform" src={imageSrc} alt="Profile" />
+							<img onClick={handlePopup} className="block aspect-square h-32 w-32 overflow-hidden rounded-full border-4 border-cyan-600 object-cover object-center shadow-w-auto hover:border-cyan-700 transition-transform" src={imageSrc} alt="Profile" />
 							<p className="text-gray-200 text-3xl tracking-wider">Welcome back {user.username}</p>
 							</div>
 						</div>
