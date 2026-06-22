@@ -4,7 +4,6 @@ from . import jobs_bp
 from app.models import User, Business, JobPosting, UserProfile, JobApplication
 from app import db
 import math
-import os
 
 
 def get_skill_vector(job_requirements):
@@ -165,7 +164,6 @@ def update_business_profile():
     bp.phone = data.get('phone', bp.phone)
     bp.email = data.get('email', bp.email)
     bp.website = data.get('website', bp.website)
-    bp.updated_at = datetime.utcnow()
 
     db.session.commit()
 
@@ -336,6 +334,7 @@ def get_job_applicants(job_id):
             'app_id': app.app_id,
             'user_id': app.user_id,
             'username': app.user.username,
+            'email': app.user.email,
             'profile_picture': app.user.profile_picture,
             'status': app.status,
             'resume_url': app.resume_url,
@@ -428,55 +427,6 @@ def get_user_job_profile():
     }), 200
 
 
-@jobs_bp.route('/nearby', methods=['POST'])
-def get_nearby_jobs():
-    """Get nearby job postings without ranking."""
-    data = request.get_json() or {}
-    latitude = data.get('latitude')
-    longitude = data.get('longitude')
-    radius = data.get('radius_mi', 20)
-
-    jobs = JobPosting.query.filter_by(status='active').all()
-
-    nearby_jobs = []
-    for job in jobs:
-        if job.latitude is None or job.longitude is None:
-            distance_mi = 999999
-        else:
-            # Haversine formula
-            R = 3959
-            lat1_rad = math.radians(latitude)
-            lat2_rad = math.radians(job.latitude)
-            delta_lat = math.radians(job.latitude - latitude)
-            delta_lon = math.radians(job.longitude - longitude)
-
-            a = math.sin(delta_lat / 2) ** 2 + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(delta_lon / 2) ** 2
-            c = 2 * math.asin(math.sqrt(a))
-            distance_mi = R * c
-
-        if distance_mi <= radius:
-            nearby_jobs.append({
-                'job_id': job.job_id,
-                'title': job.title,
-                'description': job.description,
-                'requirements': job.requirements,
-                'salary_range': job.salary_range,
-                'job_type': job.job_type,
-                'location': job.location,
-                'longitude': job.longitude,
-                'latitude': job.latitude,
-                'business_name': job.business.business_name,
-                'business_id': job.business.bid,
-                'distance_miles': distance_mi,
-                'posted_date': job.posted_date.isoformat()
-            })
-
-    return jsonify({
-        'nearby_jobs': nearby_jobs,
-        'length': len(nearby_jobs)
-    }), 200
-
-
 @jobs_bp.route('/ranked', methods=['POST'])
 @login_required
 def get_ranked_jobs():
@@ -484,7 +434,7 @@ def get_ranked_jobs():
     data = request.get_json() or {}
     latitude = data.get('latitude')
     longitude = data.get('longitude')
-    radius = data.get('radius_mi', 20)
+    radius = data.get('radius_mi', 50)
 
     # Get user's job profile
     user_profile = current_user.user_job_profile

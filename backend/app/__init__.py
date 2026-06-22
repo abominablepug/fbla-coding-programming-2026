@@ -69,11 +69,13 @@ def create_app():
     from app.rate import rate_bp  # Rating/review routes
     from app.loc import loc_bp    # Location management routes
     from app.recc import recc_bp  # Recommendation routes
-    
+    from app.jobs import jobs_bp  # Job portal routes
+
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(rate_bp, url_prefix='/rate')
     app.register_blueprint(loc_bp, url_prefix='/loc')
     app.register_blueprint(recc_bp, url_prefix='/recc')
+    app.register_blueprint(jobs_bp, url_prefix='/jobs')
 
     # Initialize Flask-Migrate for database migrations
     Migrate(app, db)
