@@ -54,7 +54,19 @@ const Login = () => {
 							const data = isJson ? await res.json().catch(() => ({} as any)) : null;
 
 							if (res.ok) {
-								navigate('/dashboard');
+								try {
+									const userRes = await fetch(`${AUTH_BASE_URL}/auth/dashboard`, {
+										credentials: 'include'
+									});
+									if (userRes.ok) {
+										const userData = await userRes.json();
+										navigate(userData.user_type === 'business' ? '/business/dashboard' : '/dashboard');
+									} else {
+										navigate('/dashboard');
+									}
+								} catch {
+									navigate('/dashboard');
+								}
 								return;
 							}
 

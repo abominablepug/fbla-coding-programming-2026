@@ -14,6 +14,7 @@ const Register = () => {
 	const [password, setPassword] = useState('');
 	const [email, setEmail] = useState('');
 	const [confirmPassword, setConfirmPassword] = useState('');
+	const [userType, setUserType] = useState<'customer' | 'business'>('customer');
 	const [submitError, setSubmitError] = useState('');
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [captchaToken, setCaptchaToken] = useState<string | null>(null);
@@ -45,6 +46,7 @@ const Register = () => {
 		formData.append('username', normalizedUsername);
 		formData.append('password', normalizedPassword);
 		formData.append('email', normalizedEmail);
+		formData.append('user_type', userType);
 		formData.append('captcha_token', captchaToken);
 
 		try {
@@ -60,7 +62,7 @@ const Register = () => {
 			const data = isJson ? await response.json().catch(() => ({} as any)) : null;
 
 			if (response.ok) {
-				navigate('/dashboard');
+				navigate(userType === 'business' ? '/business/dashboard' : '/dashboard');
 				return;
 			}
 
@@ -122,6 +124,34 @@ const Register = () => {
 							value={email}
 							onChange={(e) => setEmail(e.target.value)}
 						/>
+					</div>
+
+					<div>
+						<label className="block text-sm font-medium text-white-400 mb-3">Account Type:</label>
+						<div className="flex gap-4">
+							<label className="flex items-center gap-2 cursor-pointer">
+								<input
+									type="radio"
+									name="userType"
+									value="customer"
+									checked={userType === 'customer'}
+									onChange={(e) => setUserType(e.target.value as 'customer' | 'business')}
+									className="w-4 h-4"
+								/>
+								<span className="text-white-300">Customer</span>
+							</label>
+							<label className="flex items-center gap-2 cursor-pointer">
+								<input
+									type="radio"
+									name="userType"
+									value="business"
+									checked={userType === 'business'}
+									onChange={(e) => setUserType(e.target.value as 'customer' | 'business')}
+									className="w-4 h-4"
+								/>
+								<span className="text-white-300">Business</span>
+							</label>
+						</div>
 					</div>
 
 					<div>
