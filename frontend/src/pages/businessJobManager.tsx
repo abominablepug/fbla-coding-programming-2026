@@ -36,10 +36,10 @@ const BusinessJobManager = () => {
   const AUTH_BASE_URL = import.meta.env.VITE_AUTH_BASE_URL || 'http://localhost:5173';
   const navigate = useNavigate();
   const { jobId } = useParams();
-  const [job, setJob] = useState<Job | null>(null);
+  const [_job, setJob] = useState<Job | null>(null);
   const [applicants, setApplicants] = useState<Applicant[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isEditing, setIsEditing] = useState(false);
+  const [_isEditing, _setIsEditing] = useState(false);
   const [showApplicantDetail, setShowApplicantDetail] = useState<number | null>(null);
   const [currentApplicant, setCurrentApplicant] = useState<Applicant | null>(null);
   const [formData, setFormData] = useState<Partial<Job>>({});

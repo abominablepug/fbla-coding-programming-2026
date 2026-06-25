@@ -9,12 +9,15 @@ import Dashboard from "./pages/dashboard";
 import TinderPage from "./pages/tinder";
 import Coupons from "./pages/coupons";
 import Alerts from "./components/alerts";
+import ProactiveAlerts from "./components/proactiveAlerts";
 import ReviewsPage from "./pages/reviews";
 import ResetPassword from "./pages/resetPassword";
 import BusinessDashboard from "./pages/businessDashboard";
 import BusinessJobManager from "./pages/businessJobManager";
 import JobFinder from "./pages/jobFinder";
 import JobProfile from "./pages/jobProfile";
+import AdminDashboard from "./pages/adminDashboard";
+import EventsBoard from "./pages/events";
 
 
 function App() {
@@ -31,6 +34,7 @@ function App() {
 	return (
 		<BrowserRouter>
 			<Alerts />
+			<ProactiveAlerts />
 			<Routes>
 				<Route path="/login" element={<Login />} />
 				<Route path="/register" element={<Register />} />
@@ -39,6 +43,7 @@ function App() {
 				<Route path="/map" element={<Map />} />
 				<Route path="/dashboard" element={<Dashboard />} />
 				<Route path="/tinder" element={<TinderPage/>} />
+				<Route path="/events" element={<EventsBoard />} />
 				<Route path="/reviews" element={<ReviewsPage />} />
 				<Route path="/welcome" element={<Landing/>} />
 				<Route path="/discount" element={<Coupons/>} />
@@ -49,6 +54,7 @@ function App() {
 				<Route path="/business/jobs/new" element={<BusinessJobManager />} />
 				<Route path="/business/jobs/:jobId" element={<BusinessJobManager />} />
 				<Route path="/business/jobs/:jobId/edit" element={<BusinessJobManager />} />
+				<Route path="/admin" element={<AdminDashboard />} />
 			</Routes>
 		</BrowserRouter>
 	);

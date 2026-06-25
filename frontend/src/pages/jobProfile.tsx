@@ -7,7 +7,7 @@ import { Upload, Plus, X } from 'lucide-react';
 const JobProfile = () => {
   const AUTH_BASE_URL = (import.meta.env.VITE_AUTH_BASE_URL || 'http://localhost:5173').trim();
   const navigate = useNavigate();
-  const [profile, setProfile] = useState<any>(null);
+  const [_profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
 

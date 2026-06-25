@@ -70,19 +70,25 @@ def create_app():
     from app.loc import loc_bp    # Location management routes
     from app.recc import recc_bp  # Recommendation routes
     from app.jobs import jobs_bp  # Job portal routes
+    from app.ads import ads_bp    # Advertisements routes
+    from app.coupons import coupons_bp # Coupons routes
+    from app.admin import admin_bp
+    from app.events import events_bp
 
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(rate_bp, url_prefix='/rate')
     app.register_blueprint(loc_bp, url_prefix='/loc')
     app.register_blueprint(recc_bp, url_prefix='/recc')
     app.register_blueprint(jobs_bp, url_prefix='/jobs')
+    app.register_blueprint(ads_bp, url_prefix='/ads')
+    app.register_blueprint(coupons_bp, url_prefix='/coupons')
+    app.register_blueprint(admin_bp, url_prefix='/admin')
+    app.register_blueprint(events_bp, url_prefix='/events')
 
     # Initialize Flask-Migrate for database migrations
     Migrate(app, db)
 
-    # Create all database tables within the application context
-    with app.app_context():
-        db.create_all()
+    # Removed db.create_all() as we are now relying entirely on Flask-Migrate
 
     @app.route('/')
     def index():

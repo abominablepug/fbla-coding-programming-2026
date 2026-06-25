@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from "framer-motion";
+import AdBanner from './adBanner';
 
 interface BodyProps {
     children?: React.ReactNode;
@@ -23,6 +24,7 @@ const Body: React.FC<BodyProps> = ({
 					<div className="absolute lg:top-[-520px] top-[-420px] w-full h-full bg-linear-to-b from-cyan-700/40 via-[#FD8973]/35 to-[#FD8973]/40 blur-[120px] rounded-full" />
 				</motion.div>
 			</div>
+            <AdBanner />
             {children}
         </div>
     );

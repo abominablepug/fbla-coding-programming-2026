@@ -31,7 +31,7 @@ interface BackendReview {
 
 interface CouponSuggestion {
   location: Location;
-  sourceType: 'personal' | 'nearby';
+  sourceType: 'personal' | 'nearby' | 'business';
   title: string;
   code: string;
   discountLabel: string;
@@ -55,7 +55,7 @@ interface SavedCouponMeta {
   discountLabel: string;
   code: string;
   lid: number;
-  sourceType: 'personal' | 'nearby';
+  sourceType: 'personal' | 'nearby' | 'business';
   address?: string;
 }
 
@@ -138,9 +138,11 @@ const Coupons = () => {
 
   const [personalCoupons, setPersonalCoupons] = useState<CouponSuggestion[]>([]);
   const [nearbyCoupons, setNearbyCoupons] = useState<CouponSuggestion[]>([]);
+  const [businessCoupons, setBusinessCoupons] = useState<CouponSuggestion[]>([]);
 
   const [showPersonalCoupons, setShowPersonalCoupons] = useState(true);
   const [showNearbyCoupons, setShowNearbyCoupons] = useState(true);
+  const [showBusinessCoupons, setShowBusinessCoupons] = useState(true);
   const [showSavedCouponsSidebar, setShowSavedCouponsSidebar] = useState(false);
   const [savedCouponKeys, setSavedCouponKeys] = useState<string[]>([]);
   const [savedCouponMeta, setSavedCouponMeta] = useState<Record<string, SavedCouponMeta>>({});
@@ -151,6 +153,7 @@ const Coupons = () => {
   const [reviewModalResolvedLid, setReviewModalResolvedLid] = useState<number | null>(null);
   const nearbySectionRef = useRef<HTMLDivElement | null>(null);
   const personalSectionRef = useRef<HTMLDivElement | null>(null);
+  const businessSectionRef = useRef<HTMLDivElement | null>(null);
 
   const requestedLocationId = typeof routeState?.locationId === 'number' ? routeState.locationId : null;
   const scrollToSection = (ref: React.RefObject<HTMLDivElement | null>) => {
@@ -474,6 +477,36 @@ const Coupons = () => {
         }
 
         setNearbyLocations(nearby);
+        
+        let fetchedBusinessCoupons: CouponSuggestion[] = [];
+        try {
+          const publicCouponsRes = await fetch(`${AUTH_BASE_URL}/coupons/public`);
+          if (publicCouponsRes.ok) {
+              const publicCouponsData = await publicCouponsRes.json();
+              fetchedBusinessCoupons = publicCouponsData.map((c: any) => ({
+                  location: {
+                      lid: c.business_id ? 100000 + c.business_id : -1,
+                      name: c.business_name,
+                      address: c.business_address || undefined,
+                      latitude: c.latitude || 0,
+                      longitude: c.longitude || 0,
+                      type: 1,
+                      categories: c.category ? [c.category] : []
+                  },
+                  sourceType: 'business',
+                  title: c.title,
+                  code: c.code,
+                  discountLabel: c.discount_label,
+                  expiresAt: c.expires_at ? new Date(c.expires_at).toLocaleDateString() : 'Never',
+                  reason: c.description || 'Special offer from local business',
+                  sourceNote: 'Directly from Business',
+                  rating: null,
+                  tipPreview: null
+              }));
+          }
+        } catch (err) {
+            console.error('Failed to fetch business coupons', err);
+        }
 
         const personalBase = dedupeLocations([...uniqueFavorites, ...uniqueVisited]).slice(0, 12);
         const [generatedPersonalRaw, generatedNearbyRaw] = await Promise.all([
@@ -502,6 +535,7 @@ const Coupons = () => {
 
         setPersonalCoupons(generatedPersonal);
         setNearbyCoupons(generatedNearby);
+        setBusinessCoupons(fetchedBusinessCoupons);
 
       } catch (error) {
         console.error('Failed to load coupons page:', error);
@@ -510,6 +544,7 @@ const Coupons = () => {
         setNearbyLocations([]);
         setPersonalCoupons([]);
         setNearbyCoupons([]);
+        setBusinessCoupons([]);
       } finally {
         setLoading(false);
       }
@@ -541,7 +576,7 @@ const Coupons = () => {
   const motionInitial =
     routeState?.from === 'dashboard' ? { opacity: 0, y: 20, scale: 0.98 } : { opacity: 0, y: 8 };
 
-  const allCoupons = useMemo(() => [...personalCoupons, ...nearbyCoupons], [personalCoupons, nearbyCoupons]);
+  const allCoupons = useMemo(() => [...businessCoupons, ...personalCoupons, ...nearbyCoupons], [businessCoupons, personalCoupons, nearbyCoupons]);
 
   const couponByKey = useMemo(() => {
     const map = new Map<string, CouponSuggestion>();
@@ -559,11 +594,12 @@ const Coupons = () => {
   const summaryText = useMemo(() => {
     const personalCount = dedupeLocations([...favoriteLocations, ...visitedLocations]).length;
     const nearbyCount = nearbyLocations.length;
-    if (personalCount === 0 && nearbyCount === 0) {
+    const businessCount = businessCoupons.length;
+    if (personalCount === 0 && nearbyCount === 0 && businessCount === 0) {
       return 'No eligible locations found yet. Visit places or enable location for nearby coupon suggestions.';
     }
-    return `${personalCount} from favorites/recent visits + ${nearbyCount} in current vicinity.`;
-  }, [favoriteLocations, visitedLocations, nearbyLocations]);
+    return `${businessCount} local business offers + ${personalCount} from favorites/recent visits + ${nearbyCount} in current vicinity.`;
+  }, [favoriteLocations, visitedLocations, nearbyLocations, businessCoupons]);
 
   const renderCouponCards = (coupons: CouponSuggestion[]) => {
     const uniqueCoupons = dedupeCoupons(coupons);
@@ -698,6 +734,12 @@ const Coupons = () => {
             </div>
             <div className="flex flex-wrap items-center justify-center gap-2">
               <button
+                onClick={() => scrollToSection(businessSectionRef)}
+                className="rounded-full border border-emerald-400/40 bg-emerald-500/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-emerald-200 hover:bg-emerald-500/25 transition-colors"
+              >
+                Local Businesses
+              </button>
+              <button
                 onClick={() => scrollToSection(nearbySectionRef)}
                 className="rounded-full border border-cyan-400/40 bg-cyan-500/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-cyan-200 hover:bg-cyan-500/25 transition-colors"
               >
@@ -719,6 +761,25 @@ const Coupons = () => {
           </Card>
         ) : (
           <div className="space-y-5">
+            <div ref={businessSectionRef}>
+            <Card
+              title={
+                <div className="flex items-center justify-between gap-3">
+                  <span style={{ fontFamily: 'var(--font-heading)' }} className="text-2xl font-bold text-emerald-400">Local Businesses Offers</span>
+                  <button
+                    onClick={() => setShowBusinessCoupons((prev) => !prev)}
+                    className="rounded-full border border-emerald-400/40 bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-200 hover:bg-emerald-500/25 transition-colors"
+                  >
+                    {showBusinessCoupons ? 'Collapse' : 'Expand'}
+                  </button>
+                </div>
+              }
+              cardClassName="w-full border border-white/10"
+            >
+              {showBusinessCoupons && renderCouponCards(businessCoupons)}
+            </Card>
+            </div>
+
             <div ref={nearbySectionRef}>
             <Card
               title={

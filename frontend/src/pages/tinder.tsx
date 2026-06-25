@@ -27,6 +27,7 @@ interface Business {
     website?: string;
     socials?: string[];
     businessHours?: string[];
+    is_certified_local?: boolean;
 }
 interface Location {
 	lid: number;
@@ -489,7 +490,18 @@ const TinderPage = () => {
                                     className="w-full max-w-[1040px] px-4"
                                 >
                                     <Card
-                                        title={currentBusiness.name || 'Unknown Business'}
+                                        title={
+                                            <div className="flex flex-wrap items-center gap-3">
+                                                <h1 style={{ fontFamily: 'var(--font-heading)' }} className="text-2xl md:text-3xl font-bold text-white line-clamp-2">
+                                                    {currentBusiness.name || 'Unknown Business'}
+                                                </h1>
+                                                {currentBusiness.is_certified_local && (
+                                                    <span className="rounded-full border border-emerald-400/40 bg-emerald-500/15 px-3 py-1 text-xs font-bold text-emerald-200 whitespace-nowrap" title="Admin Verified Locally Owned Business">
+                                                        Certified Local ✅
+                                                    </span>
+                                                )}
+                                            </div>
+                                        }
                                         cardClassName="w-[1040px] max-w-[97vw]"
                                         bgcolor="#003A6CFF"
                                         titleClassName='text-white'

@@ -158,8 +158,19 @@ class Business(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+    is_certified_local = db.Column(db.Boolean, default=False)
+
     # Relationship: Job postings from this business
     job_postings = db.relationship('JobPosting', back_populates='business', lazy=True, cascade='all, delete-orphan')
+
+    # Relationship: Advertisements from this business
+    advertisements = db.relationship('Advertisement', back_populates='business', lazy=True, cascade='all, delete-orphan')
+
+    # Relationship: Coupons from this business
+    coupons = db.relationship('Coupon', back_populates='business', lazy=True, cascade='all, delete-orphan')
+
+    # Relationship: Events from this business
+    events = db.relationship('Event', back_populates='business', lazy=True, cascade='all, delete-orphan')
 
     def __repr__(self):
         return f'<Business {self.business_name}>'
@@ -231,3 +242,63 @@ class JobApplication(db.Model):
 
     def __repr__(self):
         return f'<JobApplication user={self.user_id} job={self.job_id}>'
+
+
+class Advertisement(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    
+    # Foreign key to business
+    business_id = db.Column(db.Integer, db.ForeignKey('business.bid'), nullable=False)
+    business = db.relationship('Business', back_populates='advertisements', lazy=True)
+    
+    media_url = db.Column(db.String(255), nullable=False)
+    media_type = db.Column(db.String(50), nullable=False)  # 'image' or 'video'
+    target_url = db.Column(db.String(255), nullable=True)
+    
+    # Status: pending, approved, rejected
+    status = db.Column(db.String(20), default='pending', nullable=False)
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def __repr__(self):
+        return f'<Advertisement {self.id} for Business {self.business_id}>'
+
+
+class Coupon(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    
+    # Foreign key to business
+    business_id = db.Column(db.Integer, db.ForeignKey('business.bid'), nullable=False)
+    business = db.relationship('Business', back_populates='coupons', lazy=True)
+    
+    title = db.Column(db.String(200), nullable=False)
+    discount_label = db.Column(db.String(50), nullable=False) # e.g., "20% OFF", "$10 OFF"
+    code = db.Column(db.String(50), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    
+    expires_at = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def __repr__(self):
+        return f'<Coupon {self.code} for Business {self.business_id}>'
+
+
+class Event(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    
+    business_id = db.Column(db.Integer, db.ForeignKey('business.bid'), nullable=False)
+    business = db.relationship('Business', back_populates='events', lazy=True)
+    
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    event_type = db.Column(db.String(50), nullable=False) # e.g. "flash_sale", "live_music", "trivia"
+    start_time = db.Column(db.DateTime, nullable=False)
+    end_time = db.Column(db.DateTime, nullable=False)
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def __repr__(self):
+        return f'<Event {self.title} for Business {self.business_id}>'
+
+

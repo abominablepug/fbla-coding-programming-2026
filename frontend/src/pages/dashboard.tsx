@@ -3,7 +3,7 @@ import Card from "../components/card";
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/navbar';
 import Links from '../components/links';
-import { ArrowUp, Bookmark, BookmarkCheck, Briefcase, ChevronLeft, ChevronRight, Heart, HeartMinus, HeartPlus, MapPin, Star, TicketPercent } from 'lucide-react';
+import { ArrowUp, Bookmark, BookmarkCheck, Briefcase, Calendar, ChevronLeft, ChevronRight, Heart, HeartMinus, HeartPlus, MapPin, Star, TicketPercent } from 'lucide-react';
 import Body from '../components/body';
 import { enqueueAlert } from '../components/alerts';
 import LocalAiChatPopup from '../components/localAiChatPopup';
@@ -1089,6 +1089,9 @@ const Dashboard = () => {
 				</Links>
 				<Links link="reviews">
 					Reviews <Star size={18} />
+				</Links>
+				<Links link="/events">
+					Events <Calendar size={18} />
 				</Links>
 			</Navbar>
 			<div className="relative grid gap-11 pt-28">

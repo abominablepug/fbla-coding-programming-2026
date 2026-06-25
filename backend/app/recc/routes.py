@@ -246,7 +246,37 @@ def get_ranked_recommendations():
     # Rank based on current user's preferences
     ranked_locations = rank_locations(current_user, reccs or [])
 
-    return jsonify({'ranked_locations': ranked_locations}), 200
+    # Fetch local certified businesses from DB
+    from app.models import Business
+    # Find certified businesses within a bounding box approximately equal to radius
+    # 1 degree of latitude is ~69 miles
+    lat_diff = radius / 69.0
+    lon_diff = radius / (69.0 * math.cos(math.radians(latitude))) if latitude else lat_diff
+    
+    local_businesses = Business.query.filter_by(is_certified_local=True).all()
+    certified_list = []
+    
+    for b in local_businesses:
+        # Check if it has coordinates and is roughly within range
+        if b.latitude and b.longitude:
+            if abs(b.latitude - latitude) <= lat_diff and abs(b.longitude - longitude) <= lon_diff:
+                certified_list.append({
+                    'name': b.business_name,
+                    'address': b.address,
+                    'latitude': b.latitude,
+                    'longitude': b.longitude,
+                    'distance_meters': 0, # Approximation or calculate exact
+                    'category': [b.category] if b.category else [],
+                    'score': 100.0, # High score to ensure they appear
+                    'classifications': [],
+                    'is_certified_local': True,
+                    'bid': b.bid
+                })
+
+    # Combine lists, putting certified businesses at the top
+    combined_locations = certified_list + ranked_locations
+
+    return jsonify({'ranked_locations': combined_locations}), 200
 
 @recc_bp.route('/test/nearby', methods=['GET'])
 def test_recommendation():
