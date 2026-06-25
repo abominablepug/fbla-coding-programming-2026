@@ -1,3 +1,4 @@
+// Resolve a location query into a Wikimedia Commons representative image URL.
 export async function getCommonsImage(query: string): Promise<string | null> {
   try {
     const searchRes = await fetch(
@@ -43,4 +44,3 @@ export async function getCommonsImage(query: string): Promise<string | null> {
     return null;
   }
 }
-

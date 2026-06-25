@@ -30,6 +30,9 @@ class User(db.Model, UserMixin):
     reviews = db.relationship('Review', back_populates='user', lazy=True)
     favorite_locations = db.relationship('Location', secondary=FavoriteLocation.__table__, back_populates='favorited_by', lazy=True)
 
+    # recently visited locations relationship
+    visited_locations = db.relationship('Location', secondary=lambda: VisitedLocation.__table__, back_populates='visited_by', lazy=True)
+
     def update_preferences(self, category, weight=0.1):
         current_preferences = self.preferences
         current_val = current_preferences.get(category, 0.0)
@@ -70,6 +73,21 @@ class Location(db.Model):
     reviews = db.relationship('Review', back_populates='location', lazy=True)
     favorited_by = db.relationship('User', secondary=FavoriteLocation.__table__, back_populates='favorite_locations', lazy=True)
 
+    # users who have visited this location
+    visited_by = db.relationship('User', secondary=lambda: VisitedLocation.__table__, back_populates='visited_locations', lazy=True)
+
     def __repr__(self):
         return f'<Location {self.name}>'
+
+
+class VisitedLocation(db.Model):
+    __tablename__ = 'visited_location'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.uid'), nullable=False)
+    location_id = db.Column(db.Integer, db.ForeignKey('location.lid'), nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    # convenient repr
+    def __repr__(self):
+        return f'<VisitedLocation user={self.user_id} loc={self.location_id} at={self.timestamp}>'
 

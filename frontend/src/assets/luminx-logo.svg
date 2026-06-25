@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="LuminX logo">
+  <defs>
+    <linearGradient id="luminxLogoGradient" x1="8" y1="6" x2="54" y2="56" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#2DE1FC"/>
+      <stop offset="52%" stop-color="#449DD1"/>
+      <stop offset="100%" stop-color="#446DF6"/>
+    </linearGradient>
+  </defs>
+
+  <circle cx="32" cy="23" r="12" fill="url(#luminxLogoGradient)" opacity="0.12"/>
+  <path
+    d="M32 6C22.611 6 15 13.611 15 23c0 13.365 12.25 28.47 15.571 32.32a2 2 0 0 0 2.858 0C36.75 51.47 49 36.365 49 23 49 13.611 41.389 6 32 6Z"
+    stroke="url(#luminxLogoGradient)"
+    stroke-width="2.4"
+  />
+  <path
+    d="M24 23c0-4.418 3.582-8 8-8s8 3.582 8 8c0 2.387-1.045 4.526-2.703 5.99-.885.782-1.297 1.38-1.297 2.01h-8c0-.63-.412-1.228-1.297-2.01A7.98 7.98 0 0 1 24 23Z"
+    stroke="url(#luminxLogoGradient)"
+    stroke-width="1.95"
+    stroke-linejoin="round"
+  />
+  <path d="M28.5 35h7M29 39h6" stroke="url(#luminxLogoGradient)" stroke-width="1.95" stroke-linecap="round"/>
+</svg>

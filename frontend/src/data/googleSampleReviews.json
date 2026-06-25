@@ -1,0 +1,62 @@
+[
+  {
+    "name": "Ava Thompson",
+    "star_rating": 5,
+    "content": "Great service and really clean setup. Staff was welcoming and everything felt organized.",
+    "relative_time": "2 weeks ago"
+  },
+  {
+    "name": "Noah Patel",
+    "star_rating": 4,
+    "content": "Solid spot overall. Good value and quick turnaround, especially during a busy hour.",
+    "relative_time": "1 month ago"
+  },
+  {
+    "name": "Mia Rodriguez",
+    "star_rating": 5,
+    "content": "Loved the atmosphere and attention to detail. I would definitely come back with friends.",
+    "relative_time": "3 weeks ago"
+  },
+  {
+    "name": "Ethan Kim",
+    "star_rating": 4,
+    "content": "Friendly team and smooth experience. Only minor wait, but the quality was worth it.",
+    "relative_time": "6 days ago"
+  },
+  {
+    "name": "Sophia Nguyen",
+    "star_rating": 5,
+    "content": "One of the better local options. Easy parking, fast service, and consistently good quality.",
+    "relative_time": "5 weeks ago"
+  },
+  {
+    "name": "Liam Carter",
+    "star_rating": 3,
+    "content": "Decent experience. Not bad, but there is room to improve response time during peak periods.",
+    "relative_time": "2 months ago"
+  },
+  {
+    "name": "Isabella Martinez",
+    "star_rating": 5,
+    "content": "Excellent first impression and very helpful staff. Everything was clearly explained.",
+    "relative_time": "4 days ago"
+  },
+  {
+    "name": "James Walker",
+    "star_rating": 4,
+    "content": "Reliable local place. Good communication and fair pricing compared to nearby options.",
+    "relative_time": "3 months ago"
+  },
+  {
+    "name": "Charlotte Brooks",
+    "star_rating": 5,
+    "content": "Really polished experience from start to finish. I appreciated how efficient everything was.",
+    "relative_time": "8 days ago"
+  },
+  {
+    "name": "Benjamin Lee",
+    "star_rating": 4,
+    "content": "Good quality and friendly service. I'd recommend this place if you're in the area.",
+    "relative_time": "2 weeks ago"
+  }
+]
