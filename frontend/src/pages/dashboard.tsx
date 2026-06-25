@@ -3,7 +3,7 @@ import Card from "../components/card";
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/navbar';
 import Links from '../components/links';
-import { ArrowUp, Bookmark, BookmarkCheck, ChevronLeft, ChevronRight, Heart, HeartMinus, HeartPlus, MapPin, Star, TicketPercent } from 'lucide-react';
+import { ArrowUp, Bookmark, BookmarkCheck, Briefcase, ChevronLeft, ChevronRight, Heart, HeartMinus, HeartPlus, MapPin, Star, TicketPercent } from 'lucide-react';
 import Body from '../components/body';
 import { enqueueAlert } from '../components/alerts';
 import LocalAiChatPopup from '../components/localAiChatPopup';
@@ -1081,6 +1081,9 @@ const Dashboard = () => {
 				<Links link="tinder">
 					Findr <Heart size={18} />
 				</Links>
+				<Links link="/jobs/finder">
+					Job Findr <Briefcase size={18} />
+				</Links>
 				<Links link="discount">
 					Coupons <TicketPercent size={18} />
 				</Links>
@@ -1103,8 +1106,8 @@ const Dashboard = () => {
 								<div className="max-w-md w-full align-items-center justify-items-center">
 									<img  className="block aspect-square h-40 w-40 overflow-hidden rounded-full border-4 border-cyan-600 object-cover object-center shadow-w-auto mb-4 align-center" src={imageSrc} alt="Profile" />
 									{!openForm&&(<div className="items-center align-items-center justify-center">
-										<button className="mt-4 px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-400 transition-colors inline-block mr-3" onClick={() => {setOpenForm(true); setPfpChange(false);}}>Change Password</button>
-										<button className="mt-4 px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-400 transition-colors inline-block" onClick={() => {setOpenForm(true); setPfpChange(true);}}>Change Profile Picture</button>
+										<button className="mt-4 px-4 py-2 bg-[#FD8973] text-white font-semibold rounded-lg hover:bg-[#fb5f43] transition-colors inline-block mr-3" onClick={() => {setOpenForm(true); setPfpChange(false);}}>Change Password</button>
+										<button className="mt-4 px-4 py-2 bg-[#FFBF65] text-[#13181B] font-semibold rounded-lg hover:bg-[#f0a93f] transition-colors inline-block" onClick={() => {setOpenForm(true); setPfpChange(true);}}>Change Profile Picture</button>
 									</div>)}
 									{openForm &&(
 										<div className={`flex flex-col items-center justify-center gap-4 mt-4 w-full`}>
@@ -1193,17 +1196,17 @@ const Dashboard = () => {
 						</div>
 				</div> 
 				<div className="mx-auto w-[95%] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
-					<div className="rounded-lg border border-cyan-400/25 bg-neutral-900/75 px-3 py-2 text-center">
-						<p className="text-[10px] uppercase tracking-[0.08em] text-cyan-200/75">Locations Favorited</p>
-						<p className="text-lg font-semibold text-cyan-300">{favoriteLocations.length}</p>
+					<div className="rounded-lg border border-[#FD8973]/45 bg-neutral-900/75 px-3 py-2 text-center">
+						<p className="text-[10px] uppercase tracking-[0.08em] text-[#FD8973]/85">Locations Favorited</p>
+						<p className="text-lg font-semibold text-[#FD8973]">{favoriteLocations.length}</p>
 					</div>
-					<div className="rounded-lg border border-cyan-400/25 bg-neutral-900/75 px-3 py-2 text-center">
-						<p className="text-[10px] uppercase tracking-[0.08em] text-cyan-200/75">Locations Visited</p>
-						<p className="text-lg font-semibold text-cyan-300">{visitedLocations.length}</p>
+					<div className="rounded-lg border border-[#FFBF65]/45 bg-neutral-900/75 px-3 py-2 text-center">
+						<p className="text-[10px] uppercase tracking-[0.08em] text-[#FFBF65]/85">Locations Visited</p>
+						<p className="text-lg font-semibold text-[#FFBF65]">{visitedLocations.length}</p>
 					</div>
-					<div className="rounded-lg border border-cyan-400/25 bg-neutral-900/75 px-3 py-2 text-center">
-						<p className="text-[10px] uppercase tracking-[0.08em] text-cyan-200/75">Saved Coupons</p>
-						<p className="text-lg font-semibold text-cyan-300">{savedCouponKeys.length}</p>
+					<div className="rounded-lg border border-[#CCD5DA]/45 bg-neutral-900/75 px-3 py-2 text-center">
+						<p className="text-[10px] uppercase tracking-[0.08em] text-[#CCD5DA]/85">Saved Coupons</p>
+						<p className="text-lg font-semibold text-[#CCD5DA]">{savedCouponKeys.length}</p>
 					</div>
 					<div className="rounded-lg border border-cyan-400/25 bg-neutral-900/75 px-3 py-2 text-center">
 						<p className="text-[10px] uppercase tracking-[0.08em] text-cyan-200/75">Distance Travelled</p>
@@ -1213,19 +1216,19 @@ const Dashboard = () => {
 					<div className="mx-auto w-[95%] flex flex-wrap items-center justify-center gap-2">
 						<button
 							onClick={() => scrollToSection(favoriteSectionRef)}
-							className="rounded-full border border-cyan-400/40 bg-cyan-500/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-cyan-200 hover:bg-cyan-500/25 transition-colors"
+							className="rounded-full border border-[#FD8973]/50 bg-[#FD8973]/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-[#FD8973] hover:bg-[#FD8973]/25 transition-colors"
 						>
 							Favorite Locations
 						</button>
 						<button
 							onClick={() => scrollToSection(savedCouponsSectionRef)}
-							className="rounded-full border border-cyan-400/40 bg-cyan-500/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-cyan-200 hover:bg-cyan-500/25 transition-colors"
+							className="rounded-full border border-[#FFBF65]/50 bg-[#FFBF65]/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-[#FFBF65] hover:bg-[#FFBF65]/25 transition-colors"
 						>
 							Saved Coupons
 						</button>
 						<button
 							onClick={() => scrollToSection(recentSectionRef)}
-							className="rounded-full border border-cyan-400/40 bg-cyan-500/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-cyan-200 hover:bg-cyan-500/25 transition-colors"
+							className="rounded-full border border-[#CCD5DA]/50 bg-[#CCD5DA]/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-[#CCD5DA] hover:bg-[#CCD5DA]/25 transition-colors"
 						>
 							Recently Visited
 						</button>
@@ -1236,18 +1239,18 @@ const Dashboard = () => {
 							AI Suggestions
 						</button>
 					</div>
-					<div className="w-[95%] h-[2px] mx-auto bg-gradient-to-r from-transparent via-cyan-400/80 to-transparent shadow-[0_0_10px_rgba(34,211,238,0.25)]" />
+					<div className="w-[95%] h-[2px] mx-auto bg-gradient-to-r from-[#FD8973]/70 via-[#FFBF65]/80 to-cyan-400/70 shadow-[0_0_10px_rgba(255,191,101,0.25)]" />
 
 					<div className="mx-auto w-[96%] max-w-7xl space-y-5">
 					<div className="w-full grid grid-cols-1 xl:grid-cols-2 gap-5 items-stretch">
 						<div ref={favoriteSectionRef} className="h-full">
 						<Card
 							title={(
-								<div className="flex items-center justify-between gap-3 text-3xl font-bold text-cyan-500 line-clamp-2">
+								<div className="flex items-center justify-between gap-3 text-3xl font-bold text-[#FD8973] line-clamp-2">
 									<span>Favorite Locations:</span>
 									<button
 										onClick={() => setShowFavoritesSidebar((prev) => !prev)}
-										className="rounded-full border border-cyan-400/40 bg-cyan-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-cyan-200 hover:bg-cyan-500/25 transition-colors"
+										className="rounded-full border border-[#FD8973]/50 bg-[#FD8973]/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#FD8973] hover:bg-[#FD8973]/25 transition-colors"
 									>
 										{showFavoritesSidebar ? 'Hide Sidebar' : 'View All Favorites'}
 									</button>
@@ -1290,11 +1293,11 @@ const Dashboard = () => {
 						<div ref={savedCouponsSectionRef} className="h-full">
 						<Card
 							title={(
-								<div className="flex items-center justify-between gap-3 text-3xl font-bold text-cyan-500 line-clamp-2">
+								<div className="flex items-center justify-between gap-3 text-3xl font-bold text-[#FFBF65] line-clamp-2">
 									<span>Saved Coupons:</span>
 									<button
 										onClick={() => navigate('/discount', { state: { from: 'dashboard' } })}
-										className="rounded-full border border-cyan-400/40 bg-cyan-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-cyan-200 hover:bg-cyan-500/25 transition-colors"
+										className="rounded-full border border-[#FFBF65]/50 bg-[#FFBF65]/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#FFBF65] hover:bg-[#FFBF65]/25 transition-colors"
 									>
 										Go to Coupons
 									</button>
@@ -1334,8 +1337,8 @@ const Dashboard = () => {
 					</div>
 
 					<div ref={recentSectionRef} className="w-full">
-						<Card title='Recently Visited:' cardClassName='w-full h-[640px] ease-in-out hover:shadow-cyan-500/20 hover:shadow-2xl hover:scale-102 transition-all duration-500'>
-							<div className="flex h-[500px] flex-col gap-3 overflow-y-auto pr-1">
+						<Card title='Recently Visited:' titleClassName='!text-[#CCD5DA]' cardClassName='w-full ease-in-out hover:shadow-cyan-500/20 hover:shadow-2xl hover:scale-102 transition-all duration-500'>
+							<div className="flex max-h-[640px] flex-col gap-3 overflow-y-auto pr-1">
 								{loadingVisited ? (
 									<p className="text-gray-400 text-center py-4">Loading visited locations...</p>
 								) : visitedLocations.length === 0 ? (

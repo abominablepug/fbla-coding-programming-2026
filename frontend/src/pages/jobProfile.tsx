@@ -109,7 +109,7 @@ const JobProfile = () => {
     return (
       <Body>
         <Navbar />
-        <div className="flex items-center justify-center h-screen">Loading...</div>
+        <div className="relative z-10 flex items-center justify-center h-screen text-white">Loading...</div>
       </Body>
     );
   }
@@ -117,13 +117,13 @@ const JobProfile = () => {
   return (
     <Body>
       <Navbar />
-      <div className="max-w-2xl mx-auto p-6 mt-20">
-        <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
+      <div className="relative z-10 max-w-2xl mx-auto p-6 pt-28">
+        <div className="bg-slate-800 rounded-lg p-6 border border-slate-700 border-l-4 border-l-[#FFBF65]">
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-2xl font-bold text-white">Your Job Profile</h1>
             {!editing && (
               <button
-                className="px-4 py-2 bg-cyan-500 hover:bg-cyan-600 text-white rounded-lg"
+                className="px-4 py-2 bg-[#FD8973] hover:bg-[#fb5f43] text-white rounded-lg font-semibold"
                 onClick={() => setEditing(true)}
               >
                 Edit Profile
@@ -168,8 +168,8 @@ const JobProfile = () => {
 
               <div>
                 <h2 className="text-lg font-semibold text-white mb-3">Resume</h2>
-                <label className="block border-2 border-dashed border-slate-600 rounded-lg p-6 text-center cursor-pointer hover:border-cyan-500">
-                  <Upload size={24} className="mx-auto mb-2 text-cyan-500" />
+                <label className="block border-2 border-dashed border-slate-600 rounded-lg p-6 text-center cursor-pointer hover:border-[#FD8973]">
+                  <Upload size={24} className="mx-auto mb-2 text-[#FFBF65]" />
                   <span className="text-slate-300">Click to upload resume</span>
                   <input
                     type="file"
@@ -183,7 +183,7 @@ const JobProfile = () => {
               <div className="flex gap-3">
                 <button
                   onClick={handleSaveProfile}
-                  className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg"
+                  className="flex-1 px-4 py-2 bg-[#FFBF65] hover:bg-[#f0a93f] text-[#13181B] font-semibold rounded-lg"
                 >
                   Save Profile
                 </button>

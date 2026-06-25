@@ -1,7 +1,9 @@
 .business-dashboard-container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem 1rem;
+  padding: 7rem 1rem 2rem;
+  position: relative;
+  z-index: 10;
 }
 
 .dashboard-content {
@@ -18,6 +20,15 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+/* Give each section its own accent so the page isn't all-blue */
+.dashboard-content > .dashboard-section:nth-of-type(1) {
+  border-left: 4px solid var(--accent-gold, #ffbf65);
+}
+
+.dashboard-content > .dashboard-section:nth-of-type(2) {
+  border-left: 4px solid var(--accent-coral, #fd8973);
+}
+
 .section-header {
   display: flex;
   justify-content: space-between;
@@ -29,8 +40,15 @@
 
 .section-header h1,
 .section-header h2 {
-  color: var(--text-primary, #ffffff);
   margin: 0;
+}
+
+.section-header h1 {
+  color: var(--accent-gold, #ffbf65);
+}
+
+.section-header h2 {
+  color: var(--accent-coral, #fd8973);
 }
 
 .section-header h1 {
@@ -63,11 +81,12 @@
 }
 
 .new-job-btn {
-  background: #00cc44;
+  background: var(--accent-gold, #ffbf65);
+  color: #13181b;
 }
 
 .new-job-btn:hover {
-  background: #00aa33;
+  background: #f0a93f;
 }
 
 .profile-form {
@@ -132,12 +151,12 @@
 }
 
 .btn-primary {
-  background: var(--primary-color, #0066cc);
+  background: var(--accent-coral, #fd8973);
   color: white;
 }
 
 .btn-primary:hover {
-  background: var(--primary-dark, #0052a3);
+  background: #fb5f43;
 }
 
 .btn-secondary {
@@ -255,7 +274,7 @@
 }
 
 .job-salary {
-  color: #44ff44;
+  color: #f0a93f;
   font-weight: 600;
   margin: 0.25rem 0;
 }

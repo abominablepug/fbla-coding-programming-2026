@@ -435,10 +435,17 @@ def get_ranked_jobs():
     latitude = data.get('latitude')
     longitude = data.get('longitude')
     radius = data.get('radius_mi', 50)
+    provided_skills = data.get('skills')
 
-    # Get user's job profile
-    user_profile = current_user.user_job_profile
-    user_skills = convert_skills_to_vector(user_profile.skills if user_profile else None)
+    # Use ad-hoc skills from the request if provided (job seeker types in skills
+    # they think they have); otherwise fall back to their saved profile skills.
+    if provided_skills:
+        user_skills = convert_skills_to_vector(provided_skills)
+    else:
+        user_profile = current_user.user_job_profile
+        user_skills = convert_skills_to_vector(user_profile.skills if user_profile else None)
+
+    has_location = latitude is not None and longitude is not None
 
     # Get all active jobs
     jobs = JobPosting.query.filter_by(status='active').all()
@@ -455,9 +462,8 @@ def get_ranked_jobs():
         # Combine scores
         final_score = relevance * distance_factor
 
-        if job.latitude is None or job.longitude is None:
-            distance_mi = 999999
-        else:
+        job_has_coords = job.latitude is not None and job.longitude is not None
+        if has_location and job_has_coords:
             R = 3959
             lat1_rad = math.radians(latitude)
             lat2_rad = math.radians(job.latitude)
@@ -467,8 +473,14 @@ def get_ranked_jobs():
             a = math.sin(delta_lat / 2) ** 2 + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(delta_lon / 2) ** 2
             c = 2 * math.asin(math.sqrt(a))
             distance_mi = R * c
+            within_radius = distance_mi <= radius
+        else:
+            # Distance unknown (no user fix or job has no coords) — never exclude.
+            distance_mi = None
+            within_radius = True
 
-        if distance_mi <= radius:
+        # Only the radius gates inclusion; jobs with unknown distance always show.
+        if within_radius:
             ranked_jobs.append({
                 'job_id': job.job_id,
                 'title': job.title,

@@ -1087,7 +1087,7 @@ useEffect(() => {
     
     const el = document.createElement('div');
     el.className = 'user-dot';
-    el.innerHTML = '<div class="w-5 h-5 bg-[#3F92FF] border-[4px] border-white rounded-full shadow-[0_0_15px_#3F92FF]"></div>';
+    el.innerHTML = '<div class="w-5 h-5 bg-[#0a5288] border-[4px] border-white rounded-full shadow-[0_0_15px_#3F92FF]"></div>';
     
     userMarkerRef.current = new tt.Marker({ element: el })
       .setLngLat([loc.lng, loc.lat])
@@ -2208,7 +2208,7 @@ useEffect(() => {
                 >
                   {speechToTextListening ? <MicOff size={16} /> : <Mic size={16} />}
                 </button>
-                <button className="bg-[#3F92FF] border-none text-white p-2 px-3 rounded-lg cursor-pointer text-sm font-bold hover:bg-[#2F75D9]" onClick={handleSearch}>🔍</button>
+                <button className="bg-[#0a5288] border-none text-white p-2 px-3 rounded-lg cursor-pointer text-sm font-bold hover:bg-[#003a6c]" onClick={handleSearch}>🔍</button>
               </div>
 
               {suggestions.length > 0 && (

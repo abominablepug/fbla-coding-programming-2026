@@ -62,46 +62,74 @@
   --font-heading: "Exo 2", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   --font-brand: "Rajdhani", "Exo 2", "Segoe UI", sans-serif;
   --font-link: "Space Mono", "IBM Plex Sans", "Segoe UI", sans-serif;
-  --tone-neutral-950: #0f141c;
-  --tone-neutral-900: #151d27;
-  --tone-neutral-800: #1d2a36;
-  --tone-neutral-700: #273949;
-  --tone-neutral-600: #395066;
-  --tone-neutral-500: #5c7387;
-  --tone-neutral-400: #8398aa;
-  --tone-neutral-300: #a9bcc9;
-  --tone-neutral-200: #cad8e1;
-  --tone-neutral-100: #e3edf2;
-  --tone-neutral-50: #f4f8fb;
-  --tone-cyan-100: #e8f3ff;
-  --tone-cyan-200: #c9e3ff;
-  --tone-cyan-300: #9dcaff;
-  --tone-cyan-400: #6aaeff;
-  --tone-cyan-500: #3f92ff;
-  --tone-cyan-600: #2f75d9;
-  --tone-cyan-700: #245bb0;
-  --tone-sky-300: #a7d4ff;
-  --tone-sky-400: #78b7ff;
-  --tone-sky-500: #4a9cff;
-  --tone-sky-600: #327fd6;
-  --tone-blue-300: #90b7ff;
-  --tone-blue-400: #6d97ff;
-  --tone-blue-500: #4b7cf7;
-  --tone-blue-600: #3b64cf;
-  --tone-blue-700: #304fa8;
-  --tone-blue-800: #273f83;
-  --tone-purple-300: #7adcc5;
-  --tone-purple-400: #43c1a3;
-  --tone-purple-500: #0ea47f;
-  --tone-purple-600: #0b8163;
-  --tone-green-400: #0ea47f;
-  --tone-green-500: #0ea47f;
-  --tone-orange-50: #f6faf2;
-  --app-bg: #151d27;
-  --app-paper: #f4f8fb;
-  --app-primary: #3f92ff;
-  --app-secondary: #0ea47f;
-  --app-tertiary: #2f75d9;
+  /* ── Brand palette ──────────────────────────────────────────────
+     Primary : #003A6C Ateneo Blue   · #13181B Neverthing (dark)
+     Accent  : #FFBF65 Sea Buckthorn · #FD8973 Miami Coral
+     Neutral : #F0EEEB Magical Moonlight · #CCD5DA Polar Drift     */
+
+  /* Vibrant variant: deep ocean-blue base (built from Ateneo Blue) instead of
+     near-black, with Polar Drift → Magical Moonlight at the light end. Keeps a
+     dark theme so existing light text stays readable, but feels far less gloomy. */
+  --tone-neutral-950: #042344;
+  --tone-neutral-900: #06305c;
+  --tone-neutral-800: #0a4179;
+  --tone-neutral-700: #105494;
+  --tone-neutral-600: #1f6cb0;
+  --tone-neutral-500: #3d88cb;
+  --tone-neutral-400: #6ba6da;
+  --tone-neutral-300: #9cc4e7;
+  --tone-neutral-200: #ccd5da;
+  --tone-neutral-100: #e6ecee;
+  --tone-neutral-50: #f0eeeb;
+
+  /* Cyan tokens = bright, luminous azure (Ateneo Blue pushed vivid for CTAs) */
+  --tone-cyan-100: #e3f1ff;
+  --tone-cyan-200: #bbddff;
+  --tone-cyan-300: #82c3ff;
+  --tone-cyan-400: #3ea4ff;
+  --tone-cyan-500: #1488f7;
+  --tone-cyan-600: #0a6fd6;
+  --tone-cyan-700: #0a5288;
+
+  /* Sky tokens (bright hover/secondary blue) */
+  --tone-sky-300: #8ec8ff;
+  --tone-sky-400: #4aaaff;
+  --tone-sky-500: #1e8df0;
+  --tone-sky-600: #0a6fd6;
+
+  /* Blue tokens — vivid azure family */
+  --tone-blue-300: #82bbff;
+  --tone-blue-400: #4f9bff;
+  --tone-blue-500: #2280f5;
+  --tone-blue-600: #0a6fd6;
+  --tone-blue-700: #0a5288;
+  --tone-blue-800: #003a6c;
+
+  /* Purple tokens = vivid Miami Coral (warm accent, more saturated) */
+  --tone-purple-300: #ffb0a0;
+  --tone-purple-400: #ff8064;
+  --tone-purple-500: #fb5f43;
+  --tone-purple-600: #e8472d;
+
+  /* Green/emerald tokens = vivid Sea Buckthorn gold accent */
+  --tone-green-400: #ffc873;
+  --tone-green-500: #ffb13d;
+  --tone-orange-50: #fff6e6;
+
+  --app-bg: #06305c;
+  --app-paper: #f0eeeb;
+  --app-primary: #1488f7;
+  --app-secondary: #ffc873;
+  --app-tertiary: #003a6c;
+
+  /* Semantic tokens consumed by the business dashboard / job manager CSS */
+  --primary-color: #1488f7;
+  --primary-dark: #0a5288;
+  --bg-secondary: #0a4179;
+  --text-primary: #f0eeeb;
+  --text-secondary: #9cc4e7;
+  --accent-gold: #ffc873;
+  --accent-coral: #ff8064;
 }
 
 html,

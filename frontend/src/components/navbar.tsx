@@ -17,6 +17,7 @@ const Navbar: React.FC<NavBarProps> = ({ page, children, className = ""}) => {
     const { scrollY } = useScroll();
     const location = useLocation();
     const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [userType, setUserType] = useState<'customer' | 'business'>('customer');
 	const width = useTransform(scrollY, [0, 100], ["100%", "98%"]);
 	const borderRadius = useTransform(scrollY, [0, 100], ["0px", "40px"]);
 	const marginTop = useTransform(scrollY, [0, 100], ["0px", "12px"]);
@@ -30,6 +31,10 @@ const Navbar: React.FC<NavBarProps> = ({ page, children, className = ""}) => {
                 const response = await fetch(`${authBaseUrl}/auth/dashboard`, { credentials: 'include' });
                 if (!cancelled) {
                     setIsAuthenticated(response.ok);
+                    if (response.ok) {
+                        const data = await response.json().catch(() => ({}));
+                        setUserType(data.user_type === 'business' ? 'business' : 'customer');
+                    }
                 }
             } catch {
                 if (!cancelled) {
@@ -43,12 +48,11 @@ const Navbar: React.FC<NavBarProps> = ({ page, children, className = ""}) => {
         };
     }, [authBaseUrl, location.pathname]);
 
+    const homePath = userType === 'business' ? '/business/dashboard' : '/dashboard';
     const brandLink = useMemo(() => {
-        const appPages = new Set(['/dashboard', '/map', '/tinder', '/discount', '/reviews']);
-        if (appPages.has(location.pathname)) return '/dashboard';
-        return isAuthenticated ? '/dashboard' : '/';
-    }, [isAuthenticated, location.pathname]);
-    const showHomeShortcut = isAuthenticated && !location.pathname.startsWith('/dashboard');
+        return isAuthenticated ? homePath : '/';
+    }, [isAuthenticated, homePath]);
+    const showHomeShortcut = isAuthenticated && location.pathname !== homePath;
 
     return (
         <div className="fixed z-50 w-full top-0 pointer-events-none flex justify-center">
@@ -83,7 +87,7 @@ const Navbar: React.FC<NavBarProps> = ({ page, children, className = ""}) => {
                         </div>
                         {showHomeShortcut && (
                             <Link
-                                to="/dashboard"
+                                to={homePath}
                                 className="pointer-events-auto inline-flex shrink-0 items-center justify-center rounded-full bg-blue-400 p-1.5 text-white shadow-lg transition-all duration-200 hover:bg-sky-400"
                                 aria-label="Home"
                                 title="Home"
