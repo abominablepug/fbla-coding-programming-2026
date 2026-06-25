@@ -492,13 +492,13 @@ const ReviewsPage = () => {
                 <div className="relative min-w-0 pr-32">
                   <h1
                     style={{ fontFamily: 'var(--font-heading)' }}
-                    className="text-2xl md:text-3xl font-bold text-cyan-500 whitespace-nowrap"
+                    className="text-2xl md:text-3xl font-bold text-[#FD8973] whitespace-nowrap"
                   >
                     Favorited Locations
                   </h1>
                   <button
                     onClick={() => setFavoritesCollapsed((prev) => !prev)}
-                    className="absolute right-0 top-1/2 -translate-y-1/2 rounded-full border border-cyan-400/30 bg-cyan-500/10 px-3 py-1 text-xs font-semibold text-cyan-100 hover:bg-cyan-500/20"
+                    className="absolute right-0 top-1/2 -translate-y-1/2 rounded-full border border-[#FD8973]/40 bg-[#FD8973]/12 px-3 py-1 text-xs font-semibold text-[#FD8973] hover:bg-[#FD8973]/22"
                   >
                     {favoritesCollapsed ? 'Expand' : 'Collapse'}
                   </button>
@@ -536,13 +536,13 @@ const ReviewsPage = () => {
                 <div className="relative min-w-0 pr-32">
                   <h1
                     style={{ fontFamily: 'var(--font-heading)' }}
-                    className="text-2xl md:text-3xl font-bold text-cyan-500 whitespace-nowrap"
+                    className="text-2xl md:text-3xl font-bold text-[#CCD5DA] whitespace-nowrap"
                   >
                     Recently Viewed
                   </h1>
                   <button
                     onClick={() => setRecentCollapsed((prev) => !prev)}
-                    className="absolute right-0 top-1/2 -translate-y-1/2 rounded-full border border-cyan-400/30 bg-cyan-500/10 px-3 py-1 text-xs font-semibold text-cyan-100 hover:bg-cyan-500/20"
+                    className="absolute right-0 top-1/2 -translate-y-1/2 rounded-full border border-[#CCD5DA]/40 bg-[#CCD5DA]/12 px-3 py-1 text-xs font-semibold text-[#CCD5DA] hover:bg-[#CCD5DA]/22"
                   >
                     {recentCollapsed ? 'Expand' : 'Collapse'}
                   </button>

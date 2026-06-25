@@ -6,25 +6,37 @@ from datetime import datetime
 class User(db.Model, UserMixin):
     # Primary key identifier
     uid = db.Column(db.Integer, primary_key=True)
-    
+
     # Authentication fields
     username = db.Column(db.String(150), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
     email = db.Column(db.String(150), unique=True, nullable=False)
     is_verified = db.Column(db.Boolean, default=False)
-    
+
+    # User type: 'customer' or 'business'
+    user_type = db.Column(db.String(20), default='customer', nullable=False)
+
     # Profile fields
     profile_picture = db.Column(db.String(256), nullable=True)
     last_updated = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Relationship: User's submitted reviews
     reviews = db.relationship('Review', back_populates='user', lazy=True)
-    
+
     # Relationship: User's favorited locations (many-to-many via FavoriteLocation)
-    favorite_locations = db.relationship('Location', secondary=FavoriteLocation.__table__, back_populates='favorited_by', lazy=True)
+    favorite_locations = db.relationship('Location', secondary=lambda: FavoriteLocation.__table__, back_populates='favorited_by', lazy=True)
 
     # Relationship: Locations the user has visited (many-to-many via VisitedLocation)
     visited_locations = db.relationship('Location', secondary=lambda: VisitedLocation.__table__, back_populates='visited_by', lazy=True)
+
+    # Relationship: Business profile (one-to-one, optional)
+    business_profile = db.relationship('Business', back_populates='user', uselist=False, lazy=True)
+
+    # Relationship: Job applications (one-to-many)
+    job_applications = db.relationship('JobApplication', back_populates='user', lazy=True)
+
+    # Relationship: User job profile (one-to-one, optional)
+    user_job_profile = db.relationship('UserProfile', back_populates='user', uselist=False, lazy=True)
 
     # User preference weights for recommendation algorithm
     # Each category is a float from 0.0 (no interest) to 1.0 (high interest)
@@ -96,7 +108,7 @@ class Location(db.Model):
     reviews = db.relationship('Review', back_populates='location', lazy=True)
     
     # Relationship: Users who favorited this location
-    favorited_by = db.relationship('User', secondary=FavoriteLocation.__table__, back_populates='favorite_locations', lazy=True)
+    favorited_by = db.relationship('User', secondary=lambda: FavoriteLocation.__table__, back_populates='favorite_locations', lazy=True)
 
     # Relationship: Users who have visited this location
     visited_by = db.relationship('User', secondary=lambda: VisitedLocation.__table__, back_populates='visited_locations', lazy=True)
@@ -115,7 +127,7 @@ class FavoriteLocation(db.Model):
 
 class VisitedLocation(db.Model):
     __tablename__ = 'visited_location'
-    
+
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.uid'), nullable=False)
     location_id = db.Column(db.Integer, db.ForeignKey('location.lid'), nullable=False)
@@ -124,3 +136,98 @@ class VisitedLocation(db.Model):
     def __repr__(self):
         return f'<VisitedLocation user={self.user_id} loc={self.location_id} at={self.timestamp}>'
 
+
+class Business(db.Model):
+    bid = db.Column(db.Integer, primary_key=True)
+
+    # Foreign key to user (one-to-one relationship)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.uid'), nullable=False, unique=True)
+    user = db.relationship('User', back_populates='business_profile', lazy=True)
+
+    # Business information
+    business_name = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    category = db.Column(db.String(100), nullable=True)
+    address = db.Column(db.String(255), nullable=True)
+    longitude = db.Column(db.Float, nullable=True)
+    latitude = db.Column(db.Float, nullable=True)
+    phone = db.Column(db.String(20), nullable=True)
+    email = db.Column(db.String(150), nullable=True)
+    website = db.Column(db.String(255), nullable=True)
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationship: Job postings from this business
+    job_postings = db.relationship('JobPosting', back_populates='business', lazy=True, cascade='all, delete-orphan')
+
+    def __repr__(self):
+        return f'<Business {self.business_name}>'
+
+
+class JobPosting(db.Model):
+    job_id = db.Column(db.Integer, primary_key=True)
+
+    # Foreign key to business
+    business_id = db.Column(db.Integer, db.ForeignKey('business.bid'), nullable=False)
+    business = db.relationship('Business', back_populates='job_postings', lazy=True)
+
+    # Job details
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    requirements = db.Column(db.JSON, nullable=True)  # Array of required skills
+    salary_range = db.Column(db.String(100), nullable=True)
+    job_type = db.Column(db.String(50), nullable=True)  # Full-time, Part-time, Contract, etc.
+    location = db.Column(db.String(255), nullable=True)
+    longitude = db.Column(db.Float, nullable=True)
+    latitude = db.Column(db.Float, nullable=True)
+
+    # Status: active, closed, filled
+    status = db.Column(db.String(20), default='active', nullable=False)
+
+    posted_date = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_date = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationship: Applications for this job
+    applications = db.relationship('JobApplication', back_populates='job_posting', lazy=True, cascade='all, delete-orphan')
+
+    def __repr__(self):
+        return f'<JobPosting {self.title}>'
+
+
+class UserProfile(db.Model):
+    profile_id = db.Column(db.Integer, primary_key=True)
+
+    # Foreign key to user (one-to-one relationship)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.uid'), nullable=False, unique=True)
+    user = db.relationship('User', back_populates='user_job_profile', lazy=True)
+
+    # Job search profile
+    skills = db.Column(db.JSON, nullable=True)  # Array of skills
+    education = db.Column(db.JSON, nullable=True)  # Education details
+    resume_url = db.Column(db.String(255), nullable=True)
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def __repr__(self):
+        return f'<UserProfile user={self.user_id}>'
+
+
+class JobApplication(db.Model):
+    app_id = db.Column(db.Integer, primary_key=True)
+
+    # Foreign keys
+    job_id = db.Column(db.Integer, db.ForeignKey('job_posting.job_id'), nullable=False)
+    job_posting = db.relationship('JobPosting', back_populates='applications', lazy=True)
+
+    user_id = db.Column(db.Integer, db.ForeignKey('user.uid'), nullable=False)
+    user = db.relationship('User', back_populates='job_applications', lazy=True)
+
+    # Application details
+    status = db.Column(db.String(20), default='applied', nullable=False)  # applied, reviewed, shortlisted, rejected
+    resume_url = db.Column(db.String(255), nullable=True)
+    applied_date = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def __repr__(self):
+        return f'<JobApplication user={self.user_id} job={self.job_id}>'

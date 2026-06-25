@@ -11,6 +11,10 @@ import Coupons from "./pages/coupons";
 import Alerts from "./components/alerts";
 import ReviewsPage from "./pages/reviews";
 import ResetPassword from "./pages/resetPassword";
+import BusinessDashboard from "./pages/businessDashboard";
+import BusinessJobManager from "./pages/businessJobManager";
+import JobFinder from "./pages/jobFinder";
+import JobProfile from "./pages/jobProfile";
 
 
 function App() {
@@ -39,6 +43,12 @@ function App() {
 				<Route path="/welcome" element={<Landing/>} />
 				<Route path="/discount" element={<Coupons/>} />
 				<Route path="/reset-password" element={<ResetPassword />} />
+				<Route path="/jobs/profile" element={<JobProfile />} />
+				<Route path="/jobs/finder" element={<JobFinder />} />
+				<Route path="/business/dashboard" element={<BusinessDashboard />} />
+				<Route path="/business/jobs/new" element={<BusinessJobManager />} />
+				<Route path="/business/jobs/:jobId" element={<BusinessJobManager />} />
+				<Route path="/business/jobs/:jobId/edit" element={<BusinessJobManager />} />
 			</Routes>
 		</BrowserRouter>
 	);

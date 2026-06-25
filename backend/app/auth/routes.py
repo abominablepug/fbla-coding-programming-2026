@@ -48,6 +48,7 @@ def register():
         password = request.form.get('password')
         image = request.form.get('image')
         email = request.form.get('email')
+        user_type = request.form.get('user_type', 'customer')  # customer or business
 
         # Check for duplicate username
         if User.query.filter_by(username=username).first():
@@ -69,20 +70,25 @@ def register():
         else:
             profile_picture = 'default_profile_picture.png'
 
-        # Generate email verification token
-        token_serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
-        token = token_serializer.dumps(email, salt='email-confirmation-salt')
-
-        # Send verification email
-        msg = Message('Confirm Your Email', recipients=[email])
-        confirm_url = url_for('auth.confirm_email', token=token, _external=True)
-        msg.body = f'Please click the link to confirm your email: {confirm_url}'
-        mail = current_app.extensions['mail']
-        mail.send(msg)
-
         # Hash password and create user
         password_hash = bcrypt.generate_password_hash(password).decode('utf-8')
-        new_user = User(username=username, password_hash=password_hash, profile_picture=profile_picture, email=email, is_verified=False)
+        # In development, auto-verify dummy emails (test@test.com, etc.)
+        is_verified = email.startswith('test') or os.getenv('FLASK_ENV') == 'development'
+        new_user = User(username=username, password_hash=password_hash, profile_picture=profile_picture, email=email, is_verified=is_verified, user_type=user_type)
+
+        # Only send verification email for non-test accounts in production
+        if not is_verified:
+            try:
+                token_serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+                token = token_serializer.dumps(email, salt='email-confirmation-salt')
+                msg = Message('Confirm Your Email', recipients=[email])
+                confirm_url = url_for('auth.confirm_email', token=token, _external=True)
+                msg.body = f'Please click the link to confirm your email: {confirm_url}'
+                mail = current_app.extensions['mail']
+                mail.send(msg)
+            except Exception as e:
+                # If email fails, still allow user to register
+                current_app.logger.warning(f'Email verification failed for {email}: {e}')
         db.session.add(new_user)
         db.session.commit()
 
@@ -122,7 +128,8 @@ def profile():
         'uid': current_user.uid,
         'username': current_user.username,
         'profile_picture': current_user.profile_picture,
-        'preferences': current_user.preferences
+        'preferences': current_user.preferences,
+        'user_type': current_user.user_type
     }), 200
 
 

@@ -742,10 +742,10 @@ const Coupons = () => {
             <Card
               title={
                 <div className="flex items-center justify-between gap-3">
-                  <span style={{ fontFamily: 'var(--font-heading)' }} className="text-2xl font-bold text-cyan-500">Your Favorites + Recently Visited</span>
+                  <span style={{ fontFamily: 'var(--font-heading)' }} className="text-2xl font-bold text-[#FD8973]">Your Favorites + Recently Visited</span>
                   <button
                     onClick={() => setShowPersonalCoupons((prev) => !prev)}
-                    className="rounded-full border border-cyan-400/40 bg-cyan-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-cyan-200 hover:bg-cyan-500/25 transition-colors"
+                    className="rounded-full border border-[#FD8973]/50 bg-[#FD8973]/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#FD8973] hover:bg-[#FD8973]/25 transition-colors"
                   >
                     {showPersonalCoupons ? 'Collapse' : 'Expand'}
                   </button>
@@ -760,9 +760,9 @@ const Coupons = () => {
         )}
       </motion.div>
       {showSavedCouponsSidebar && (
-        <div className="fixed top-20 bottom-3 right-2 z-[1500] w-[360px] rounded-2xl border border-cyan-500/30 bg-neutral-900/90 p-4 shadow-2xl backdrop-blur-xl">
+        <div className="fixed top-20 bottom-3 right-2 z-[1500] w-[360px] rounded-2xl border border-[#FFBF65]/40 bg-neutral-900/90 p-4 shadow-2xl backdrop-blur-xl">
           <div className="mb-3 flex items-center justify-between border-b border-white/10 pb-2">
-            <h3 className="text-cyan-300 text-lg font-semibold">Saved Coupons</h3>
+            <h3 className="text-[#FFBF65] text-lg font-semibold">Saved Coupons</h3>
             <button
               onClick={() => setShowSavedCouponsSidebar(false)}
               className="h-7 w-7 rounded-full bg-white/5 text-neutral-300 hover:text-white hover:bg-white/10"
@@ -780,7 +780,7 @@ const Coupons = () => {
                   className="mb-3 rounded-xl border border-white/10 bg-neutral-800/55 p-3 hover:bg-neutral-800/80 transition-colors"
                 >
                   <div className="space-y-1.5">
-                    <p className="text-cyan-300 text-base font-semibold">{coupon.location.name}</p>
+                    <p className="text-[#FFBF65] text-base font-semibold">{coupon.location.name}</p>
                     <p className="text-xs text-gray-300">{coupon.title} • {coupon.discountLabel}</p>
                     <p className="text-xs text-gray-400">Code: {coupon.code}</p>
                   </div>
