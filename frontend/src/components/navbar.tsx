@@ -58,6 +58,7 @@ const Navbar: React.FC<NavBarProps> = ({ page, children, className = ""}) => {
         return isAuthenticated ? '/dashboard' : '/';
     }, [isAuthenticated, location.pathname]);
     const showHomeShortcut = isAuthenticated && !location.pathname.startsWith('/dashboard');
+    const showProfileShortcut = isAuthenticated && !location.pathname.startsWith('/profile');
     const profileImageSrc = profilePicture ? `${authBaseUrl}/static/profile_pictures/${profilePicture}` : '';
 
     return (
@@ -101,7 +102,7 @@ const Navbar: React.FC<NavBarProps> = ({ page, children, className = ""}) => {
                                 <House size={16} />
                             </Link>
                         )}
-                        {isAuthenticated && (
+                        { (
                             <Link
                                 to="/profile"
                                 className="pointer-events-auto inline-flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-md border border-cyan-200/20 bg-cyan-50/6 text-cyan-50 shadow-md shadow-black/20 transition-all duration-200 hover:border-cyan-200/40 hover:bg-cyan-50/10"

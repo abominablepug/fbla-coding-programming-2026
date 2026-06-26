@@ -202,20 +202,63 @@ a {
 
 :root[data-theme='light'] .bg-\[radial-gradient\(circle_at_16\%_10\%\,rgba\(103\,232\,249\,0\.25\)\,transparent_32\%\)\,radial-gradient\(circle_at_78\%_16\%\,rgba\(45\,212\,191\,0\.20\)\,transparent_30\%\)\,radial-gradient\(circle_at_55\%_88\%\,rgba\(139\,92\,246\,0\.18\)\,transparent_34\%\)\,linear-gradient\(135deg\,\#030712_0\%\,\#07111f_42\%\,\#101827_72\%\,\#1a1030_100\%\)\] {
   background:
-    radial-gradient(circle at 16% 10%, rgb(0, 185, 226), transparent 100%),
-    radial-gradient(circle at 78% 16%, rgb(15, 107, 99), transparent 100%),
-    radial-gradient(circle at 55% 88%, rgb(77, 29, 149)),
-    linear-gradient(135deg, #d7eaf303 0%, #c8e0ec00 42%, #dbe6f100 72%, #ddd3ed00 0%) !important;
+    radial-gradient(circle at 16% 10%, rgba(18, 104, 82, 0.142), transparent 60%),
+    radial-gradient(circle at 78% 16%, rgba(18, 86, 101, 0.127), transparent 60%),
+    radial-gradient(circle at 55% 88%, rgba(140, 87, 232, 0.065), transparent 70%),
+    linear-gradient(135deg, #b9d5e3 0%, #a2c7dc 42%, #b4c9de 72%, #cbd2e8 100%) !important;
 }
 
+:root[data-theme='light'] [class*="drop-shadow-[0_0_12px_rgba(103,232,249,0.42)]"],
+:root[data-theme='light'] [class*="drop-shadow-[0_0_10px_rgba(103,232,249,0.30)]"]{
+  filter:
+    drop-shadow(0 0 10px rgb(0, 214, 252)) !important
+}
+
+/*Fix for maps and like reg card bg*/
 :root[data-theme='light'] [class*="bg-neutral-950"],
-:root[data-theme='light'] [class*="bg-neutral-900"],
 :root[data-theme='light'] [class*="bg-neutral-800"],
 :root[data-theme='light'] [class*="bg-slate-950"],
 :root[data-theme='light'] [class*="bg-slate-900"],
 :root[data-theme='light'] [class*="bg-[#020617"],
 :root[data-theme='light'] [class*="bg-[#030712"] {
-  background-color: #dcecf5 !important;
+  background-color: #e2eaec92 !important; 
+}
+
+:root[data-theme='light'] [class*="bg-cyan-300/8"] {
+  background-color: #00e1ff43 !important;
+  border-color: #00cde8 !important;
+  color: #07111f !important;
+}
+
+:root[data-theme='light'] [class*="bg-rose-400/8"],
+:root[data-theme='light'] [class*="bg-rose-400/10"] {
+  background-color: #f900293a !important;
+  border-color: #f43f5d3f !important;
+  color: #07111f !important;
+}
+
+:root[data-theme='light'] [class*="bg-teal-300/8"] {
+  background-color: #1fe7cc51 !important;
+  border-color: #11383263 !important;
+  color: #07111f !important;
+}
+
+:root[data-theme='light']
+[class*="drop-shadow-[0_0_10px_rgba(103,232,249,0.30)]"]{
+    filter:
+        drop-shadow(0 0 4px rgba(9, 117, 138, .22))
+        drop-shadow(0 0 10px rgba(26, 167, 152, .18));
+}
+
+
+:root[data-theme='light'] .brand-gradient{
+  background-image:
+      linear-gradient(
+          90deg,
+          #0891b2,
+          #14b8a6,
+          #7c3aed
+      );
 }
 
 :root[data-theme='light'] [class*="bg-white/5"],
@@ -230,10 +273,9 @@ a {
 :root[data-theme='light'] [class*="bg-cyan-500/25"],
 :root[data-theme='light'] [class*="bg-emerald-500/"],
 :root[data-theme='light'] [class*="bg-purple-400/10"],
-:root[data-theme='light'] [class*="bg-rose-400/10"],
 :root[data-theme='light'] [class*="bg-[#3F92FF1A"],
 :root[data-theme='light'] [class*="bg-[#3F92FF26"] {
-  background-color: #bddde7 !important;
+  background-color: #bddde72f !important;
 }
 
 :root[data-theme='light'] button[class*="rounded-full"],
@@ -251,8 +293,8 @@ a {
 :root[data-theme='light'] a[class*="bg-white/"],
 :root[data-theme='light'] button[class*="bg-emerald-"],
 :root[data-theme='light'] a[class*="bg-emerald-"] {
-  background-color: #bddde7 !important;
-  color: #07111f !important;
+  background-color: #bddde77c !important;
+  color: #07111f rgba(189, 221, 231, 0) !important;
 }
 
 :root[data-theme='light'] button[class~="bg-cyan-500"],
@@ -302,8 +344,8 @@ a {
 :root[data-theme='light'] input,
 :root[data-theme='light'] textarea,
 :root[data-theme='light'] select {
-  background-color: rgba(255, 255, 255, 0) !important;
-  border-color: rgba(8, 111, 131, 0) !important;
+  background-color: rgba(255, 255, 255, 0.465) !important;
+  border-color: rgba(8, 111, 131, 0.481) !important;
   color: #07111f !important;
 }
 
@@ -312,10 +354,7 @@ a {
   color: #52677a !important;
 }
 
-:root[data-theme='light'] .shadow-2xl,
-:root[data-theme='light'] [class*="shadow-[0_"] {
-  box-shadow: 0 18px 54px rgba(15, 23, 42, 0.14) !important;
-}
+
 
 :root[data-theme='light'] .landing-wordmark {
   background: none !important;

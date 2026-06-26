@@ -58,7 +58,7 @@ const Alerts = () => {
       const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
       const item: AlertItem = {
         id,
-        duration: 2500,
+        duration: 1500,
         textColor: 'text-white',
         bgColor: 'bg-neutral-900/85',
         width: 'w-80',

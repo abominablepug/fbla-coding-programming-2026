@@ -1417,7 +1417,7 @@ const Dashboard = () => {
 						</Card>
 					</div>
 
-					<div ref={aiSectionRef} className="w-full grid grid-cols-1 xl:grid-cols-2 gap-5 items-stretch">
+					<div ref={aiSectionRef} className="w-full grid grid-cols-1 xl:grid-cols-2 gap-5 items-stretch mb-5">
 						<Card
 							title="AI Suggested Locations"
 							cardClassName='w-full h-[500px] ease-in-out hover:shadow-cyan-500/20 hover:shadow-2xl hover:scale-102 transition-all duration-500'

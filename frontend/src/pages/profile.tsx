@@ -698,6 +698,7 @@ const Profile = () => {
   return (
     <Body>
       <Navbar page="Profile">
+        <Links link="tinder">Findr <Heart size={18} /></Links>
         <Links link="/map">Map <MapPin size={17} /></Links>
         <Links link="/discount">Coupons <TicketPercent size={17} /></Links>
         <Links link="/reviews">Reviews <Star size={17} /></Links>
