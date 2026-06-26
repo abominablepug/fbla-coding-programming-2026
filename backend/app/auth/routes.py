@@ -287,3 +287,75 @@ def reset_password(token):
     db.session.commit()
 
     return jsonify({'message': 'Password reset successfully'}), 200
+
+def _location_to_dict(location, visited_at=None):
+    return {
+        'lid': location.lid,
+        'name': location.name,
+        'address': location.address,
+        'longitude': location.longitude,
+        'latitude': location.latitude,
+        'categories': location.categories,
+        'visited_at': visited_at.isoformat() if visited_at else None,
+    }
+
+
+def _get_theme_mode(user: User) -> str:
+    preferences = user.preferences or {}
+    return preferences.get('theme_mode') if preferences.get('theme_mode') in ('dark', 'light') else 'dark'
+
+
+@auth_bp.route('/update_theme_mode', methods=['POST'])
+@login_required
+def update_theme_mode():
+    payload = request.get_json(silent=True) or request.form
+    theme_mode = payload.get('theme_mode')
+    if theme_mode not in ('dark', 'light'):
+        return jsonify({'message': 'Theme mode must be dark or light.'}), 400
+
+    preferences = dict(current_user.preferences or {})
+    preferences['theme_mode'] = theme_mode
+    current_user.preferences = preferences
+    db.session.commit()
+
+    return jsonify({'message': 'Theme preference saved.', 'theme_mode': theme_mode}), 200
+
+
+@auth_bp.route('/profile/report_data', methods=['GET'])
+@login_required
+def get_profile_report_data():
+    from app.models import Location, VisitedLocation
+    visits = (
+        VisitedLocation.query
+        .filter_by(user_id=current_user.uid)
+        .order_by(VisitedLocation.timestamp.desc())
+        .all()
+    )
+    visited_locations = []
+    for visit in visits:
+        location = Location.query.get(visit.location_id)
+        if location:
+            visited_locations.append(_location_to_dict(location, visit.timestamp))
+
+    favorite_locations = [_location_to_dict(location) for location in current_user.favorite_locations]
+    reviews = []
+    for review in current_user.reviews:
+        reviews.append({
+            'location_id': review.location_id,
+            'location_name': review.location.name if review.location else 'Unknown location',
+            'star_rating': review.star_rating,
+            'content': review.content,
+        })
+
+    return jsonify({
+        'generated_for': {
+            'uid': current_user.uid,
+            'username': current_user.username,
+            'email': current_user.email,
+            'theme_mode': _get_theme_mode(current_user),
+        },
+        'favorite_locations': favorite_locations,
+        'recently_visited_locations': visited_locations,
+        'reviews': reviews,
+        'preferences': current_user.preferences or {},
+    }), 200

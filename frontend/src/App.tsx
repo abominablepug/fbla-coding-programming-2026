@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Login from './pages/login';
 import Landing from "./pages/loading";
@@ -18,23 +18,16 @@ import JobFinder from "./pages/jobFinder";
 import JobProfile from "./pages/jobProfile";
 import AdminDashboard from "./pages/adminDashboard";
 import EventsBoard from "./pages/events";
+import Profile from "./pages/profile";
+import ThemeToggle from "./components/ThemeToggle";
 
 
 function App() {
-	useEffect(() => {
-		const root = document.documentElement;
-		root.setAttribute('data-theme', 'dark');
-		try {
-			window.localStorage.removeItem('bizmatch_theme_mode');
-		} catch {
-			// ignore storage errors
-		}
-	}, []);
-
 	return (
 		<BrowserRouter>
 			<Alerts />
 			<ProactiveAlerts />
+			<ThemeToggle />
 			<Routes>
 				<Route path="/login" element={<Login />} />
 				<Route path="/register" element={<Register />} />
@@ -45,6 +38,7 @@ function App() {
 				<Route path="/tinder" element={<TinderPage/>} />
 				<Route path="/events" element={<EventsBoard />} />
 				<Route path="/reviews" element={<ReviewsPage />} />
+				<Route path="/profile" element={<Profile />} />
 				<Route path="/welcome" element={<Landing/>} />
 				<Route path="/discount" element={<Coupons/>} />
 				<Route path="/reset-password" element={<ResetPassword />} />

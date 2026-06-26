@@ -1,6 +1,9 @@
 @import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Rajdhani:wght@600;700&family=Exo+2:wght@600;700;800&family=Space+Mono:wght@700&display=swap");
 @import "tailwindcss";
 
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+@custom-variant light (&:where([data-theme='light'], [data-theme='light'] *));
+
 @theme {
   --color-neutral-950: var(--tone-neutral-950);
   --color-neutral-900: var(--tone-neutral-900);
@@ -62,75 +65,99 @@
   --font-heading: "Exo 2", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   --font-brand: "Rajdhani", "Exo 2", "Segoe UI", sans-serif;
   --font-link: "Space Mono", "IBM Plex Sans", "Segoe UI", sans-serif;
-  /* ── Brand palette ──────────────────────────────────────────────
-     Primary : #003A6C Ateneo Blue   · #13181B Neverthing (dark)
-     Accent  : #FFBF65 Sea Buckthorn · #FD8973 Miami Coral
-     Neutral : #F0EEEB Magical Moonlight · #CCD5DA Polar Drift     */
-
-  /* Vibrant variant: deep ocean-blue base (built from Ateneo Blue) instead of
-     near-black, with Polar Drift → Magical Moonlight at the light end. Keeps a
-     dark theme so existing light text stays readable, but feels far less gloomy. */
-  --tone-neutral-950: #042344;
-  --tone-neutral-900: #06305c;
-  --tone-neutral-800: #0a4179;
-  --tone-neutral-700: #105494;
-  --tone-neutral-600: #1f6cb0;
-  --tone-neutral-500: #3d88cb;
-  --tone-neutral-400: #6ba6da;
-  --tone-neutral-300: #9cc4e7;
-  --tone-neutral-200: #ccd5da;
-  --tone-neutral-100: #e6ecee;
-  --tone-neutral-50: #f0eeeb;
-
-  /* Cyan tokens = bright, luminous azure (Ateneo Blue pushed vivid for CTAs) */
-  --tone-cyan-100: #e3f1ff;
-  --tone-cyan-200: #bbddff;
-  --tone-cyan-300: #82c3ff;
-  --tone-cyan-400: #3ea4ff;
-  --tone-cyan-500: #1488f7;
-  --tone-cyan-600: #0a6fd6;
-  --tone-cyan-700: #0a5288;
-
-  /* Sky tokens (bright hover/secondary blue) */
-  --tone-sky-300: #8ec8ff;
-  --tone-sky-400: #4aaaff;
-  --tone-sky-500: #1e8df0;
-  --tone-sky-600: #0a6fd6;
-
-  /* Blue tokens — vivid azure family */
-  --tone-blue-300: #82bbff;
-  --tone-blue-400: #4f9bff;
-  --tone-blue-500: #2280f5;
-  --tone-blue-600: #0a6fd6;
-  --tone-blue-700: #0a5288;
-  --tone-blue-800: #003a6c;
-
-  /* Purple tokens = vivid Miami Coral (warm accent, more saturated) */
-  --tone-purple-300: #ffb0a0;
-  --tone-purple-400: #ff8064;
-  --tone-purple-500: #fb5f43;
-  --tone-purple-600: #e8472d;
-
-  /* Green/emerald tokens = vivid Sea Buckthorn gold accent */
-  --tone-green-400: #ffc873;
-  --tone-green-500: #ffb13d;
-  --tone-orange-50: #fff6e6;
-
-  --app-bg: #06305c;
-  --app-paper: #f0eeeb;
-  --app-primary: #1488f7;
-  --app-secondary: #ffc873;
-  --app-tertiary: #003a6c;
-
-  /* Semantic tokens consumed by the business dashboard / job manager CSS */
-  --primary-color: #1488f7;
-  --primary-dark: #0a5288;
-  --bg-secondary: #0a4179;
-  --text-primary: #f0eeeb;
-  --text-secondary: #9cc4e7;
-  --accent-gold: #ffc873;
-  --accent-coral: #ff8064;
+  --tone-neutral-950: #0f141c;
+  --tone-neutral-900: #151d27;
+  --tone-neutral-800: #1d2a36;
+  --tone-neutral-700: #273949;
+  --tone-neutral-600: #395066;
+  --tone-neutral-500: #5c7387;
+  --tone-neutral-400: #8398aa;
+  --tone-neutral-300: #a9bcc9;
+  --tone-neutral-200: #cad8e1;
+  --tone-neutral-100: #e3edf2;
+  --tone-neutral-50: #f4f8fb;
+  --tone-cyan-100: #ccfbf1;
+  --tone-cyan-200: #99f6e4;
+  --tone-cyan-300: #5eead4;
+  --tone-cyan-400: #2dd4bf;
+  --tone-cyan-500: #14b8a6;
+  --tone-cyan-600: #0d9488;
+  --tone-cyan-700: #0f766e;
+  --tone-sky-300: #c4b5fd;
+  --tone-sky-400: #a78bfa;
+  --tone-sky-500: #8b5cf6;
+  --tone-sky-600: #7c3aed;
+  --tone-blue-300: #7dd3fc;
+  --tone-blue-400: #38bdf8;
+  --tone-blue-500: #0ea5b7;
+  --tone-blue-600: #087f8c;
+  --tone-blue-700: #155e63;
+  --tone-blue-800: #164e63;
+  --tone-purple-300: #d8b4fe;
+  --tone-purple-400: #c084fc;
+  --tone-purple-500: #a855f7;
+  --tone-purple-600: #9333ea;
+  --tone-green-400: #0ea47f;
+  --tone-green-500: #0ea47f;
+  --tone-orange-50: #f6faf2;
+  --app-bg: #080b14;
+  --app-paper: #f4f8fb;
+  --app-primary: #2dd4bf;
+  --app-secondary: #8b5cf6;
+  --app-tertiary: #020617;
 }
+
+/* Light theme overrides */
+:root[data-theme='light'] {
+  /* Background + text */
+  --app-bg: #d5e8f1;
+  --app-paper: #07111f;
+  --app-primary: #07596b;
+  --app-secondary: #4c1d95;
+  --app-tertiary: #0f172a;
+
+  /* Keep utility tokens coherent with readable contrast */
+  --tone-neutral-950: #edf6fb;
+  --tone-neutral-900: #dcecf5;
+  --tone-neutral-800: #c9dfed;
+  --tone-neutral-700: #a9c4d5;
+  --tone-neutral-600: #647d95;
+  --tone-neutral-500: #465d73;
+  --tone-neutral-400: #33475b;
+  --tone-neutral-300: #223142;
+  --tone-neutral-200: #182333;
+  --tone-neutral-100: #101827;
+  --tone-neutral-50: #07111f;
+
+  --tone-cyan-100: #0f4d5c;
+  --tone-cyan-200: #0d5f6f;
+  --tone-cyan-300: #07596b;
+  --tone-cyan-400: #07596b;
+  --tone-cyan-500: #064f60;
+  --tone-cyan-600: #083f4d;
+  --tone-cyan-700: #082f3a;
+
+  --tone-sky-300: #155e75;
+  --tone-sky-400: #075985;
+  --tone-sky-500: #0c4a6e;
+  --tone-sky-600: #075985;
+
+  --tone-blue-300: #1d4ed8;
+  --tone-blue-400: #1e40af;
+  --tone-blue-500: #1d4ed8;
+  --tone-blue-600: #1e3a8a;
+  --tone-blue-700: #1e3a8a;
+  --tone-blue-800: #172554;
+
+  --tone-purple-300: #6d28d9;
+  --tone-purple-400: #5b21b6;
+  --tone-purple-500: #4c1d95;
+  --tone-purple-600: #3b0764;
+
+  --tone-orange-50: #f6faf2;
+}
+
+
 
 html,
 body {
@@ -163,7 +190,7 @@ svg {
 h1,
 h2,
 h3,
-h4,
+h4, 
 h5,
 h6 {
   font-family: var(--font-heading);
@@ -171,4 +198,134 @@ h6 {
 
 a {
   font-family: var(--font-link);
+}
+
+:root[data-theme='light'] .bg-\[radial-gradient\(circle_at_16\%_10\%\,rgba\(103\,232\,249\,0\.25\)\,transparent_32\%\)\,radial-gradient\(circle_at_78\%_16\%\,rgba\(45\,212\,191\,0\.20\)\,transparent_30\%\)\,radial-gradient\(circle_at_55\%_88\%\,rgba\(139\,92\,246\,0\.18\)\,transparent_34\%\)\,linear-gradient\(135deg\,\#030712_0\%\,\#07111f_42\%\,\#101827_72\%\,\#1a1030_100\%\)\] {
+  background:
+    radial-gradient(circle at 16% 10%, rgb(0, 185, 226), transparent 100%),
+    radial-gradient(circle at 78% 16%, rgb(15, 107, 99), transparent 100%),
+    radial-gradient(circle at 55% 88%, rgb(77, 29, 149)),
+    linear-gradient(135deg, #d7eaf303 0%, #c8e0ec00 42%, #dbe6f100 72%, #ddd3ed00 0%) !important;
+}
+
+:root[data-theme='light'] [class*="bg-neutral-950"],
+:root[data-theme='light'] [class*="bg-neutral-900"],
+:root[data-theme='light'] [class*="bg-neutral-800"],
+:root[data-theme='light'] [class*="bg-slate-950"],
+:root[data-theme='light'] [class*="bg-slate-900"],
+:root[data-theme='light'] [class*="bg-[#020617"],
+:root[data-theme='light'] [class*="bg-[#030712"] {
+  background-color: #dcecf5 !important;
+}
+
+:root[data-theme='light'] [class*="bg-white/5"],
+:root[data-theme='light'] [class*="bg-white/10"],
+:root[data-theme='light'] [class*="bg-white/["],
+:root[data-theme='light'] [class*="bg-cyan-50/6"],
+:root[data-theme='light'] [class*="bg-cyan-300/14"],
+:root[data-theme='light'] [class*="bg-cyan-500/10"],
+:root[data-theme='light'] [class*="bg-cyan-500/15"],
+:root[data-theme='light'] [class*="bg-cyan-500/16"],
+:root[data-theme='light'] [class*="bg-cyan-500/20"],
+:root[data-theme='light'] [class*="bg-cyan-500/25"],
+:root[data-theme='light'] [class*="bg-emerald-500/"],
+:root[data-theme='light'] [class*="bg-purple-400/10"],
+:root[data-theme='light'] [class*="bg-rose-400/10"],
+:root[data-theme='light'] [class*="bg-[#3F92FF1A"],
+:root[data-theme='light'] [class*="bg-[#3F92FF26"] {
+  background-color: #bddde7 !important;
+}
+
+:root[data-theme='light'] button[class*="rounded-full"],
+:root[data-theme='light'] a[class*="rounded-full"],
+:root[data-theme='light'] button[class*="rounded-lg"],
+:root[data-theme='light'] a[class*="rounded-lg"],
+:root[data-theme='light'] button[class*="rounded-md"],
+:root[data-theme='light'] a[class*="rounded-md"] {
+  border-color: rgba(8, 111, 131, 0.35) !important;
+}
+
+:root[data-theme='light'] button[class*="bg-cyan-"],
+:root[data-theme='light'] a[class*="bg-cyan-"],
+:root[data-theme='light'] button[class*="bg-white/"],
+:root[data-theme='light'] a[class*="bg-white/"],
+:root[data-theme='light'] button[class*="bg-emerald-"],
+:root[data-theme='light'] a[class*="bg-emerald-"] {
+  background-color: #bddde7 !important;
+  color: #07111f !important;
+}
+
+:root[data-theme='light'] button[class~="bg-cyan-500"],
+:root[data-theme='light'] a[class~="bg-cyan-500"] {
+  background-color: #07596b !important;
+  color: #ffffff !important;
+}
+
+:root[data-theme='light'] [class*="border-white/"],
+:root[data-theme='light'] [class*="border-neutral-"],
+:root[data-theme='light'] [class*="border-cyan-"],
+:root[data-theme='light'] [class*="border-emerald-"],
+:root[data-theme='light'] [class*="border-purple-"] {
+  border-color: rgba(8, 89, 107, 0.32) !important;
+}
+
+:root[data-theme='light'] [class*="text-white"],
+:root[data-theme='light'] [class*="text-gray-"],
+:root[data-theme='light'] [class*="text-neutral-"],
+:root[data-theme='light'] [class*="text-slate-"],
+:root[data-theme='light'] [class*="text-cyan-50"],
+:root[data-theme='light'] [class*="text-cyan-100"],
+:root[data-theme='light'] [class*="text-cyan-200"],
+:root[data-theme='light'] [class*="text-cyan-300"],
+:root[data-theme='light'] [class*="text-sky-50"],
+:root[data-theme='light'] [class*="text-teal-50"] {
+  color: #07111f !important;
+}
+
+:root[data-theme='light'] [class*="text-cyan-400"],
+:root[data-theme='light'] [class*="text-cyan-500"],
+:root[data-theme='light'] [class*="text-blue-"],
+:root[data-theme='light'] [class*="text-sky-"],
+:root[data-theme='light'] [class*="text-purple-"],
+:root[data-theme='light'] [class*="text-emerald-"] {
+  color: #083f4d !important;
+}
+
+:root[data-theme='light'] button[class~="bg-cyan-500"],
+:root[data-theme='light'] a[class~="bg-cyan-500"],
+:root[data-theme='light'] button[class*="bg-[#3F92FF"],
+:root[data-theme='light'] a[class*="bg-[#3F92FF"] {
+  background-color: #07596b !important;
+  color: #ffffff !important;
+}
+
+:root[data-theme='light'] input,
+:root[data-theme='light'] textarea,
+:root[data-theme='light'] select {
+  background-color: rgba(255, 255, 255, 0) !important;
+  border-color: rgba(8, 111, 131, 0) !important;
+  color: #07111f !important;
+}
+
+:root[data-theme='light'] input::placeholder,
+:root[data-theme='light'] textarea::placeholder {
+  color: #52677a !important;
+}
+
+:root[data-theme='light'] .shadow-2xl,
+:root[data-theme='light'] [class*="shadow-[0_"] {
+  box-shadow: 0 18px 54px rgba(15, 23, 42, 0.14) !important;
+}
+
+:root[data-theme='light'] .landing-wordmark {
+  background: none !important;
+  color: #053345 !important;
+  filter: none !important;
+  text-shadow: none !important;
+}
+
+:root[data-theme='light'] .landing-logo-mark {
+  background: transparent !important;
+  filter: none !important;
+  mix-blend-mode: multiply;
 }
