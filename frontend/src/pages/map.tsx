@@ -1315,7 +1315,7 @@ const MapGoogle = () => {
   ) : null;
 
   return (
-    <div className="fixed inset-0 bg-neutral-900">
+    <div className="fixed inset-0">
       <div ref={mapElement} className="absolute inset-0" />
       <div className="absolute inset-0 pointer-events-none [&>*]:pointer-events-auto">
         <Navbar page="Map">

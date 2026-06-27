@@ -65,24 +65,24 @@
   --font-heading: "Exo 2", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   --font-brand: "Rajdhani", "Exo 2", "Segoe UI", sans-serif;
   --font-link: "Space Mono", "IBM Plex Sans", "Segoe UI", sans-serif;
-  --tone-neutral-950: #0f141c;
-  --tone-neutral-900: #151d27;
-  --tone-neutral-800: #1d2a36;
-  --tone-neutral-700: #273949;
-  --tone-neutral-600: #395066;
-  --tone-neutral-500: #5c7387;
-  --tone-neutral-400: #8398aa;
-  --tone-neutral-300: #a9bcc9;
-  --tone-neutral-200: #cad8e1;
-  --tone-neutral-100: #e3edf2;
+  --tone-neutral-950: #091019;
+  --tone-neutral-900: #0b1421;
+  --tone-neutral-800: #161a2e;
+  --tone-neutral-700: #1e2538;
+  --tone-neutral-600: #2a344a;
+  --tone-neutral-500: #3b4961;
+  --tone-neutral-400: #546882;
+  --tone-neutral-300: #7b91a8;
+  --tone-neutral-200: #a1b5c9;
+  --tone-neutral-100: #ccddec;
   --tone-neutral-50: #f4f8fb;
-  --tone-cyan-100: #ccfbf1;
-  --tone-cyan-200: #99f6e4;
-  --tone-cyan-300: #5eead4;
-  --tone-cyan-400: #2dd4bf;
-  --tone-cyan-500: #14b8a6;
-  --tone-cyan-600: #0d9488;
-  --tone-cyan-700: #0f766e;
+  --tone-cyan-100: #d6faf1;
+  --tone-cyan-200: #aff4e5;
+  --tone-cyan-300: #86e7d5;
+  --tone-cyan-400: #55b5a6;
+  --tone-cyan-500: #316356;
+  --tone-cyan-600: #294a4c;
+  --tone-cyan-700: #20463e;
   --tone-sky-300: #c4b5fd;
   --tone-sky-400: #a78bfa;
   --tone-sky-500: #8b5cf6;
@@ -100,34 +100,34 @@
   --tone-green-400: #0ea47f;
   --tone-green-500: #0ea47f;
   --tone-orange-50: #f6faf2;
-  --app-bg: #080b14;
-  --app-paper: #f4f8fb;
-  --app-primary: #2dd4bf;
-  --app-secondary: #8b5cf6;
-  --app-tertiary: #020617;
+  --app-bg: #091019;
+  --app-paper: #0b1421;
+  --app-primary: #86e7d5;
+  --app-secondary: #55b5a6;
+  --app-tertiary: #161a2e;
 }
 
 /* Light theme overrides */
 :root[data-theme='light'] {
   /* Background + text */
-  --app-bg: #d5e8f1;
-  --app-paper: #07111f;
-  --app-primary: #07596b;
-  --app-secondary: #4c1d95;
-  --app-tertiary: #0f172a;
+  --app-bg: #abc3d2;
+  --app-paper: #b2cbdd;
+  --app-primary: #aecadd;
+  --app-secondary: #09101e;
+  --app-tertiary: #b0cadc;
 
   /* Keep utility tokens coherent with readable contrast */
-  --tone-neutral-950: #edf6fb;
-  --tone-neutral-900: #dcecf5;
-  --tone-neutral-800: #c9dfed;
-  --tone-neutral-700: #a9c4d5;
-  --tone-neutral-600: #647d95;
-  --tone-neutral-500: #465d73;
-  --tone-neutral-400: #33475b;
-  --tone-neutral-300: #223142;
-  --tone-neutral-200: #182333;
-  --tone-neutral-100: #101827;
-  --tone-neutral-50: #07111f;
+  --tone-neutral-950: #abc3d2;
+  --tone-neutral-900: #b2cbdd;
+  --tone-neutral-800: #b0cadc;
+  --tone-neutral-700: #aecadd;
+  --tone-neutral-600: #a8c6db;
+  --tone-neutral-500: #9cbacf;
+  --tone-neutral-400: #88a7be;
+  --tone-neutral-300: #6d8d9f;
+  --tone-neutral-200: #516f80;
+  --tone-neutral-100: #3a5061;
+  --tone-neutral-50: #09101e;
 
   --tone-cyan-100: #0f4d5c;
   --tone-cyan-200: #0d5f6f;
@@ -221,7 +221,7 @@ a {
 :root[data-theme='light'] [class*="bg-slate-900"],
 :root[data-theme='light'] [class*="bg-[#020617"],
 :root[data-theme='light'] [class*="bg-[#030712"] {
-  background-color: #e2eaec92 !important; 
+  background-color: #b2cbdd !important; 
 }
 
 :root[data-theme='light'] [class*="bg-cyan-300/8"] {
@@ -267,6 +267,7 @@ a {
 :root[data-theme='light'] [class*="bg-cyan-50/6"],
 :root[data-theme='light'] [class*="bg-cyan-300/14"],
 :root[data-theme='light'] [class*="bg-cyan-500/10"],
+:root[data-theme='light'] [class*="bg-cyan-500/12"],
 :root[data-theme='light'] [class*="bg-cyan-500/15"],
 :root[data-theme='light'] [class*="bg-cyan-500/16"],
 :root[data-theme='light'] [class*="bg-cyan-500/20"],
@@ -275,7 +276,7 @@ a {
 :root[data-theme='light'] [class*="bg-purple-400/10"],
 :root[data-theme='light'] [class*="bg-[#3F92FF1A"],
 :root[data-theme='light'] [class*="bg-[#3F92FF26"] {
-  background-color: #bddde72f !important;
+  background-color: #aecadd !important;
 }
 
 :root[data-theme='light'] button[class*="rounded-full"],
@@ -293,8 +294,8 @@ a {
 :root[data-theme='light'] a[class*="bg-white/"],
 :root[data-theme='light'] button[class*="bg-emerald-"],
 :root[data-theme='light'] a[class*="bg-emerald-"] {
-  background-color: #bddde77c !important;
-  color: #07111f rgba(189, 221, 231, 0) !important;
+  background-color: #aecadd !important;
+  color: #09101e !important;
 }
 
 :root[data-theme='light'] button[class~="bg-cyan-500"],
@@ -321,7 +322,7 @@ a {
 :root[data-theme='light'] [class*="text-cyan-300"],
 :root[data-theme='light'] [class*="text-sky-50"],
 :root[data-theme='light'] [class*="text-teal-50"] {
-  color: #07111f !important;
+  color: #09101e !important;
 }
 
 :root[data-theme='light'] [class*="text-cyan-400"],
@@ -367,4 +368,47 @@ a {
   background: transparent !important;
   filter: none !important;
   mix-blend-mode: multiply;
+}
+/* Override arbitrary hex values for consistent theming */
+/* Default (Dark Mode) mapping */
+[class*="text-[#FD8973]"] { color: var(--color-cyan-500) !important; }
+[class*="text-[#FFBF65]"] { color: var(--color-cyan-400) !important; }
+[class*="text-[#CCD5DA]"] { color: var(--color-cyan-300) !important; }
+
+[class*="border-[#FD8973]"] { border-color: var(--color-cyan-500) !important; }
+[class*="border-[#FFBF65]"] { border-color: var(--color-cyan-400) !important; }
+[class*="border-[#CCD5DA]"] { border-color: var(--color-cyan-300) !important; }
+
+[class*="bg-[#FD8973]"] { background-color: var(--color-cyan-500) !important; }
+[class*="bg-[#FFBF65]"] { background-color: var(--color-cyan-400) !important; }
+[class*="bg-[#CCD5DA]"] { background-color: var(--color-cyan-300) !important; }
+
+/* Handle opacity modifiers for backgrounds */
+[class*="bg-[#FD8973]/12"], [class*="bg-[#FD8973]/15"] { background-color: color-mix(in srgb, var(--color-cyan-500) 15%, transparent) !important; }
+[class*="bg-[#FFBF65]/12"], [class*="bg-[#FFBF65]/15"] { background-color: color-mix(in srgb, var(--color-cyan-400) 15%, transparent) !important; }
+[class*="bg-[#CCD5DA]/12"], [class*="bg-[#CCD5DA]/15"] { background-color: color-mix(in srgb, var(--color-cyan-300) 15%, transparent) !important; }
+
+/* Light Theme overrides for the same hex colors */
+:root[data-theme='light'] [class*="text-[#FD8973]"],
+:root[data-theme='light'] [class*="text-[#FFBF65]"],
+:root[data-theme='light'] [class*="text-[#CCD5DA]"] {
+  color: #083f4d !important;
+}
+
+:root[data-theme='light'] [class*="bg-[#FD8973]"],
+:root[data-theme='light'] [class*="bg-[#FFBF65]"],
+:root[data-theme='light'] [class*="bg-[#CCD5DA]"],
+:root[data-theme='light'] [class*="bg-[#FD8973]/12"],
+:root[data-theme='light'] [class*="bg-[#FD8973]/15"],
+:root[data-theme='light'] [class*="bg-[#FFBF65]/12"],
+:root[data-theme='light'] [class*="bg-[#FFBF65]/15"],
+:root[data-theme='light'] [class*="bg-[#CCD5DA]/12"],
+:root[data-theme='light'] [class*="bg-[#CCD5DA]/15"] {
+  background-color: #aecadd !important;
+}
+
+:root[data-theme='light'] [class*="border-[#FD8973]"],
+:root[data-theme='light'] [class*="border-[#FFBF65]"],
+:root[data-theme='light'] [class*="border-[#CCD5DA]"] {
+  border-color: rgba(8, 89, 107, 0.32) !important;
 }

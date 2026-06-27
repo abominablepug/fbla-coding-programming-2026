@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import {motion, useScroll, useTransform} from "framer-motion";
+import {motion} from "framer-motion";
 import { Link, useLocation } from 'react-router-dom';
 import { House, UserRound } from 'lucide-react';
 import luminxLogo from '../assets/luminx-logo.png';
@@ -14,15 +14,14 @@ interface NavBarProps {
 }
 
 const Navbar: React.FC<NavBarProps> = ({ page, children, className = ""}) => {
-    const { scrollY } = useScroll();
     const location = useLocation();
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [userType, setUserType] = useState<'customer' | 'business'>('customer');
     const [profilePicture, setProfilePicture] = useState<string | null>(null);
     const [username, setUsername] = useState<string>('Profile');
-	const width = useTransform(scrollY, [0, 100], ["100%", "98%"]);
-	const borderRadius = useTransform(scrollY, [0, 100], ["0px", "40px"]);
-	const marginTop = useTransform(scrollY, [0, 100], ["0px", "12px"]);
+	const width = "98%";
+	const borderRadius = "40px";
+	const marginTop = "12px";
     const authBaseUrl = import.meta.env.VITE_AUTH_BASE_URL || 'http://localhost:5173';
 
     useEffect(() => {

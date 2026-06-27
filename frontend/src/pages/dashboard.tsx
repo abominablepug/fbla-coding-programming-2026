@@ -256,20 +256,12 @@ const CompactLocationMeta = ({ loc }: { loc: Location }) => {
 const Dashboard = () => {
 	const [user, setUser] = useState<{ uid: string, username: string } | null>(null);
 	const navigate = useNavigate();
-	const [openForm, setOpenForm] = useState(false);
-	const [profilePic, setProfilePic] = useState<string>();
-	const [pfpChange, setPfpChange] = useState(false);
-	const [password, setPassword] = useState('');
-	const [currentPassword, setCurrentPassword] = useState('');
-	const [pwSubmitError, setPwSubmitError] = useState('');
-	const [confirmPassword, setConfirmPassword] = useState('');
+
 	const [favoriteLocations, setFavoriteLocations] = useState<Location[]>([]);
 	const [loadingFavorites, setLoadingFavorites] = useState(false);
 	const [loadingVisited, setLoadingVisited] = useState(false);
 	const [visitedLocations, setVisitedLocations] = useState<Location[]>([]);
 	const [visitedHistory, setVisitedHistory] = useState<Location[]>([]);
-	const imageSrc = `http://localhost:5173/static/profile_pictures/${profilePic}`;
-	const [popup,setPopup] = useState(false);
 	const [showFavoritesSidebar, setShowFavoritesSidebar] = useState(false);
 	const [savedCouponKeys, setSavedCouponKeys] = useState<string[]>([]);
 	const [savedCouponMeta, setSavedCouponMeta] = useState<Record<string, SavedCouponMeta>>({});
@@ -433,147 +425,8 @@ const Dashboard = () => {
 		}
 	};
 
-	const handleFileChange = async (formData: FormData) => {
-		try {
-			const response = await fetch(`${AUTH_BASE_URL}/auth/change_picture`, {
-				method: 'POST',
-				body: formData,
-				credentials: 'include'
-			});
-			if (response.ok) {
-				const data = await response.json();
-				setProfilePic(data.profile_picture);
-				setOpenForm(false);
-				enqueueAlert({ message: "Profile picture updated.", textColor: "text-green-300" });
-			} else {
-				console.error('Failed to upload profile picture');
-				enqueueAlert({ message: "Failed to update profile picture.", textColor: "text-red-300" });
-			}
-		} catch (error) {
-			console.error('Error uploading profile picture:', error);
-			enqueueAlert({ message: "Error uploading profile picture.", textColor: "text-red-300" });
-		}
-	};
 
-	const handlePwChange = async (formData: FormData) => {
-		try {
-			setPwSubmitError('');
-			if (!password || !confirmPassword) {
-				setPwSubmitError('Please fill in all fields.');
-				enqueueAlert({ message: "Fill in all password fields.", textColor: "text-red-300" });
-				return;
-			}
-			const response = await fetch(`${AUTH_BASE_URL}/auth/change_password`, {
-				method: 'POST',
-				body: formData,
-				credentials: 'include'
-			});
-			if (response.ok) {
-				setOpenForm(false);
-				setPassword('');
-				setConfirmPassword('');
-				setCurrentPassword('');
-				setPwSubmitError('');
-				enqueueAlert({ message: "Password changed successfully.", textColor: "text-green-300" });
-			}else {
-				const errorData = await response.json();
-				if (errorData.message === 'Current password is incorrect') {
-					setPwSubmitError('Current password is incorrect');
-					enqueueAlert({ message: "Current password is incorrect.", textColor: "text-red-300" });
-				} else {
-					console.error('Failed to change password. Try again.');
-					setPassword('');
-					setConfirmPassword('');
-					setCurrentPassword('');
-					enqueueAlert({ message: "Failed to change password.", textColor: "text-red-300" });
-				}}
-		} catch (error) {
-			console.error('Error changing password:', error);
-			enqueueAlert({ message: "Error changing password.", textColor: "text-red-300" });
-		}
-	};
 
-	const isPasswordValid = password.length >= 8 && /\d/.test(password) && /[a-zA-Z]/.test(password);
-	const doPasswordsMatch = password === confirmPassword;
-	let content;
-
-	if (pfpChange) {
-		content = (
-		<div className="flex flex-col items-center gap-4 max-w-fit">
-			<form className="flex flex-col items-center gap-4" onSubmit={(e) => {
-			e.preventDefault();
-			const formData = new FormData(e.currentTarget);
-			handleFileChange(formData);
-			}}>
-				<input className="mt-1 w-full rounded-lg bg-white/10 border border-white/20 p-3 text-slate-300 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400 transition-all" type="file" accept='image/png' id="image" name="image"/>
-				<div className="flex justify-center gap-2">
-					<button className="px-3 py-1 rounded-full bg-cyan-500 text-white max-w-fit text-md transition-all hover:bg-cyan-400 shadow-lg" type="submit">
-						Upload New Picture
-					</button>
-					<button className="px-3 py-1 rounded-full bg-cyan-500 text-white max-w-fit text-md transition-all hover:bg-cyan-400 shadow-lg" onClick={() => {setOpenForm(false); setPwSubmitError('');}}>Close X</button>
-				</div>
-			</form>
-		</div>);
-	}else{
-		content = (
-		<div className="flex flex-col items-center gap-4 max-w-fit">
-			<form className="flex flex-col items-center gap-4" onSubmit={(e) => {
-			   e.preventDefault();
-			   const formData = new FormData(e.currentTarget);
-			   handlePwChange(formData);
-		   	}}>
-				<div>
-				<label className="block text-sm font-medium text-white-400">Current Password</label>
-				<input
-					type="password"
-					className="mt-1 w-fit rounded-lg bg-white/10 border border-white/20 p-3 text-slate-300 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400 transition-all"
-					placeholder="••••••••"
-					value={currentPassword}
-					name = "current_password"
-					onChange={(e) => setCurrentPassword(e.target.value)}
-				/>
-				</div>
-				<div>
-				<label className="block text-sm font-medium text-white-400">New Password</label>
-				<input
-					type="password"
-					className="mt-1 w-fit rounded-lg bg-white/10 border border-white/20 p-3 text-slate-300 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400 transition-all"
-					placeholder="••••••••"
-					value={password}
-					name = "new_password"
-					onChange={(e) => setPassword(e.target.value)}
-				/>
-				{password && (
-					<p className={`text-xs mt-1 ${isPasswordValid ? 'text-green-400' : 'text-red-400'}`}>
-						{isPasswordValid ? 'Strong password' : 'Password must be at least 8 characters long and contain both letters and numbers.'}
-					</p>
-				)}
-				</div>
-				<div>
-					<label className="block text-sm font-medium text-white-400">Confirm Password</label>
-					<input
-						type="password"
-						className="mt-1 w-full rounded-lg bg-white/10 border border-white/20 p-3 text-slate-300 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400 transition-all"
-						placeholder="••••••••"
-						value={confirmPassword}
-						onChange={(e) => setConfirmPassword(e.target.value)}
-					/>
-					{confirmPassword && (
-						<p className={`text-xs mt-1 ${doPasswordsMatch ? 'text-green-400' : 'text-red-400'}`}>
-							{doPasswordsMatch ? 'Passwords match' : 'Passwords do not match'}
-						</p>
-					)}
-				</div>
-				{pwSubmitError && <p className="text-red-400 text-sm text-center">{pwSubmitError}</p>}
-			   <div className="flex justify-center gap-2">
-				   <button className="px-3 py-1 rounded-full bg-cyan-500 text-white max-w-fit text-md transition-all hover:bg-cyan-400 shadow-lg" type="submit">
-					   Change Password
-				   </button>
-				   <button className="px-3 py-1 rounded-full bg-cyan-500 text-white max-w-fit text-md transition-all hover:bg-cyan-400 shadow-lg" onClick={() => {setOpenForm(false); setPwSubmitError('');}}>Close X</button>
-			   </div>
-			</form>
-		</div>);
-	}
 
 	useEffect(() => {
 		const fetchProfile = async () => {
@@ -584,7 +437,6 @@ const Dashboard = () => {
 				if (response.ok) {
 					const data = await response.json();
 					setUser(data);
-					setProfilePic(data.profile_picture);
 					try {
 						const storageKey = `bizmatch_saved_coupons_${Number(data.uid)}`;
 						const raw = window.localStorage.getItem(storageKey);
@@ -675,10 +527,6 @@ const Dashboard = () => {
 			navigate('/');
 		}
 	};
-
-	const handlePopup = () => {
-		setPopup(true);
-	}
 
 	const finishOnboarding = () => {
 		if (!user) {
@@ -1127,31 +975,7 @@ const Dashboard = () => {
 			</Navbar>
 			<div className="relative grid gap-11 pt-28">
 				<div className="text-cyan-500/80" >
-						{popup && (
-							<div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 overscroll">
-								<Card title={(
-									<div className="grid grid-cols-2">
-									<h1 className={`text-2xl font-bold text-cyan-500 line-clamp-2`}>
-										Account Details
-									</h1>
-									<button className="ml-42 px-3 py-1 w-fit rounded-full text-white hover:bg-neutral-900 transition-colors" onClick={() => {setPopup(false); setOpenForm(false);}}>X</button>
-									</div>
-								)} cardClassName='w-lg'>
-								<div className="max-w-md w-full align-items-center justify-items-center">
-									<img  className="block aspect-square h-40 w-40 overflow-hidden rounded-full border-4 border-cyan-600 object-cover object-center shadow-w-auto mb-4 align-center" src={imageSrc} alt="Profile" />
-									{!openForm&&(<div className="items-center align-items-center justify-center">
-										<button className="mt-4 px-4 py-2 bg-[#FD8973] text-white font-semibold rounded-lg hover:bg-[#fb5f43] transition-colors inline-block mr-3" onClick={() => {setOpenForm(true); setPfpChange(false);}}>Change Password</button>
-										<button className="mt-4 px-4 py-2 bg-[#FFBF65] text-[#13181B] font-semibold rounded-lg hover:bg-[#f0a93f] transition-colors inline-block" onClick={() => {setOpenForm(true); setPfpChange(true);}}>Change Profile Picture</button>
-									</div>)}
-									{openForm &&(
-										<div className={`flex flex-col items-center justify-center gap-4 mt-4 w-full`}>
-											{content}
-										</div>)
-									}
-								</div>
-								</Card>
-							</div>
-						)}
+
 						{showOnboarding && (
 							<div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[1900] px-4">
 								<Card
@@ -1224,7 +1048,6 @@ const Dashboard = () => {
 								</button>
 							</div>
 							<div className="grid grid-cols-1 gap-y-3 place-items-center text-center pt-1">
-							<img onClick={handlePopup} className="block aspect-square h-32 w-32 overflow-hidden rounded-full border-4 border-cyan-600 object-cover object-center shadow-w-auto hover:border-cyan-700 transition-transform" src={imageSrc} alt="Profile" />
 							<p className="text-gray-200 text-3xl tracking-wider">Welcome back {user.username}</p>
 							</div>
 						</div>
