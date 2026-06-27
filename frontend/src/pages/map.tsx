@@ -101,6 +101,7 @@ const POI_GROUPS = [
       { id: 'parking', type: 'parking', label: 'Parking', icon: '🅿️' },
       { id: 'repair', type: 'car_repair', label: 'Repair', icon: '🔧' },
       { id: 'rental', type: 'car_rental', label: 'Car Rental', icon: '🚗' },
+      { id: 'dealership', type: 'car_dealer', label: 'Car Dealer', icon: '🏷️' },
     ],
   },
   {
@@ -110,8 +111,40 @@ const POI_GROUPS = [
       { id: 'restaurant', type: 'restaurant', label: 'Restaurant', icon: '🍽️' },
       { id: 'cafe', type: 'cafe', label: 'Cafe / Pub', icon: '☕' },
       { id: 'winery', type: 'liquor_store', label: 'Winery', icon: '🍷' },
+      { id: 'bakery', type: 'bakery', label: 'Bakery', icon: '🥐' },
+      { id: 'bar', type: 'bar', label: 'Bar', icon: '🍺' },
+      { id: 'grocery', type: 'supermarket', label: 'Grocery', icon: '🛒' },
     ],
   },
+  {
+    name: 'Shopping',
+    color: 'bg-blue-500',
+    items: [
+      { id: 'mall', type: 'shopping_mall', label: 'Shopping Mall', icon: '🛍️' },
+      { id: 'clothing', type: 'clothing_store', label: 'Clothing Store', icon: '👕' },
+      { id: 'electronics', type: 'electronics_store', label: 'Electronics', icon: '📱' },
+      { id: 'furniture', type: 'furniture_store', label: 'Furniture', icon: '🛋️' },
+    ]
+  },
+  {
+    name: 'Entertainment',
+    color: 'bg-purple-500',
+    items: [
+      { id: 'movie', type: 'movie_theater', label: 'Movie Theater', icon: '🍿' },
+      { id: 'park', type: 'park', label: 'Park', icon: '🌲' },
+      { id: 'museum', type: 'museum', label: 'Museum', icon: '🏛️' },
+      { id: 'gym', type: 'gym', label: 'Gym', icon: '🏋️' },
+    ]
+  },
+  {
+    name: 'Health',
+    color: 'bg-green-500',
+    items: [
+      { id: 'hospital', type: 'hospital', label: 'Hospital', icon: '🏥' },
+      { id: 'pharmacy', type: 'pharmacy', label: 'Pharmacy', icon: '💊' },
+      { id: 'dentist', type: 'dentist', label: 'Dentist', icon: '🦷' },
+    ]
+  }
 ];
 
 const metersToMiles = (meters: number) => meters * 0.000621371;
@@ -146,6 +179,7 @@ const MapGoogle = () => {
   const mapRef = useRef<any>(null);
   // Use `any` types for Google objects to avoid TS namespace issues during loader-based init.
   const markersRef = useRef<any[]>([]);
+  const favMarkersRef = useRef<any[]>([]);
   const poiMarkersRef = useRef<any[]>([]);
   const userMarkerRef = useRef<any>(null);
   const directionsRendererRef = useRef<any>(null);
@@ -156,6 +190,11 @@ const MapGoogle = () => {
   const [mapError, setMapError] = useState<string | null>(null);
 
   const [userLoc, setUserLoc] = useState({ lat: 34.0731, lng: -118.4016 });
+  const userLocRef = useRef(userLoc);
+  const [locLoaded, setLocLoaded] = useState(false);
+  useEffect(() => {
+    userLocRef.current = userLoc;
+  }, [userLoc]);
   const [inputValue, setInputValue] = useState('');
   const [suggestions, setSuggestions] = useState<any[]>([]);
 
@@ -199,6 +238,97 @@ const MapGoogle = () => {
   const isNavigatingRef = useRef(false);
   const activeRouteRef = useRef<RouteInfo | null>(null);
   const lastSpokenInstructionRef = useRef<string | null>(null);
+
+  const trafficLayerRef = useRef<any>(null);
+  const [isTrafficOn, setIsTrafficOn] = useState(false);
+  const [isNightMode, setIsNightMode] = useState(true);
+  const [is3D, setIs3D] = useState(false);
+
+  const toggleTraffic = () => {
+    if (!mapRef.current) return;
+    const googleNs = (window as any).google as any;
+    if (!trafficLayerRef.current) {
+      trafficLayerRef.current = new googleNs.maps.TrafficLayer();
+    }
+    if (isTrafficOn) {
+      trafficLayerRef.current.setMap(null);
+    } else {
+      trafficLayerRef.current.setMap(mapRef.current);
+    }
+    setIsTrafficOn(!isTrafficOn);
+  };
+
+  const toggleNightMode = () => {
+    if (!mapRef.current) return;
+    if (isNightMode) {
+      mapRef.current.setOptions({ styles: [] });
+    } else {
+      mapRef.current.setOptions({ styles: [
+        { elementType: 'geometry', stylers: [{ color: '#242f3e' }] },
+        { elementType: 'labels.text.stroke', stylers: [{ color: '#242f3e' }] },
+        { elementType: 'labels.text.fill', stylers: [{ color: '#746855' }] },
+        { featureType: 'administrative.locality', elementType: 'labels.text.fill', stylers: [{ color: '#d59563' }] },
+        { featureType: 'poi', elementType: 'labels.text.fill', stylers: [{ color: '#d59563' }] },
+        { featureType: 'poi.park', elementType: 'geometry', stylers: [{ color: '#263c3f' }] },
+        { featureType: 'poi.park', elementType: 'labels.text.fill', stylers: [{ color: '#6b9a76' }] },
+        { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#38414e' }] },
+        { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#212a37' }] },
+        { featureType: 'road', elementType: 'labels.text.fill', stylers: [{ color: '#9ca5b3' }] },
+        { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#746855' }] },
+        { featureType: 'road.highway', elementType: 'geometry.stroke', stylers: [{ color: '#1f2835' }] },
+        { featureType: 'road.highway', elementType: 'labels.text.fill', stylers: [{ color: '#f3d19c' }] },
+        { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#17263c' }] },
+        { featureType: 'water', elementType: 'labels.text.fill', stylers: [{ color: '#515c6d' }] },
+        { featureType: 'water', elementType: 'labels.text.stroke', stylers: [{ color: '#17263c' }] }
+      ] });
+    }
+    setIsNightMode(!isNightMode);
+  };
+
+  const toggle3D = () => {
+    if (!mapRef.current) return;
+    if (is3D) {
+      mapRef.current.setMapTypeId('roadmap');
+      mapRef.current.setTilt(0);
+      mapRef.current.setHeading(0);
+    } else {
+      mapRef.current.setMapTypeId('satellite');
+      mapRef.current.setTilt(45);
+      mapRef.current.setHeading(45);
+    }
+    setIs3D(!is3D);
+  };
+
+  useEffect(() => {
+    if (!mapRef.current) return;
+    const googleNs = (window as any).google as any;
+
+    favMarkersRef.current.forEach((m) => m.setMap(null));
+    favMarkersRef.current = [];
+
+    if (showSidebar && favoriteLocations.length > 0) {
+      const markers = favoriteLocations.map((loc) => {
+        return new googleNs.maps.Marker({
+          position: { lat: loc.latitude, lng: loc.longitude },
+          map: mapRef.current!,
+          label: {
+            text: '★',
+            fontSize: '18px',
+            color: '#FBBF24'
+          },
+          icon: {
+            path: googleNs.maps.SymbolPath.CIRCLE,
+            scale: 14,
+            fillColor: '#1F2937',
+            fillOpacity: 1,
+            strokeColor: '#FBBF24',
+            strokeWeight: 2,
+          }
+        });
+      });
+      favMarkersRef.current = markers;
+    }
+  }, [showSidebar, favoriteLocations, mapLoaded]);
 
   const GOOGLE_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || import.meta.env.PUBLIC_GOOGLE_MAPS_API_KEY;
   const AUTH_BASE_URL = import.meta.env.VITE_AUTH_BASE_URL || 'http://localhost:5173';
@@ -434,7 +564,6 @@ const MapGoogle = () => {
         const map = new googleNs.maps.Map(mapElement.current!, {
           center: { lat: userLoc.lat, lng: userLoc.lng },
           zoom: 13,
-          mapId: 'DEMO_MAP_ID', // Required for AdvancedMarkerElement
           styles: [
             { elementType: 'geometry', stylers: [{ color: '#242f3e' }] },
             { elementType: 'labels.text.stroke', stylers: [{ color: '#242f3e' }] },
@@ -470,14 +599,18 @@ const MapGoogle = () => {
         setMapLoaded(true);
         setMapError(null);
 
-        // user marker (AdvancedMarkerElement)
-        const userMarkerDiv = document.createElement('div');
-        userMarkerDiv.innerHTML = '<div style="background:#3F92FF; width:16px; height:16px; border-radius:50%; border:2px solid white; box-shadow:0 0 4px rgba(0,0,0,0.3);"></div>';
-
-        const um = new googleNs.maps.marker.AdvancedMarkerElement({
+        // user marker (Standard Marker)
+        const um = new googleNs.maps.Marker({
           position: { lat: userLoc.lat, lng: userLoc.lng },
           map,
-          content: userMarkerDiv,
+          icon: {
+            path: googleNs.maps.SymbolPath.CIRCLE,
+            scale: 8,
+            fillColor: '#3F92FF',
+            fillOpacity: 1,
+            strokeColor: 'white',
+            strokeWeight: 2,
+          }
         });
         userMarkerRef.current = um;
 
@@ -506,8 +639,11 @@ const MapGoogle = () => {
               setUserLoc(coords);
               map.setCenter(coords);
               if (userMarkerRef.current) userMarkerRef.current.position = coords;
+              setLocLoaded(true);
             },
-            () => {}
+            () => {
+              setLocLoaded(true);
+            }
           );
 
           navigator.geolocation.watchPosition(
@@ -535,7 +671,7 @@ const MapGoogle = () => {
   useEffect(() => {
     const lat = searchParams.get('lat');
     const lon = searchParams.get('lon');
-    if (!lat || !lon || !mapLoaded) return;
+    if (!lat || !lon || !mapLoaded || !locLoaded) return;
     const destLat = parseFloat(lat);
     const destLng = parseFloat(lon);
     if (Number.isNaN(destLat) || Number.isNaN(destLng)) return;
@@ -545,7 +681,7 @@ const MapGoogle = () => {
     const routeName = nameParam?.trim() || addressParam?.trim() || 'Destination';
 
     void calculateRoute(destLat, destLng, routeName, false);
-  }, [mapLoaded, searchParams]);
+  }, [mapLoaded, searchParams, locLoaded]);
 
   const calculateRoute = async (
     dLat: number,
@@ -560,7 +696,7 @@ const MapGoogle = () => {
       const ds = new googleNs.maps.DirectionsService();
 
       const request = {
-        origin: { lat: userLoc.lat, lng: userLoc.lng },
+        origin: { lat: userLocRef.current.lat, lng: userLocRef.current.lng },
         destination: { lat: dLat, lng: dLng },
         travelMode: googleNs.maps.TravelMode.DRIVING,
       };
@@ -597,7 +733,7 @@ const MapGoogle = () => {
           message: `Head towards ${name}`,
           distance: 0,
           time: 0,
-          point: { lng: userLoc.lng, lat: userLoc.lat },
+          point: { lng: userLocRef.current.lng, lat: userLocRef.current.lat },
         });
         instructions.push({
           maneuverType: 'arrive',
@@ -779,13 +915,17 @@ const MapGoogle = () => {
     markersRef.current = [];
 
     const googleNs = (window as any).google as any;
-    const markerDiv = document.createElement('div');
-    markerDiv.innerHTML = '<div style="background:#3F92FF; width:12px; height:12px; border-radius:50%; border:2px solid white; box-shadow:0 0 4px rgba(0,0,0,0.3);"></div>';
-
-    const marker = new googleNs.maps.marker.AdvancedMarkerElement({
+    const marker = new googleNs.maps.Marker({
       position: pos,
       map: mapRef.current!,
-      content: markerDiv,
+      icon: {
+        path: googleNs.maps.SymbolPath.CIRCLE,
+        scale: 6,
+        fillColor: '#F43F5E',
+        fillOpacity: 1,
+        strokeColor: 'white',
+        strokeWeight: 2,
+      }
     });
     markersRef.current.push(marker);
 
@@ -884,23 +1024,21 @@ const MapGoogle = () => {
         poiMarkersRef.current = [];
 
         const markers = next.map((poi) => {
-          const div = document.createElement('div');
-          div.style.background = '#222';
-          div.style.borderRadius = '50%';
-          div.style.width = '32px';
-          div.style.height = '32px';
-          div.style.display = 'flex';
-          div.style.alignItems = 'center';
-          div.style.justifyContent = 'center';
-          div.style.border = '2px solid white';
-          div.style.boxShadow = '0 0 6px rgba(0,0,0,0.5)';
-          div.textContent = poi.icon;
-          div.style.fontSize = '18px';
-          
-          return new googleNs.maps.marker.AdvancedMarkerElement({
+          return new googleNs.maps.Marker({
             position: { lat: poi.lat, lng: poi.lng },
             map: mapRef.current!,
-            content: div,
+            label: {
+              text: poi.icon,
+              fontSize: '18px'
+            },
+            icon: {
+              path: googleNs.maps.SymbolPath.CIRCLE,
+              scale: 16,
+              fillColor: '#F43F5E',
+              fillOpacity: 1,
+              strokeColor: 'white',
+              strokeWeight: 2,
+            }
           });
         });
 
@@ -1078,8 +1216,8 @@ const MapGoogle = () => {
         )}
       </div>
 
-      <div className="mt-2 grid grid-cols-3 gap-2 text-[11px]">
-        <label className="rounded-xl border border-neutral-800 bg-neutral-900/95 px-2 py-1.5">
+      <div className="mt-2 grid grid-cols-2 gap-2 text-[11px]">
+        <label className="col-span-2 rounded-xl border border-neutral-800 bg-neutral-900/95 px-2 py-1.5">
           <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-cyan-200/80">Rating</span>
           <div className="flex items-center justify-between gap-1">
             {[1, 2, 3, 4, 5].map((star) => (
@@ -1094,10 +1232,10 @@ const MapGoogle = () => {
                 }}
                 className="rounded-sm p-0.5 hover:bg-white/10 transition-colors"
               >
-                <span className="relative block h-4 w-4 leading-none">
-                  <span className="absolute inset-0 text-[16px] text-neutral-600">★</span>
+                <span className="relative block h-6 w-6 leading-none">
+                  <span className="absolute inset-0 text-[24px] text-neutral-600">★</span>
                   <span
-                    className="absolute inset-0 overflow-hidden text-amber-300"
+                    className="absolute inset-0 overflow-hidden text-amber-300 text-[24px]"
                     style={{ width: `${getStarFillPercent(poiMinRating, star)}%` }}
                   >
                     ★
@@ -1142,29 +1280,28 @@ const MapGoogle = () => {
       </div>
 
       <div className="mt-2.5 text-[14px]">
-        <div className="w-full bg-neutral-900/95 text-white border border-neutral-800 p-3 rounded-xl flex justify-between items-center">
-          <span className="font-large">Select Category</span>
-          <span className="text-xs text-gray-400">(demo)</span>
-        </div>
-      </div>
-
-      <div className="mt-2 grid grid-cols-2 gap-2">
-        {POI_GROUPS.flatMap((group) =>
-          group.items.map((item) => ({
-            ...item,
-            groupColor: group.color,
-          }))
-        )
-          .slice(0, 4)
-          .map((item) => (
-            <button
-              key={item.id}
-              onClick={() => void searchPoi(item.type, item.icon)}
-              className="rounded-md border border-neutral-800 bg-neutral-900/95 px-2 py-2 text-xs text-cyan-200 hover:bg-white/5"
-            >
-              {item.icon} {item.label}
-            </button>
+        <select
+          onChange={(e) => {
+            if (!e.target.value) return;
+            const selected = POI_GROUPS.flatMap(g => g.items).find(i => i.type === e.target.value);
+            if (selected) {
+              void searchPoi(selected.type, selected.icon);
+            }
+            e.target.value = "";
+          }}
+          className="w-full bg-neutral-900/95 text-white border border-neutral-800 p-3 rounded-xl focus:outline-none focus:border-[#3F92FF]"
+        >
+          <option value="">Select a Category...</option>
+          {POI_GROUPS.map((group) => (
+            <optgroup key={group.name} label={group.name} className="text-gray-400">
+              {group.items.map((item) => (
+                <option key={item.id} value={item.type} className="text-white">
+                  {item.icon} {item.label}
+                </option>
+              ))}
+            </optgroup>
           ))}
+        </select>
       </div>
     </div>
   );
@@ -1244,13 +1381,37 @@ const MapGoogle = () => {
           )}
         </AnimatePresence>
 
+        <div className="absolute right-4 bottom-32 z-[1000] flex flex-col gap-3">
+          <button
+            onClick={toggleTraffic}
+            className={`w-[45px] h-[45px] ${isTrafficOn ? 'bg-cyan-600/90' : 'bg-neutral-900/95'} text-white border border-neutral-800 rounded-xl cursor-pointer text-xl flex flex-col items-center justify-center shadow-lg transition-all hover:scale-105 hover:border-[#3F92FF]`}
+            title="Toggle Traffic"
+          >
+            🚦
+          </button>
+          <button
+            onClick={toggleNightMode}
+            className="w-[45px] h-[45px] bg-neutral-900/95 text-white border border-neutral-800 rounded-xl cursor-pointer text-xl flex flex-col items-center justify-center shadow-lg transition-all hover:scale-105 hover:border-[#3F92FF]"
+            title="Toggle Night/Day Mode"
+          >
+            {isNightMode ? '☀️' : '🌙'}
+          </button>
+          <button
+            onClick={toggle3D}
+            className={`w-[45px] h-[45px] ${is3D ? 'bg-cyan-600/90' : 'bg-neutral-900/95'} text-white border border-neutral-800 rounded-xl cursor-pointer text-sm font-bold flex flex-col items-center justify-center shadow-lg transition-all hover:scale-105 hover:border-[#3F92FF]`}
+            title="Toggle 2D/3D"
+          >
+            {is3D ? '2D' : '3D'}
+          </button>
+        </div>
+
         <div className="absolute left-4 bottom-32 z-[1000] flex flex-col gap-3">
           <button
             onClick={() => setShowSidebar((v) => !v)}
             className="w-[55px] h-[40px] md:w-[60px] md:h-[50px] bg-neutral-900/95 text-white border border-neutral-800 rounded-xl cursor-pointer text-sm flex flex-col items-center justify-center shadow-lg transition-all hover:scale-105 hover:border-[#3F92FF]"
             title="Favorites"
           >
-            <span className="text-xs font-bold">★</span>
+            <span className="text-2xl text-yellow-400 font-bold">★</span>
           </button>
           <button
             onClick={() => {

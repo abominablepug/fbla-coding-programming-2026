@@ -177,7 +177,7 @@ const API_KEY =
 	import.meta.env.GOOGLE_MAPS_API_KEY;
 const AUTH_BASE_URL = import.meta.env.VITE_AUTH_BASE_URL || 'http://localhost:5173';
 const LocationDetailBlock = ({ loc }: { loc: Location }) => {
-	const formattedHours = formatBusinessHoursForDisplay(loc.businessHours, 2);
+	const hoursList = loc.businessHours || [];
 
 	return (
 		<div className="mt-2.5 grid grid-cols-2 gap-1.5 text-[11px] leading-snug">
@@ -202,15 +202,21 @@ const LocationDetailBlock = ({ loc }: { loc: Location }) => {
 					) : 'N/A'}
 				</div>
 				<div className="col-span-2 rounded-md border border-white/10 bg-white/5 px-2 py-1 text-gray-400">
-					Hours: {formattedHours.length > 0 ? formattedHours.join(' | ') : 'N/A'}
+					{hoursList.length > 0 ? (
+						<details onClick={(e) => e.stopPropagation()} className="relative group">
+							<summary className="cursor-pointer hover:text-gray-300 select-none">Hours (Click to expand)</summary>
+							<ul className="absolute left-0 top-full mt-2 w-max rounded-md border border-cyan-500/30 bg-neutral-900 p-2 shadow-2xl z-[100] space-y-0.5 text-[9px] text-gray-200">
+								{hoursList.map((h, i) => <li key={i}>{h}</li>)}
+							</ul>
+						</details>
+					) : 'Hours: N/A'}
 				</div>
 			</div>
 		);
 };
 
 const CompactLocationMeta = ({ loc }: { loc: Location }) => {
-	const hours = formatBusinessHoursForDisplay(loc.businessHours, 1);
-	const websiteLabel = loc.website ? 'Available' : 'N/A';
+	const hoursList = loc.businessHours || [];
 
 	return (
 		<div className="mt-2.5 space-y-1.5">
@@ -221,13 +227,30 @@ const CompactLocationMeta = ({ loc }: { loc: Location }) => {
 				<p className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-gray-400 line-clamp-2">
 					Email: {loc.email || 'N/A'}
 				</p>
-				<p className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-gray-400 line-clamp-2">
-					Website: {websiteLabel}
-				</p>
+				<div className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-gray-400 line-clamp-2">
+					Website: {loc.website ? (
+						<a
+							href={loc.website}
+							target="_blank"
+							rel="noopener noreferrer"
+							className="text-cyan-300 hover:text-cyan-200 underline break-all"
+							onClick={(e) => e.stopPropagation()}
+						>
+							Available
+						</a>
+					) : 'N/A'}
+				</div>
 			</div>
-			<p className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-[10px] text-gray-400 line-clamp-2">
-				Hours: {hours.length > 0 ? hours.join(' | ') : 'N/A'}
-			</p>
+			<div className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-[10px] text-gray-400">
+					{hoursList.length > 0 ? (
+						<details onClick={(e) => e.stopPropagation()} className="relative group">
+							<summary className="cursor-pointer hover:text-gray-300 select-none">Hours (Click to expand)</summary>
+							<ul className="absolute left-0 top-full mt-2 w-max rounded-md border border-cyan-500/30 bg-neutral-900 p-2 shadow-2xl z-[100] space-y-0.5 text-[9px] text-gray-200">
+								{hoursList.map((h, i) => <li key={i}>{h}</li>)}
+							</ul>
+						</details>
+					) : 'Hours: N/A'}
+			</div>
 		</div>
 	);
 };
@@ -1199,19 +1222,19 @@ const Dashboard = () => {
 						</div>
 				</div> 
 				<div className="mx-auto w-[95%] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
-					<div className="rounded-lg border border-[#FD8973]/45 bg-neutral-900/75 px-3 py-2 text-center">
+					<div className="rounded-lg border border-sky-300/25 bg-cyan-500/12 shadow-[inset_0_1px_12px_rgba(8,145,178,0.06)] px-3 py-2 text-center">
 						<p className="text-[10px] uppercase tracking-[0.08em] text-[#FD8973]/85">Locations Favorited</p>
 						<p className="text-lg font-semibold text-[#FD8973]">{favoriteLocations.length}</p>
 					</div>
-					<div className="rounded-lg border border-[#FFBF65]/45 bg-neutral-900/75 px-3 py-2 text-center">
+					<div className="rounded-lg border border-sky-300/25 bg-cyan-500/12 shadow-[inset_0_1px_12px_rgba(8,145,178,0.06)] px-3 py-2 text-center">
 						<p className="text-[10px] uppercase tracking-[0.08em] text-[#FFBF65]/85">Locations Visited</p>
 						<p className="text-lg font-semibold text-[#FFBF65]">{visitedLocations.length}</p>
 					</div>
-					<div className="rounded-lg border border-[#CCD5DA]/45 bg-neutral-900/75 px-3 py-2 text-center">
+					<div className="rounded-lg border border-sky-300/25 bg-cyan-500/12 shadow-[inset_0_1px_12px_rgba(8,145,178,0.06)] px-3 py-2 text-center">
 						<p className="text-[10px] uppercase tracking-[0.08em] text-[#CCD5DA]/85">Saved Coupons</p>
 						<p className="text-lg font-semibold text-[#CCD5DA]">{savedCouponKeys.length}</p>
 					</div>
-					<div className="rounded-lg border border-cyan-400/25 bg-neutral-900/75 px-3 py-2 text-center">
+					<div className="rounded-lg border border-sky-300/25 bg-cyan-500/12 shadow-[inset_0_1px_12px_rgba(8,145,178,0.06)] px-3 py-2 text-center">
 						<p className="text-[10px] uppercase tracking-[0.08em] text-cyan-200/75">Distance Travelled</p>
 						<p className="text-lg font-semibold text-cyan-300">{totalDistanceMiles.toFixed(1)} mi</p>
 					</div>
@@ -1242,7 +1265,7 @@ const Dashboard = () => {
 							AI Suggestions
 						</button>
 					</div>
-					<div className="w-[95%] h-[2px] mx-auto bg-gradient-to-r from-[#FD8973]/70 via-[#FFBF65]/80 to-cyan-400/70 shadow-[0_0_10px_rgba(255,191,101,0.25)]" />
+					<div className="w-[95%] h-[1px] mx-auto border-t border-cyan-400/20" />
 
 					<div className="mx-auto w-[96%] max-w-7xl space-y-5">
 					<div className="w-full grid grid-cols-1 xl:grid-cols-2 gap-5 items-stretch">
@@ -1274,7 +1297,7 @@ const Dashboard = () => {
 													<p className="text-xs text-gray-400 line-clamp-1">{loc.address}</p>
 													<p className="text-[11px] text-gray-500 mt-1 line-clamp-2">
 														{loc.categories && loc.categories.length > 0
-															? `Categories: ${loc.categories.join(', ')}`
+															? `Categories: ${loc.categories.map(c => c.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())).join(', ')}`
 															: 'Categories: N/A'}
 													</p>
 													<CompactLocationMeta loc={loc} />
@@ -1355,7 +1378,7 @@ const Dashboard = () => {
 													<p className="text-xs text-gray-400 line-clamp-1">{loc.address}</p>
 													<p className="text-[11px] text-gray-500 mt-1 line-clamp-2">
 														{loc.categories && loc.categories.length > 0
-															? `Categories: ${loc.categories.join(', ')}`
+															? `Categories: ${loc.categories.map(c => c.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())).join(', ')}`
 															: 'Categories: N/A'}
 													</p>
 													<p className="text-[11px] text-cyan-200/70 mt-1">Visited: {formatVisitedAt(loc.visited_at)}</p>
@@ -1408,11 +1431,11 @@ const Dashboard = () => {
 										>
 											<ChevronLeft size={16} />
 										</button>
-												<div ref={aiLocationCarouselRef} className="flex h-full w-full items-center gap-4 overflow-x-hidden px-10 scroll-smooth">
+												<div ref={aiLocationCarouselRef} className="flex h-full w-full items-center gap-4 overflow-x-auto snap-x snap-mandatory scroll-smooth px-10">
 													{circularAiSuggestedLocations.map((item, idx) => (
 													<div
 														key={`ai-location-${item.loc.lid}-${idx}`}
-														className="relative min-w-[calc(100%-5.5rem)] max-w-[calc(100%-5.5rem)] h-[286px] shrink-0 rounded-xl border border-cyan-500/30 bg-cyan-500/10 p-4 pt-10 flex flex-col justify-between"
+														className="relative w-full flex-none snap-center h-[286px] rounded-xl border border-indigo-400/20 bg-indigo-500/10 p-4 pt-10 flex flex-col justify-between"
 													>
 													<button
 														onClick={() => handleFavoriteVisitedLocation(item.loc)}
@@ -1427,7 +1450,7 @@ const Dashboard = () => {
 															<p className="mt-1 text-xs text-gray-300 line-clamp-2">{item.loc.address || 'Address unavailable'}</p>
 															<p className="mt-1 text-[11px] text-gray-400 line-clamp-2">
 																{item.loc.categories && item.loc.categories.length > 0
-																	? `Categories: ${item.loc.categories.join(', ')}`
+																	? `Categories: ${item.loc.categories.map(c => c.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())).join(', ')}`
 																	: 'Categories: N/A'}
 															</p>
 															<p className="mt-2 text-xs text-gray-400 line-clamp-2">{item.reason}</p>
@@ -1435,13 +1458,13 @@ const Dashboard = () => {
 															<div className="mt-3 flex flex-wrap items-center gap-2">
 														<button
 															onClick={() => navigate(buildMapRouteUrl(item.loc))}
-															className="rounded-md border border-cyan-400/40 bg-cyan-500/20 px-3 py-1.5 text-xs text-cyan-100 hover:bg-cyan-500/30"
+															className="rounded-md border border-indigo-400/20 bg-indigo-500/20 px-3 py-1.5 text-xs text-indigo-200 hover:bg-indigo-500/30"
 														>
 															Open Location
 														</button>
 															<button
 																onClick={() => void openAiLocationReviews(item.loc)}
-																className="rounded-md border border-white/25 bg-white/10 px-3 py-1.5 text-xs text-gray-100 hover:bg-white/20"
+																className="rounded-md border border-indigo-400/20 bg-indigo-500/20 px-3 py-1.5 text-xs text-indigo-200 hover:bg-indigo-500/30"
 															>
 																Reviews
 															</button>
@@ -1477,11 +1500,11 @@ const Dashboard = () => {
 										>
 										<ChevronLeft size={16} />
 									</button>
-										<div ref={aiCouponCarouselRef} className="flex h-full w-full items-center gap-4 overflow-x-hidden px-10 scroll-smooth">
+										<div ref={aiCouponCarouselRef} className="flex h-full w-full items-center gap-4 overflow-x-auto snap-x snap-mandatory scroll-smooth px-10">
 												{circularAiSuggestedCoupons.map((coupon, idx) => (
 														<div
 															key={`ai-coupon-${coupon.location.lid}-${idx}`}
-															className="relative min-w-[calc(100%-5.5rem)] max-w-[calc(100%-5.5rem)] h-[286px] shrink-0 rounded-xl border border-emerald-400/35 bg-emerald-500/12 p-4 flex flex-col justify-between"
+															className="relative w-full flex-none snap-center h-[286px] rounded-xl border border-indigo-400/20 bg-indigo-500/10 p-4 flex flex-col justify-between"
 														>
 													<div className="flex items-center justify-between gap-2">
 														<p className="text-base font-semibold text-emerald-100 line-clamp-1">{coupon.title}</p>
@@ -1509,13 +1532,13 @@ const Dashboard = () => {
 													<div className="mt-3 flex flex-wrap items-center gap-2">
 															<button
 																onClick={() => navigate('/discount', { state: { from: 'dashboard', locationId: coupon.location.lid } })}
-																className="rounded-md border border-emerald-300/40 bg-emerald-500/20 px-3 py-1.5 text-xs text-emerald-100 hover:bg-emerald-500/30"
+																className="rounded-md border border-indigo-400/20 bg-indigo-500/20 px-3 py-1.5 text-xs text-indigo-200 hover:bg-indigo-500/30"
 															>
 																View Coupon
 															</button>
 															<button
 																onClick={() => navigate(buildMapRouteUrl(coupon.location))}
-																className="rounded-md border border-white/25 bg-white/10 px-3 py-1.5 text-xs text-gray-100 hover:bg-white/20"
+																className="rounded-md border border-indigo-400/20 bg-indigo-500/20 px-3 py-1.5 text-xs text-indigo-200 hover:bg-indigo-500/30"
 															>
 																Open in Map
 														</button>

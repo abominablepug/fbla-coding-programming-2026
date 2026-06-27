@@ -32,7 +32,14 @@ const JobFinder = () => {
   const [jobs, setJobs] = useState<Job[]>([]);
   // Job ids the user has already swiped on (skipped or applied). We never show
   // these again, even after a re-rank pulls a fresh list from the backend.
-  const [decidedIds, setDecidedIds] = useState<Set<number>>(new Set());
+  const [decidedIds, setDecidedIds] = useState<Set<number>>(() => {
+    try {
+      const stored = localStorage.getItem('bizmatch_decided_jobs');
+      return stored ? new Set(JSON.parse(stored)) : new Set();
+    } catch {
+      return new Set();
+    }
+  });
   const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
   const [edgeGlow, setEdgeGlow] = useState<'left' | 'right' | null>(null);
   const [loading, setLoading] = useState(true);
@@ -173,10 +180,12 @@ const JobFinder = () => {
       await applyToJob(currentJob);
     }
 
-    // Record this job as decided so it is never shown again.
     setDecidedIds((prev) => {
       const next = new Set(prev);
       next.add(currentJob.job_id);
+      try {
+        localStorage.setItem('bizmatch_decided_jobs', JSON.stringify(Array.from(next)));
+      } catch {}
       return next;
     });
     setSwipeDirection(null);

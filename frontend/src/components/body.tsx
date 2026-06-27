@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from "framer-motion";
+
 import AdBanner from './adBanner';
 
 interface BodyProps {
@@ -13,16 +13,14 @@ const Body: React.FC<BodyProps> = ({
     className= ""
 }) => {
     return (
-        <div className={`min-h-screen bg-neutral-900 relative w-full overscroll-none ${className}`}>
-			<div className=" min-h-screen w-full fixed bg-neutral-900 backdrop-blur-[400px] flex items-center justify-center overflow-hidden">
-				{/* Bottom glow: blue fading into warm Sea Buckthorn gold */}
-				<motion.div initial={{ opacity: 0.4, y: 0 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 2.0 }} className="fixed lg:w-[1200px] h-[500px] w-[600px] -z-0 rounded-full">
-					<div className="absolute bottom-[-500px] w-full h-full bg-linear-to-t from-cyan-700/70 via-cyan-500/55 to-[#FFBF65]/45 blur-[160px] rounded-full" />
-				</motion.div>
-				{/* Top glow: blue fading into warm Miami Coral */}
-				<motion.div initial={{ opacity: 0.3, y: 0 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 2.0 }} className="fixed lg:w-[900px] h-[500px] w-[500px] -z-0 rounded-full">
-					<div className="absolute lg:top-[-520px] top-[-420px] w-full h-full bg-linear-to-b from-cyan-700/40 via-[#FD8973]/35 to-[#FD8973]/40 blur-[120px] rounded-full" />
-				</motion.div>
+		<div className={`min-h-screen ${className}`}>
+			<div className="min-h-screen w-full fixed bg-[linear-gradient(135deg,#030712_0%,#07111f_40%,#101827_72%,#17152b_100%)] light:bg-[linear-gradient(135deg,#b9d5e3_0%,#a2c7dc_42%,#b4c9de_72%,#cbd2e8_100%)] flex items-center justify-center overflow-hidden -z-10">
+				{/* Top Glow */}
+				<div className="absolute inset-0 bg-gradient-to-b from-cyan-300/10 to-transparent light:from-cyan-600/25 pointer-events-none" />
+				{/* Overlay Layer */}
+				<div className="absolute inset-0 bg-[linear-gradient(115deg,transparent_0%,rgba(103,232,249,0.07)_32%,transparent_48%,rgba(139,92,246,0.07)_72%,transparent_100%)] opacity-80 light:opacity-55 pointer-events-none" />
+				{/* Bottom Shading */}
+				<div className="absolute inset-0 bg-gradient-to-t from-black/55 to-transparent light:from-slate-500/15 pointer-events-none" />
 			</div>
             <AdBanner />
             {children}

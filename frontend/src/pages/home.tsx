@@ -23,9 +23,10 @@ const Home = () => {
 			</Navbar>
 
 			<div className="relative z-10 flex flex-col items-center justify-center min-h-screen text-center px-4 transition-transform">
+                <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_50%_20%,rgba(103,232,249,0.16),transparent_42%),linear-gradient(135deg,rgba(15,23,42,0.78),rgba(8,47,73,0.34),rgba(49,46,129,0.28))]" />
 				<motion.div initial={{ opacity: 0.5, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease: "easeOut" }} >
 					<div className="mb-6 flex items-center justify-center gap-0.5 md:gap-1">
-						<h1 className="shrink-0 leading-none text-6xl md:text-9xl font-extrabold bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent tracking-tighter drop-shadow-2xl">
+						<h1 className="shrink-0 leading-none text-6xl md:text-9xl font-extrabold bg-gradient-to-r from-cyan-100 via-teal-300 to-purple-400 bg-clip-text text-transparent tracking-tighter drop-shadow-[0_0_36px_rgba(103,232,249,0.24)] light:drop-shadow-[0_4px_18px_rgba(8,47,73,0.20)]">
 							LuminX
 						</h1>
 						<div className="inline-flex h-16 w-16 shrink-0 items-center justify-center self-center md:h-32 md:w-32">
@@ -51,11 +52,11 @@ const Home = () => {
 				</motion.p>
 
 				<motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.6, duration: 0.5 }} className="flex gap-8" >
-					<Link to="/register" className="group inline-flex items-center gap-3 px-6 py-4 bg-sky-500 text-white rounded-lg font-semibold text-lg transition-all hover:bg-sky-400 shadow-lg">
+					<Link to="/register" className="group inline-flex items-center gap-3 px-6 py-4 border border-cyan-100/20 bg-cyan-300/14 text-cyan-50 shadow-[0_16px_48px_rgba(8,145,178,0.20)] hover:bg-cyan-200/18 light:bg-[#a8d4df] light:text-slate-950 rounded-lg font-semibold text-lg transition-all">
 						Get Started
 						<ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
 					</Link>
-					<Link to="/login" className="group inline-flex items-center gap-3 px-10 py-4 bg-sky-500 text-white rounded-lg font-semibold text-lg transition-all hover:bg-sky-400 shadow-lg">
+					<Link to="/login" className="group inline-flex items-center gap-3 px-10 py-4 border border-cyan-100/20 bg-cyan-300/14 text-cyan-50 shadow-[0_16px_48px_rgba(8,145,178,0.20)] hover:bg-cyan-200/18 light:bg-[#a8d4df] light:text-slate-950 rounded-lg font-semibold text-lg transition-all">
 						Login 
 						<ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
 					</Link>

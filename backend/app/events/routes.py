@@ -28,7 +28,8 @@ def create_event():
         description=data.get('description'),
         start_time=start_time,
         end_time=end_time,
-        image_url=data.get('image_url')
+        image_url=data.get('image_url'),
+        event_type=data.get('event_type', 'general')
     )
     db.session.add(new_event)
     db.session.commit()
@@ -74,6 +75,8 @@ def update_event(event_id):
         event.title = data['title']
     if 'description' in data:
         event.description = data['description']
+    if 'event_type' in data:
+        event.event_type = data['event_type']
     if 'start_time' in data:
         try:
             event.start_time = datetime.fromisoformat(data['start_time'].replace('Z', '+00:00'))

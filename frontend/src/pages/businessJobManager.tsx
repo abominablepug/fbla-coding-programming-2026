@@ -405,8 +405,7 @@ const BusinessJobManager = () => {
                   <div className="detail-section">
                     <a
                       href={currentApplicant.resume_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                      download={`Resume_${currentApplicant.username}`}
                       className="btn-download-resume"
                     >
                       <Download size={18} /> Download Resume

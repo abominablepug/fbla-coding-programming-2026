@@ -299,6 +299,7 @@ class Event(db.Model):
     event_type = db.Column(db.String(50), nullable=False) # e.g. "flash_sale", "live_music", "trivia"
     start_time = db.Column(db.DateTime, nullable=False)
     end_time = db.Column(db.DateTime, nullable=False)
+    image_url = db.Column(db.String(255), nullable=True)
     
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 

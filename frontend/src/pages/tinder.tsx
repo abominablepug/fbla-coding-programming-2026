@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Navbar from '../components/navbar';
 import Card from '../components/card';
 import { HeartPlus, MapPin, Star, TicketPercent, X } from 'lucide-react';
-import { getCommonsImage } from '../utils/getCommonsImage';
+
 import {useNavigate } from 'react-router-dom';
 import Links from '../components/links';
 import Body from '../components/body';
@@ -342,13 +342,12 @@ const TinderPage = () => {
     };
 
 
-    function titleCase(str:string) {
-        const splitStr = str.toLowerCase().split(' ');
-        for (let i = 0; i < splitStr.length; i++) {
-            
-            splitStr[i] = splitStr[i].charAt(0).toUpperCase() + splitStr[i].substring(1);     
-        }
-        return splitStr.join(' '); 
+    function titleCase(str: string) {
+        return str
+            .replace(/_/g, ' ')
+            .split(' ')
+            .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+            .join(' ');
     }
     const prettyUrl = (value: string): string => value.replace(/^https?:\/\//i, '').replace(/^www\./i, '');
     const isMapFallback = (imageUrl: string | undefined) =>
@@ -468,13 +467,13 @@ const TinderPage = () => {
                     <div className="relative z-40 w-full max-w-[1120px] px-4 mt-6 mb-12">
                         <div className="rounded-2xl border border-[#CCD5DA]/25 bg-neutral-900/55 p-2 shadow-lg backdrop-blur-sm">
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                                <div className="rounded-full border border-rose-400/35 bg-rose-500/12 px-4 py-2 text-sm font-semibold text-rose-100 text-center">
+                                <div className="rounded-full border border-rose-300/24 bg-rose-400/8 px-4 py-2 text-sm font-semibold text-rose-100 text-center">
                                     Left swipe: Skip this location
                                 </div>
-                                <div className="rounded-full border border-[#CCD5DA]/35 bg-[#CCD5DA]/12 px-4 py-2 text-sm font-semibold text-[#CCD5DA] text-center">
+                                <div className="rounded-full border border-cyan-200/24 bg-cyan-300/8 px-4 py-2 text-sm font-semibold text-cyan-50 text-center">
                                     Use sidebar to open routes
                                 </div>
-                                <div className="rounded-full border border-[#FFBF65]/40 bg-[#FFBF65]/12 px-4 py-2 text-sm font-semibold text-[#FFBF65] text-center">
+                                <div className="rounded-full border border-teal-300/24 bg-teal-300/8 px-4 py-2 text-sm font-semibold text-teal-50 text-center">
                                     Right swipe: Add to favorites
                                 </div>
                             </div>
@@ -516,7 +515,7 @@ const TinderPage = () => {
                                         titleClassName='text-white'
                                     >
                                         <div className="space-y-4">
-                                            <div className="bg-white/10 p-5 rounded-xl border border-cyan-200/20 flex items-center gap-5 min-h-[182px]">
+                                            <div className="bg-[linear-gradient(135deg,rgba(15,23,42,0.56),rgba(8,145,178,0.12),rgba(88,28,135,0.10))] p-5 rounded-xl border border-cyan-200/20 flex items-center gap-5 min-h-[182px]">
                                                 <div className="flex-1 min-w-0">
                                                     <p className="text-white text-sm leading-relaxed"><strong>Address:</strong> {currentBusiness.address || 'N/A'}</p>
                                                     <p className="text-white text-sm leading-relaxed"><strong>Distance:</strong> {(currentBusiness.distance_meters / 1609.34).toFixed(2)} miles</p>
@@ -550,7 +549,7 @@ const TinderPage = () => {
                                                     />
                                                     {isMapFallback(currentBusiness.imageUrl) && (
                                                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                                            <MapPin size={30} strokeWidth={2.4} className="text-cyan-200 drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)]" />
+                                                            <MapPin size={30} strokeWidth={2.4} className="text-cyan-100 drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)]" />
                                                         </div>
                                                     )}
                                                 </div>
@@ -602,7 +601,7 @@ const TinderPage = () => {
                     >
                         <HeartPlus 
                             size={120}
-                            className="text-[#2ecc71] drop-shadow-lg"
+                            className="text-green-500 drop-shadow-lg"
                         />
                     </motion.button>
                 </div>
@@ -614,7 +613,7 @@ const TinderPage = () => {
                             animate={{ x: 0 }}
                             exit={{ x: '100%' }}
                             transition={{ duration: 0.3 }}
-                            className="fixed top-28 bottom-2 right-2 z-[1500] w-[360px] rounded-2xl border border-[#FD8973]/40 bg-neutral-900/90 p-4 shadow-2xl backdrop-blur-xl"
+                            className="fixed top-28 bottom-2 right-2 z-[1500] w-[360px] rounded-2xl border border-cyan-100/14 bg-slate-950/88 p-4 shadow-2xl backdrop-blur-xl"
                         >
                             <div className="mb-3 flex items-center justify-between border-b border-white/10 pb-2">
                                 <h3 className="text-[#FD8973] text-lg font-semibold">All Favorited Locations</h3>

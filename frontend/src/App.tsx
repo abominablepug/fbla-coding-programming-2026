@@ -19,6 +19,7 @@ import JobProfile from "./pages/jobProfile";
 import AdminDashboard from "./pages/adminDashboard";
 import EventsBoard from "./pages/events";
 import Profile from "./pages/profile";
+import BusinessProfile from "./pages/businessProfile";
 import ThemeToggle from "./components/ThemeToggle";
 
 
@@ -44,6 +45,7 @@ function App() {
 				<Route path="/reset-password" element={<ResetPassword />} />
 				<Route path="/jobs/profile" element={<JobProfile />} />
 				<Route path="/jobs/finder" element={<JobFinder />} />
+				<Route path="/business/profile" element={<BusinessProfile />} />
 				<Route path="/business/dashboard" element={<BusinessDashboard />} />
 				<Route path="/business/jobs/new" element={<BusinessJobManager />} />
 				<Route path="/business/jobs/:jobId" element={<BusinessJobManager />} />

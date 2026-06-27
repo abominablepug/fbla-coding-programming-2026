@@ -249,6 +249,15 @@ const BusinessDashboard = () => {
     }
   };
 
+  const formatDateForInput = (dateStr?: string) => {
+    if (!dateStr) return '';
+    if (dateStr.length === 16 && !dateStr.includes('Z')) return dateStr;
+    const d = new Date(dateStr);
+    if (Number.isNaN(d.getTime())) return '';
+    const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+    return local.toISOString().slice(0, 16);
+  };
+
   const handleSaveEvent = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingEvent?.title || !editingEvent?.start_time || !editingEvent?.end_time) return;
@@ -516,7 +525,7 @@ const BusinessDashboard = () => {
                     <label>Start Time *</label>
                     <input
                       type="datetime-local"
-                      value={editingEvent?.start_time ? new Date(editingEvent.start_time).toISOString().slice(0, 16) : ''}
+                      value={formatDateForInput(editingEvent?.start_time)}
                       onChange={(e) => setEditingEvent({ ...editingEvent, start_time: e.target.value })}
                       required
                     />
@@ -525,7 +534,7 @@ const BusinessDashboard = () => {
                     <label>End Time *</label>
                     <input
                       type="datetime-local"
-                      value={editingEvent?.end_time ? new Date(editingEvent.end_time).toISOString().slice(0, 16) : ''}
+                      value={formatDateForInput(editingEvent?.end_time)}
                       onChange={(e) => setEditingEvent({ ...editingEvent, end_time: e.target.value })}
                       required
                     />

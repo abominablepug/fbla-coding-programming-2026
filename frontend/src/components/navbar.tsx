@@ -23,7 +23,6 @@ const Navbar: React.FC<NavBarProps> = ({ page, children, className = ""}) => {
 	const width = useTransform(scrollY, [0, 100], ["100%", "98%"]);
 	const borderRadius = useTransform(scrollY, [0, 100], ["0px", "40px"]);
 	const marginTop = useTransform(scrollY, [0, 100], ["0px", "12px"]);
-	const bgColor = useTransform(scrollY, [0, 100], ["rgba(23, 23, 23, 1)", "rgba(30, 30, 30, 0.7)"]);
     const authBaseUrl = import.meta.env.VITE_AUTH_BASE_URL || 'http://localhost:5173';
 
     useEffect(() => {
@@ -63,7 +62,7 @@ const Navbar: React.FC<NavBarProps> = ({ page, children, className = ""}) => {
 
     return (
         <div className="fixed z-50 w-full top-0 pointer-events-none flex justify-center">
-            <motion.div style={{ width, borderRadius, marginTop, backgroundColor: bgColor }} className="px-3 sm:px-4 flex items-center justify-between shadow-neutral-700 backdrop-blur-md pointer-events-auto shadow-md">
+            <motion.div style={{ width, borderRadius, marginTop }} className="px-3 sm:px-4 flex items-center justify-between bg-neutral-950/90 border-b border-cyan-200/10 shadow-[0_14px_45px_rgba(0,0,0,0.28)] light:shadow-[0_14px_40px_rgba(15,23,42,0.12)] backdrop-blur-md pointer-events-auto">
                 <nav className="py-2 sm:py-2.5 px-1 sm:px-2 w-full flex items-center relative">
                     <span
                         style={{ fontFamily: 'var(--font-brand)' }}
@@ -73,9 +72,9 @@ const Navbar: React.FC<NavBarProps> = ({ page, children, className = ""}) => {
                             <img
                                 src={luminxLogo}
                                 alt="LuminX logo"
-                                className="h-9 w-9 scale-115 object-contain drop-shadow-[0_0_12px_rgba(56,189,248,0.42)] sm:h-10 sm:w-10"
+                                className="h-9 w-9 scale-115 object-contain drop-shadow-[0_0_12px_rgba(103,232,249,0.42)] sm:h-10 sm:w-10"
                             />
-                            <span className="bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent drop-shadow-[0_0_8px_rgba(56,189,248,0.42)]">
+                            <span className="bg-gradient-to-r from-cyan-200 via-teal-300 to-purple-400 bg-clip-text text-transparent drop-shadow-[0_0_10px_rgba(103,232,249,0.30)]">
                                 LuminX
                             </span>
                         </Link>
@@ -95,7 +94,7 @@ const Navbar: React.FC<NavBarProps> = ({ page, children, className = ""}) => {
                         {showHomeShortcut && (
                             <Link
                                 to={homePath}
-                                className="pointer-events-auto inline-flex shrink-0 items-center justify-center rounded-full bg-blue-400 p-1.5 text-white shadow-lg transition-all duration-200 hover:bg-sky-400"
+                                className="pointer-events-auto inline-flex shrink-0 items-center justify-center rounded-full bg-cyan-50/6 p-1.5 text-cyan-50 border border-cyan-200/18 transition-all duration-200 hover:bg-cyan-50/10 hover:border-cyan-200/36"
                                 aria-label="Home"
                                 title="Home"
                             >
@@ -104,8 +103,8 @@ const Navbar: React.FC<NavBarProps> = ({ page, children, className = ""}) => {
                         )}
                         {isAuthenticated && (
                             <Link
-                                to="/profile"
-                                className="pointer-events-auto inline-flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-md border border-cyan-200/20 bg-cyan-50/6 text-cyan-50 shadow-md shadow-black/20 transition-all duration-200 hover:border-cyan-200/40 hover:bg-cyan-50/10"
+                                to={userType === 'business' ? '/business/profile' : '/profile'}
+                                className="pointer-events-auto inline-flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-md border border-cyan-200/18 bg-cyan-50/6 text-cyan-50 transition-all duration-200 hover:border-cyan-200/36 hover:bg-cyan-50/10"
                                 aria-label="Open profile settings"
                                 title="Profile settings"
                             >

@@ -35,6 +35,7 @@ interface ProfileUser {
   email: string;
   profile_picture?: string;
   theme_mode: ThemeMode;
+  user_type?: 'customer' | 'business';
   preferences?: Record<string, number | string>;
 }
 
@@ -128,7 +129,11 @@ const dedupeLocations = (locations: Location[]) => {
   });
 };
 
-const categoryLabel = (loc: Location) => loc.categories?.[0] || 'Local place';
+const categoryLabel = (loc: Location) => {
+  const cat = loc.categories?.[0];
+  if (!cat) return 'Local place';
+  return cat.replace(/_/g, ' ').split(' ').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+};
 
 const buildAiSuggestions = (favorites: Location[], visits: Location[]) => {
   const favoriteIds = new Set(favorites.map((loc) => loc.lid));
@@ -695,12 +700,18 @@ const Profile = () => {
     return <div className="min-h-screen bg-neutral-900 text-white flex items-center justify-center">Loading profile...</div>;
   }
 
+  const isBusiness = user.user_type === 'business';
+
   return (
     <Body>
       <Navbar page="Profile">
-        <Links link="/map">Map <MapPin size={17} /></Links>
-        <Links link="/discount">Coupons <TicketPercent size={17} /></Links>
-        <Links link="/reviews">Reviews <Star size={17} /></Links>
+        {!isBusiness && (
+          <>
+            <Links link="/map">Map <MapPin size={17} /></Links>
+            <Links link="/discount">Coupons <TicketPercent size={17} /></Links>
+            <Links link="/reviews">Reviews <Star size={17} /></Links>
+          </>
+        )}
       </Navbar>
       
 
@@ -731,7 +742,7 @@ const Profile = () => {
                 </div>
         )}
         <section className="overflow-hidden rounded-lg border border-cyan-200/16 bg-neutral-950/78 shadow-2xl shadow-black/25 backdrop-blur-xl light:bg-white/75">
-          <div className="grid gap-0 lg:grid-cols-[0.85fr_1.15fr]">
+          <div className={`grid gap-0 ${!isBusiness ? 'lg:grid-cols-[0.85fr_1.15fr]' : 'lg:grid-cols-1'}`}>
             <div className="border-b border-white/10 p-5 lg:border-b-0 lg:border-r">
               <div className="flex items-center gap-4">
                 <img
@@ -754,18 +765,20 @@ const Profile = () => {
                     </button>
 						    	</div>
               </div>
-              <div className="mt-5 grid grid-cols-3 gap-2">
-                {[
-                  ['Favorites', favorites.length],
-                  ['Visits', visited.length],
-                  ['Coupons', savedCoupons.length],
-                ].map(([label, value]) => (
-                  <div key={label} className="rounded-lg border border-white/10 bg-white/5 p-3 text-center">
-                    <p className="text-xl font-bold text-cyan-200">{value}</p>
-                    <p className="text-[11px] uppercase tracking-wide text-gray-400">{label}</p>
-                  </div>
-                ))}
-              </div>
+              {!isBusiness && (
+                <div className="mt-5 grid grid-cols-3 gap-2">
+                  {[
+                    ['Favorites', favorites.length],
+                    ['Visits', visited.length],
+                    ['Coupons', savedCoupons.length],
+                  ].map(([label, value]) => (
+                    <div key={label} className="rounded-lg border border-white/10 bg-white/5 p-3 text-center">
+                      <p className="text-xl font-bold text-cyan-200">{value}</p>
+                      <p className="text-[11px] uppercase tracking-wide text-gray-400">{label}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
               <div className="mt-4 mb-4 rounded-lg border border-cyan-200/14 bg-white/5 p-3">
                 <div className="mb-2 flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
@@ -815,108 +828,112 @@ const Profile = () => {
                   </button>
                 </div>
             </div>
-            <div className="p-5">
+            {!isBusiness && (
+              <div className="p-5">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.22em] text-cyan-200/70">Location Overview</p>
+                    <h2 className="text-2xl font-bold text-white">Activity Orbit</h2>
+                  </div>
+                  <Map className="text-cyan-200" size={28} />
+                </div>
+                {allLocations.length === 0 ? (
+                  <div className="rounded-lg border border-dashed border-cyan-200/25 bg-white/5 p-6 text-center text-sm text-gray-300">
+                    Favorites and visits will appear here after you explore locations.
+                  </div>
+                ) : (
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {dedupeLocations([...favorites.slice(0, 4), ...visited.slice(0, 4)]).slice(0, 6).map((loc, index) => (
+                      <div
+                        key={`${loc.lid}-${index}`}
+                        className="relative overflow-hidden rounded-lg border border-white/10 bg-white/5 p-3 transition hover:border-cyan-200/30 hover:bg-white/8"
+                      >
+                        <div className="absolute right-3 top-3 h-8 w-8 rounded-md border border-cyan-200/20 bg-cyan-300/10 text-center text-xs font-bold leading-8 text-cyan-200">
+                          {index + 1}
+                        </div>
+                        <p className="pr-12 text-sm font-semibold text-white">{loc.name}</p>
+                        <p className="pr-12 mt-1 line-clamp-2 text-xs text-gray-400">{loc.address || 'No address saved'}</p>
+                        <div className="mt-3 flex flex-wrap gap-1.5 text-[10px]">
+                          {favorites.some((fav) => fav.lid === loc.lid) && (
+                            <span className="inline-flex items-center gap-1 rounded-md bg-cyan-500/15 px-2 py-1 text-cyan-200">
+                              <Heart size={12} /> Favorite
+                            </span>
+                          )}
+                          {visited.some((visit) => visit.lid === loc.lid) && (
+                            <span className="inline-flex items-center gap-1 rounded-md bg-purple-400/10 px-2 py-1 text-purple-200">
+                              <Route size={12} /> Visited
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </section>
+
+        {!isBusiness && (
+          <section className="grid \">
+
+            <div className="rounded-lg border border-cyan-200/16 bg-neutral-950/72 p-5 backdrop-blur-xl light:bg-white/70">
               <div className="mb-4 flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.22em] text-cyan-200/70">Location Overview</p>
-                  <h2 className="text-2xl font-bold text-white">Activity Orbit</h2>
+                <div className="flex items-center gap-2">
+                  <FileText className="text-cyan-200" />
+                  <h2 className="text-xl font-bold text-white">Report Builder</h2>
                 </div>
-                <Map className="text-cyan-200" size={28} />
+                <span className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-[10px] uppercase tracking-wide text-gray-300">
+                  PDF export
+                </span>
               </div>
-              {allLocations.length === 0 ? (
-                <div className="rounded-lg border border-dashed border-cyan-200/25 bg-white/5 p-6 text-center text-sm text-gray-300">
-                  Favorites and visits will appear here after you explore locations.
-                </div>
-              ) : (
-                <div className="grid gap-3 md:grid-cols-2">
-                  {dedupeLocations([...favorites.slice(0, 4), ...visited.slice(0, 4)]).slice(0, 6).map((loc, index) => (
-                    <div
-                      key={`${loc.lid}-${index}`}
-                      className="relative overflow-hidden rounded-lg border border-white/10 bg-white/5 p-3 transition hover:border-cyan-200/30 hover:bg-white/8"
-                    >
-                      <div className="absolute right-3 top-3 h-8 w-8 rounded-md border border-cyan-200/20 bg-cyan-300/10 text-center text-xs font-bold leading-8 text-cyan-200">
-                        {index + 1}
-                      </div>
-                      <p className="pr-12 text-sm font-semibold text-white">{loc.name}</p>
-                      <p className="mt-1 line-clamp-2 text-xs text-gray-400">{loc.address || 'No address saved'}</p>
-                      <div className="mt-3 flex flex-wrap gap-1.5 text-[10px]">
-                        {favorites.some((fav) => fav.lid === loc.lid) && (
-                          <span className="inline-flex items-center gap-1 rounded-md bg-cyan-500/15 px-2 py-1 text-cyan-200">
-                            <Heart size={12} /> Favorite
-                          </span>
-                        )}
-                        {visited.some((visit) => visit.lid === loc.lid) && (
-                          <span className="inline-flex items-center gap-1 rounded-md bg-purple-400/10 px-2 py-1 text-purple-200">
-                            <Route size={12} /> Visited
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </section>
-
-        <section className="grid \">
-
-          <div className="rounded-lg border border-cyan-200/16 bg-neutral-950/72 p-5 backdrop-blur-xl light:bg-white/70">
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
-                <FileText className="text-cyan-200" />
-                <h2 className="text-xl font-bold text-white">Report Builder</h2>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4">
+                {(Object.keys(options) as Array<keyof ReportOptions>).map((key) => (
+                  <label key={key} className="flex cursor-pointer items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-gray-200 transition hover:border-cyan-200/30">
+                    <input
+                      type="checkbox"
+                      checked={options[key]}
+                      onChange={() => toggleOption(key)}
+                      className="h-4 w-4 accent-cyan-500"
+                    />
+                    <span className="capitalize">{key.replace(/([A-Z])/g, ' $1')}</span>
+                  </label>
+                ))}
               </div>
-              <span className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-[10px] uppercase tracking-wide text-gray-300">
-                PDF export
-              </span>
-            </div>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4">
-              {(Object.keys(options) as Array<keyof ReportOptions>).map((key) => (
-                <label key={key} className="flex cursor-pointer items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-gray-200 transition hover:border-cyan-200/30">
-                  <input
-                    type="checkbox"
-                    checked={options[key]}
-                    onChange={() => toggleOption(key)}
-                    className="h-4 w-4 accent-cyan-500"
-                  />
-                  <span className="capitalize">{key.replace(/([A-Z])/g, ' $1')}</span>
-                </label>
-              ))}
-            </div>
-            <textarea
-              value={customNote}
-              onChange={(event) => setCustomNote(event.target.value)}
-              placeholder="Optional note for the report"
-              className="mt-3 min-h-20 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-cyan-300"
-            />
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              <select
-                value={routeFromId || ''}
-                onChange={(event) => setRouteFromId(Number(event.target.value))}
-                className="rounded-lg border border-white/10 bg-white/5 px-2 py-2 text-xs text-white"
+              <textarea
+                value={customNote}
+                onChange={(event) => setCustomNote(event.target.value)}
+                placeholder="Optional note for the report"
+                className="mt-3 min-h-20 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-cyan-300"
+              />
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <select
+                  value={routeFromId || ''}
+                  onChange={(event) => setRouteFromId(Number(event.target.value))}
+                  className="rounded-lg border border-white/10 bg-white/5 px-2 py-2 text-xs text-white"
+                >
+                  {allLocations.map((loc) => <option key={`from-${loc.lid}`} value={loc.lid}>{loc.name}</option>)}
+                </select>
+                <select
+                  value={routeToId || ''}
+                  onChange={(event) => setRouteToId(Number(event.target.value))}
+                  className="rounded-lg border border-white/10 bg-white/5 px-2 py-2 text-xs text-white"
+                >
+                  {allLocations.map((loc) => <option key={`to-${loc.lid}`} value={loc.lid}>{loc.name}</option>)}
+                </select>
+              </div>
+              <button
+                type="button"
+                onClick={downloadReport}
+                disabled={generatingReport}
+                className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-cyan-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-cyan-400 disabled:opacity-60"
               >
-                {allLocations.map((loc) => <option key={`from-${loc.lid}`} value={loc.lid}>{loc.name}</option>)}
-              </select>
-              <select
-                value={routeToId || ''}
-                onChange={(event) => setRouteToId(Number(event.target.value))}
-                className="rounded-lg border border-white/10 bg-white/5 px-2 py-2 text-xs text-white"
-              >
-                {allLocations.map((loc) => <option key={`to-${loc.lid}`} value={loc.lid}>{loc.name}</option>)}
-              </select>
+                <Download size={17} />
+                {generatingReport ? 'Generating PDF...' : 'Download PDF Report'}
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={downloadReport}
-              disabled={generatingReport}
-              className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-cyan-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-cyan-400 disabled:opacity-60"
-            >
-              <Download size={17} />
-              {generatingReport ? 'Generating PDF...' : 'Download PDF Report'}
-            </button>
-          </div>
-        </section>
+          </section>
+        )}
       </main>
     </Body>
   );
