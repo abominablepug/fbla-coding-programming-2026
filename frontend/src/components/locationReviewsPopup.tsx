@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Card from './card';
-import { getSampleGoogleReviewsForLocation } from '../utils/googleReviews';
 import { resolveLocationId } from '../utils/locationResolver';
 
 interface BackendReview {
@@ -46,10 +45,9 @@ const LocationReviewsPopup = ({
   const [resolvedLocationId, setResolvedLocationId] = useState<number | null>(location.lid && location.lid > 0 ? location.lid : null);
   const [communityError, setCommunityError] = useState<string>('');
 
-  const googleReviews = useMemo(
-    () => getSampleGoogleReviewsForLocation({ name: location.name, address: location.address, lid: location.lid }),
-    [location.name, location.address, location.lid]
-  );
+  const [googleReviews, setGoogleReviews] = useState<any[]>([]);
+  const [loadingGoogle, setLoadingGoogle] = useState(false);
+  const [googleError, setGoogleError] = useState<string>('');
 
   useEffect(() => {
     setResolvedLocationId(location.lid && location.lid > 0 ? location.lid : null);
@@ -81,7 +79,7 @@ const LocationReviewsPopup = ({
       if (!targetLocationId) {
         setCommunityReviews([]);
         setCommunityError('Unable to resolve this location in the database yet.');
-        return;
+        return null;
       }
 
       const res = await fetch(`http://localhost:5173/rate/loc/${targetLocationId}/reviews`, {
@@ -90,7 +88,7 @@ const LocationReviewsPopup = ({
       if (!res.ok) {
         setCommunityReviews([]);
         setCommunityError('Unable to load community reviews right now.');
-        return;
+        return targetLocationId;
       }
       const data = await res.json();
       const reviews = Array.isArray(data?.reviews) ? data.reviews : [];
@@ -111,11 +109,37 @@ const LocationReviewsPopup = ({
           }))
           .filter((review: BackendReview) => review.content.length > 0)
       );
+      return targetLocationId;
     } catch {
       setCommunityReviews([]);
       setCommunityError('Unable to load community reviews right now.');
+      return targetLocationId;
     } finally {
       setLoadingCommunity(false);
+    }
+  };
+
+  const loadGoogleReviews = async (targetLocationId: number | null) => {
+    setLoadingGoogle(true);
+    setGoogleError('');
+    try {
+      if (!targetLocationId) {
+        setGoogleReviews([]);
+        return;
+      }
+      const res = await fetch(`http://localhost:5173/loc/${targetLocationId}/google_reviews`, {
+        credentials: 'include',
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setGoogleReviews(data.reviews || []);
+      } else {
+        setGoogleError('Unable to load Google reviews.');
+      }
+    } catch {
+      setGoogleError('Unable to load Google reviews.');
+    } finally {
+      setLoadingGoogle(false);
     }
   };
 
@@ -124,7 +148,9 @@ const LocationReviewsPopup = ({
       const nextOpen = !prev;
       if (nextOpen) {
         onOpen?.();
-        void loadCommunityReviews();
+        void loadCommunityReviews().then((id) => {
+          void loadGoogleReviews(id);
+        });
       }
       return nextOpen;
     });
@@ -166,7 +192,11 @@ const LocationReviewsPopup = ({
                 <div className="max-h-[62vh] overflow-y-auto space-y-4 pr-1">
                   <div>
                     <h3 className="mb-2 text-sm font-semibold text-cyan-300">Google Reviews</h3>
-                    {googleReviews.length === 0 ? (
+                    {loadingGoogle ? (
+                      <p className="text-sm text-gray-300">Loading Google reviews...</p>
+                    ) : googleError ? (
+                      <p className="text-sm text-gray-300">{googleError}</p>
+                    ) : googleReviews.length === 0 ? (
                       <p className="text-sm text-gray-300">No Google reviews for this location yet.</p>
                     ) : (
                       <div className="space-y-3">

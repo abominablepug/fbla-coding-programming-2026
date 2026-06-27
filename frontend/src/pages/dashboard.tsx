@@ -9,12 +9,10 @@ import { enqueueAlert } from '../components/alerts';
 import LocalAiChatPopup from '../components/localAiChatPopup';
 import {
 	fetchGooglePlaceDetails,
-	formatBusinessHoursForDisplay,
 	serializeBusinessHours,
 	serializeSocials,
 	type SocialLink,
 } from '../utils/googlePlaceDetails';
-import { getSampleGoogleReviewsForLocation } from '../utils/googleReviews';
 import { resolveLocationId } from '../utils/locationResolver';
 
 interface Location {
@@ -289,18 +287,10 @@ const Dashboard = () => {
 	const [aiReviewModalResolvedLid, setAiReviewModalResolvedLid] = useState<number | null>(null);
 	const [showOnboarding, setShowOnboarding] = useState(false);
 	const [onboardingStepIndex, setOnboardingStepIndex] = useState(0);
+	const [aiReviewModalGoogleReviews, setAiReviewModalGoogleReviews] = useState<any[]>([]);
+	const [aiReviewModalGoogleLoading, setAiReviewModalGoogleLoading] = useState(false);
+	const [aiReviewModalGoogleError, setAiReviewModalGoogleError] = useState('');
 	const [showScrollTopButton, setShowScrollTopButton] = useState(false);
-	const aiReviewModalGoogleReviews = useMemo(
-		() =>
-			aiReviewModalLocation
-				? getSampleGoogleReviewsForLocation({
-						lid: aiReviewModalLocation.lid,
-						name: aiReviewModalLocation.name,
-						address: aiReviewModalLocation.address,
-				  })
-				: [],
-		[aiReviewModalLocation]
-	);
 	const onboardingStep = APP_ONBOARDING_STEPS[onboardingStepIndex] || APP_ONBOARDING_STEPS[0];
 	
 	const fetchFavoriteLocations = async () => {
@@ -896,6 +886,24 @@ const Dashboard = () => {
 				}))
 				.filter((review: BackendReview) => review.content.length > 0);
 			setAiReviewModalReviews(cleaned);
+			
+			setAiReviewModalGoogleLoading(true);
+			setAiReviewModalGoogleError('');
+			try {
+				const googleRes = await fetch(`http://localhost:5173/loc/${resolvedLid}/google_reviews`, {
+					credentials: 'include',
+				});
+				if (googleRes.ok) {
+					const googleData = await googleRes.json();
+					setAiReviewModalGoogleReviews(googleData.reviews || []);
+				} else {
+					setAiReviewModalGoogleError('Unable to load Google reviews.');
+				}
+			} catch {
+				setAiReviewModalGoogleError('Unable to load Google reviews.');
+			} finally {
+				setAiReviewModalGoogleLoading(false);
+			}
 		} catch (error) {
 			console.error('Error loading AI location reviews:', error);
 			setAiReviewModalReviews([]);
@@ -1584,7 +1592,11 @@ const Dashboard = () => {
 									<div className="max-h-[62vh] overflow-y-auto space-y-4 pr-1">
 										<div>
 											<h3 className="mb-2 text-sm font-semibold text-cyan-300">Google Reviews</h3>
-											{aiReviewModalGoogleReviews.length === 0 ? (
+											{aiReviewModalGoogleLoading ? (
+												<p className="text-sm text-gray-300">Loading Google reviews...</p>
+											) : aiReviewModalGoogleError ? (
+												<p className="text-sm text-gray-300">{aiReviewModalGoogleError}</p>
+											) : aiReviewModalGoogleReviews.length === 0 ? (
 												<p className="text-sm text-gray-300">No Google reviews for this location yet.</p>
 											) : (
 												<div className="space-y-3">

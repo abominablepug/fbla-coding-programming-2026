@@ -8,7 +8,6 @@ import Links from '../components/links';
 import Card from '../components/card';
 import LocalAiChatPopup from '../components/localAiChatPopup';
 import { enqueueAlert } from '../components/alerts';
-import { getSampleGoogleReviewsForLocation } from '../utils/googleReviews';
 import { resolveLocationId } from '../utils/locationResolver';
 
 interface Location {
@@ -159,17 +158,9 @@ const Coupons = () => {
   const scrollToSection = (ref: React.RefObject<HTMLDivElement | null>) => {
     ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
-  const reviewModalGoogleReviews = useMemo(
-    () =>
-      reviewModalLocation
-        ? getSampleGoogleReviewsForLocation({
-            lid: reviewModalLocation.lid,
-            name: reviewModalLocation.name,
-            address: reviewModalLocation.address,
-          })
-        : [],
-    [reviewModalLocation]
-  );
+  const [reviewModalGoogleReviews, setReviewModalGoogleReviews] = useState<any[]>([]);
+  const [reviewModalGoogleLoading, setReviewModalGoogleLoading] = useState(false);
+  const [reviewModalGoogleError, setReviewModalGoogleError] = useState('');
 
   const fetchFoursquareSnapshot = async (loc: Location): Promise<FsqSnapshot> => {
     if (!FOURSQUARE_API_KEY) return { rating: null, tipCount: 0, topTip: null };
@@ -270,6 +261,24 @@ const Coupons = () => {
         }))
         .filter((review) => review.content.length > 0);
       setReviewModalReviews(cleaned);
+      
+      setReviewModalGoogleLoading(true);
+      setReviewModalGoogleError('');
+      try {
+        const googleRes = await fetch(`http://localhost:5173/loc/${resolvedLid}/google_reviews`, {
+          credentials: 'include',
+        });
+        if (googleRes.ok) {
+          const googleData = await googleRes.json();
+          setReviewModalGoogleReviews(googleData.reviews || []);
+        } else {
+          setReviewModalGoogleError('Unable to load Google reviews.');
+        }
+      } catch {
+        setReviewModalGoogleError('Unable to load Google reviews.');
+      } finally {
+        setReviewModalGoogleLoading(false);
+      }
     } finally {
       setReviewModalLoading(false);
     }
@@ -912,7 +921,11 @@ const Coupons = () => {
             <div className="space-y-4 max-h-[62vh] overflow-y-auto pr-1">
               <div>
                 <h3 className="mb-2 text-sm font-semibold text-cyan-300">Google Reviews</h3>
-                {reviewModalGoogleReviews.length === 0 ? (
+                {reviewModalGoogleLoading ? (
+                  <p className="text-sm text-gray-300">Loading Google reviews...</p>
+                ) : reviewModalGoogleError ? (
+                  <p className="text-sm text-gray-300">{reviewModalGoogleError}</p>
+                ) : reviewModalGoogleReviews.length === 0 ? (
                   <p className="text-sm text-gray-300">No Google reviews for this location yet.</p>
                 ) : (
                   <div className="space-y-3">

@@ -201,3 +201,53 @@ def get_visited_locations():
                 'visited_at': v.timestamp.isoformat()  # ISO 8601 format for frontend parsing
             })
     return jsonify(visited_data), 200
+
+@loc_bp.route('/<int:location_id>/google_reviews', methods=['GET'])
+def get_google_reviews(location_id):
+    import requests
+    import os
+    location = Location.query.get(location_id)
+    if not location:
+        return jsonify({'message': 'Location not found'}), 404
+        
+    google_maps_api_key = os.getenv('GOOGLE_MAPS_API_KEY')
+    if not google_maps_api_key:
+        return jsonify({'reviews': []}), 200
+        
+    query = location.name
+    if location.address:
+        query += f" {location.address}"
+        
+    headers = {
+        'Content-Type': 'application/json',
+        'X-Goog-Api-Key': google_maps_api_key,
+        'X-Goog-FieldMask': 'places.reviews'
+    }
+    
+    payload = {
+        "textQuery": query,
+        "languageCode": "en",
+        "maxResultCount": 1
+    }
+    
+    try:
+        response = requests.post("https://places.googleapis.com/v1/places:searchText", headers=headers, json=payload, timeout=8)
+        if response.status_code == 200:
+            data = response.json()
+            places = data.get('places', [])
+            if places and len(places) > 0:
+                reviews = places[0].get('reviews', [])
+                formatted_reviews = []
+                # Just get a couple recent ones
+                for r in reviews[:2]:
+                    formatted_reviews.append({
+                        'name': r.get('authorAttribution', {}).get('displayName', 'Anonymous'),
+                        'star_rating': r.get('rating', 5),
+                        'content': r.get('originalText', {}).get('text', '') or r.get('text', {}).get('text', ''),
+                        'relative_time': r.get('relativePublishTimeDescription', 'Recently')
+                    })
+                return jsonify({'reviews': formatted_reviews}), 200
+    except requests.RequestException:
+        pass
+        
+    return jsonify({'reviews': []}), 200

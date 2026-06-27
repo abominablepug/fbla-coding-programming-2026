@@ -8,7 +8,6 @@ import Card from '../components/card';
 import { enqueueAlert } from '../components/alerts';
 import LocalAiChatPopup from '../components/localAiChatPopup';
 import { POST as getAiChatResponse } from '../utils/aiChatResponse';
-import googleSampleReviews from '../data/googleSampleReviews.json';
 import {
   fetchGooglePlaceDetails,
   formatBusinessHoursForDisplay,
@@ -74,7 +73,7 @@ const LocationDetailBlock = ({ loc }: { loc: Location }) => {
           className="text-cyan-300 hover:text-cyan-200 underline break-all"
           onClick={(e) => e.stopPropagation()}
         >
-          Open
+          Available
         </a>
       ),
     });
@@ -83,7 +82,9 @@ const LocationDetailBlock = ({ loc }: { loc: Location }) => {
   if (loc.categories && loc.categories.length > 0) {
     details.push({
       label: 'Categories',
-      value: loc.categories.map((cat) => cat.charAt(0).toUpperCase() + cat.slice(1)).join(', '),
+      value: loc.categories.map((cat) => 
+        cat.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+      ).join(', '),
     });
   }
 
@@ -161,35 +162,17 @@ const ReviewsPage = () => {
     () => allReviewableLocations.find((loc) => loc.lid === selectedLocationId) || null,
     [allReviewableLocations, selectedLocationId]
   );
-  const sampleGoogleReviewsForSelected = useMemo(() => {
-    if (!selectedLocation) return [] as SampleGoogleReview[];
-    const base = googleSampleReviews as SampleGoogleReview[];
-    if (!Array.isArray(base) || base.length === 0) return [];
+  const [googleReviewsForSelected, setGoogleReviewsForSelected] = useState<SampleGoogleReview[]>([]);
+  const [loadingGoogleReviews, setLoadingGoogleReviews] = useState(false);
+  const [googleError, setGoogleError] = useState('');
 
-    const seedSource = `${selectedLocation.name}|${selectedLocation.address || ''}|${selectedLocation.lid}`;
-    const seed = seedSource.split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
-    const count = Math.min(4, base.length);
-    const selected: SampleGoogleReview[] = [];
-
-    for (let i = 0; i < count; i++) {
-      const idx = (seed + i * 3) % base.length;
-      const item = base[idx];
-      const variation = ((seed + i) % 3) - 1;
-      selected.push({
-        ...item,
-        star_rating: Math.max(3, Math.min(5, item.star_rating + variation)),
-      });
-    }
-
-    return selected;
-  }, [selectedLocation]);
   const sampleGoogleRating = useMemo(() => {
-    if (sampleGoogleReviewsForSelected.length === 0) return null;
+    if (googleReviewsForSelected.length === 0) return null;
     const avg =
-      sampleGoogleReviewsForSelected.reduce((sum, row) => sum + row.star_rating, 0) /
-      sampleGoogleReviewsForSelected.length;
+      googleReviewsForSelected.reduce((sum, row) => sum + row.star_rating, 0) /
+      googleReviewsForSelected.length;
     return avg;
-  }, [sampleGoogleReviewsForSelected]);
+  }, [googleReviewsForSelected]);
   const communityAverageRating = useMemo(() => {
     if (backendReviews.length === 0) return null;
     const avg = backendReviews.reduce((sum, review) => sum + review.star_rating, 0) / backendReviews.length;
@@ -349,6 +332,26 @@ const ReviewsPage = () => {
     }
   };
 
+  const loadGoogleReviews = async (locationId: number) => {
+    setLoadingGoogleReviews(true);
+    setGoogleError('');
+    try {
+      const res = await fetch(`http://localhost:5173/loc/${locationId}/google_reviews`, {
+        credentials: 'include',
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setGoogleReviewsForSelected(data.reviews || []);
+      } else {
+        setGoogleError('Unable to load Google reviews.');
+      }
+    } catch {
+      setGoogleError('Unable to load Google reviews.');
+    } finally {
+      setLoadingGoogleReviews(false);
+    }
+  };
+
   useEffect(() => {
     void fetchProfile();
     void fetchFavorites();
@@ -358,6 +361,7 @@ const ReviewsPage = () => {
   useEffect(() => {
     if (!selectedLocation) return;
     void fetchBackendReviews(selectedLocation.lid, user);
+    void loadGoogleReviews(selectedLocation.lid);
   }, [selectedLocation?.lid, user?.uid]);
 
   useEffect(() => {
@@ -619,11 +623,15 @@ const ReviewsPage = () => {
 
                   <div className="rounded-xl border border-white/10 bg-neutral-800/55 p-4">
                     <h3 className="text-cyan-300 font-semibold">Google Reviews</h3>
-                    {sampleGoogleReviewsForSelected.length === 0 ? (
-                      <p className="text-gray-400 text-sm mt-2">No sample Google reviews available.</p>
+                    {loadingGoogleReviews ? (
+                      <p className="text-gray-400 text-sm mt-2">Loading Google reviews...</p>
+                    ) : googleError ? (
+                      <p className="text-gray-400 text-sm mt-2">{googleError}</p>
+                    ) : googleReviewsForSelected.length === 0 ? (
+                      <p className="text-gray-400 text-sm mt-2">No Google reviews for this location yet.</p>
                     ) : (
                       <div className="mt-2 space-y-2 max-h-[260px] overflow-y-auto pr-1">
-                        {sampleGoogleReviewsForSelected.map((review, idx) => (
+                        {googleReviewsForSelected.map((review, idx) => (
                           <div key={`${review.name}-${idx}`} className="rounded-lg border border-white/10 p-3">
                             <p className="text-sm text-cyan-200">
                               {review.name}

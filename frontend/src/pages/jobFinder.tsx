@@ -34,7 +34,7 @@ const JobFinder = () => {
   // these again, even after a re-rank pulls a fresh list from the backend.
   const [decidedIds, setDecidedIds] = useState<Set<number>>(() => {
     try {
-      const stored = localStorage.getItem('bizmatch_decided_jobs');
+      const stored = localStorage.getItem('bizmatch_decided_jobs_v2');
       return stored ? new Set(JSON.parse(stored)) : new Set();
     } catch {
       return new Set();
@@ -184,7 +184,7 @@ const JobFinder = () => {
       const next = new Set(prev);
       next.add(currentJob.job_id);
       try {
-        localStorage.setItem('bizmatch_decided_jobs', JSON.stringify(Array.from(next)));
+        localStorage.setItem('bizmatch_decided_jobs_v2', JSON.stringify(Array.from(next)));
       } catch {}
       return next;
     });
@@ -205,6 +205,9 @@ const JobFinder = () => {
 
   const handleApplySkills = () => {
     setLoading(true);
+    // Clear decided IDs to allow re-evaluating jobs
+    setDecidedIds(new Set());
+    localStorage.removeItem('bizmatch_decided_jobs_v2');
     fetchJobs(userLoc, skills);
   };
 
