@@ -860,7 +860,7 @@ const Profile = () => {
                             </span>
                           )}
                           {visited.some((visit) => visit.lid === loc.lid) && (
-                            <span className="inline-flex items-center gap-1 rounded-md bg-purple-400/10 px-2 py-1 text-purple-200">
+                            <span className="inline-flex items-center gap-1 rounded-md bg-teal-400/10 px-2 py-1 text-teal-200">
                               <Route size={12} /> Visited
                             </span>
                           )}

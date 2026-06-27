@@ -463,9 +463,9 @@ const TinderPage = () => {
                         </motion.div>
                     )}
                 </AnimatePresence>
-                <div className="from-cyan-700/70 via-cyan-500/70 to-purple-400/70 z-10 pt-28 pb-32 h-screen flex flex-col items-center">
+                <div className="from-cyan-700/70 via-cyan-500/70 to-cyan-300/70 z-10 pt-28 pb-32 h-screen flex flex-col items-center">
                     <div className="relative z-40 w-full max-w-[1120px] px-4 mt-6 mb-12">
-                        <div className="rounded-2xl border border-[#CCD5DA]/25 bg-neutral-900/55 p-2 shadow-lg backdrop-blur-sm">
+                        <div className="rounded-2xl border border-[var(--app-text-muted)]/25 bg-neutral-900/55 p-2 shadow-lg backdrop-blur-sm">
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                                 <div className="rounded-full border border-rose-300/24 bg-rose-400/8 px-4 py-2 text-sm font-semibold text-rose-100 text-center">
                                     Left swipe: Skip this location
@@ -511,7 +511,7 @@ const TinderPage = () => {
                                             </div>
                                         }
                                         cardClassName="w-[1040px] max-w-[97vw]"
-                                        bgcolor="#003A6CFF"
+                                        bgcolor="var(--app-surface-strong)"
                                         titleClassName='text-white'
                                     >
                                         <div className="space-y-4">
@@ -583,7 +583,7 @@ const TinderPage = () => {
                             className="text-red-500 drop-shadow-lg"
                         />
                     </motion.button>
-                    <button className="px-4 py-4 rounded-full bg-[#FD8973] text-white max-w-fit text-md font-semibold transition-all hover:bg-[#fb5f43] shadow-lg" onClick={()=>setShowSidebar(!showSidebar)}>
+                    <button className="max-w-fit rounded-lg border border-cyan-100/18 bg-slate-950/72 px-4 py-4 text-md text-cyan-50 shadow-lg shadow-black/25 transition-all hover:border-cyan-100/32 hover:bg-slate-900/88" onClick={()=>setShowSidebar(!showSidebar)}>
                         Show Favorite Locations
                     </button>
                     <motion.button
@@ -616,7 +616,7 @@ const TinderPage = () => {
                             className="fixed top-28 bottom-2 right-2 z-[1500] w-[360px] rounded-2xl border border-cyan-100/14 bg-slate-950/88 p-4 shadow-2xl backdrop-blur-xl"
                         >
                             <div className="mb-3 flex items-center justify-between border-b border-white/10 pb-2">
-                                <h3 className="text-[#FD8973] text-lg font-semibold">All Favorited Locations</h3>
+                                <h3 className="text-[var(--app-accent-coral)] text-lg font-semibold">All Favorited Locations</h3>
                                 <button
                                     onClick={() => setShowSidebar(false)}
                                     className="h-7 w-7 rounded-full bg-white/5 text-neutral-300 hover:text-white hover:bg-white/10"
@@ -634,7 +634,7 @@ const TinderPage = () => {
                                     uniqueFavoriteLocations.map((loc, i) => (
                                         <div key={i} className="mb-3 rounded-xl border border-white/10 bg-neutral-800/55 p-3 hover:bg-neutral-800/80 transition-colors">
                                             <div className="flex-1 cursor-pointer " onClick={() => navigate(buildMapRouteUrl(loc))}>
-                                                <h4 className="text-[#FD8973] text-lg font-semibold">{loc.name}</h4>
+                                                <h4 className="text-[var(--app-accent-coral)] text-lg font-semibold">{loc.name}</h4>
                                                 <p className="text-gray-400 text-sm">{loc.address}</p>
                                                 {renderFavoriteDetails(loc)}
                                             </div>
@@ -669,7 +669,7 @@ const TinderPage = () => {
                                         className="mb-3 rounded-xl border border-white/10 bg-neutral-800/55 p-3 cursor-pointer hover:bg-neutral-800/80 transition-colors"
                                         onClick={() => navigate(buildMapRouteUrl(loc))}
                                     >
-                                        <h4 className="text-[#FD8973] text-lg font-semibold">{loc.name}</h4>
+                                        <h4 className="text-[var(--app-accent-coral)] text-lg font-semibold">{loc.name}</h4>
                                         <p className="text-gray-400 text-sm">{loc.address}</p>
                                         {renderFavoriteDetails(loc)}
                                         <div className="mt-2 flex justify-end" onClick={(e) => e.stopPropagation()}>

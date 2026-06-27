@@ -18,7 +18,7 @@ const Links: React.FC<LinkProps> = ({ title, children, link = "", className = ""
                 to={link.startsWith('/') ? link : `/${link}`}
                 onClick={onClick}
                 style={{ fontFamily: 'var(--font-link)' }}
-                className={`${linkClassName} flex shrink-0 items-center gap-1.5 pointer-events-auto rounded-full bg-blue-400 px-2 py-1 text-[10px] text-white shadow-lg transition-all duration-200 hover:bg-sky-400 sm:px-2.5 sm:py-1.5 sm:text-[11px] lg:hover:scale-[1.04]`}
+                className={`${linkClassName} flex shrink-0 items-center gap-0.5 pointer-events-auto rounded-full border-cyan-300/45 bg-teal-700 px-2 py-1 text-[8px] text-white shadow-md transition-all duration-200 hover:bg-cyan-500 sm:px-2.5 sm:py-1.5 sm:text-[11px] lg:hover:scale-[1.04]`}
             >
                         {title ? (
                             typeof title === 'string' ? (

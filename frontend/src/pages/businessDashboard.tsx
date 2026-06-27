@@ -621,7 +621,7 @@ const BusinessDashboard = () => {
                     <div className="job-info">
                       <p>Type: {ad.media_type}</p>
                       <span className={`status-badge ${ad.status}`}>{ad.status}</span>
-                      {ad.target_url && <a href={ad.target_url} target="_blank" rel="noopener noreferrer" style={{fontSize: '0.8em', color: '#4da6ff'}}>Link</a>}
+                      {ad.target_url && <a href={ad.target_url} target="_blank" rel="noopener noreferrer" style={{fontSize: '0.8em', color: 'var(--app-primary)'}}>Link</a>}
                     </div>
                     <div className="job-actions">
                       <button className="action-btn delete-btn" onClick={() => handleDeleteAd(ad.id)}>×</button>

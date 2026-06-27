@@ -16,17 +16,17 @@
   background: var(--bg-secondary, #1a1a2e);
   border-radius: 12px;
   padding: 2rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 12px 36px var(--app-shadow);
+  border: 1px solid var(--app-border);
 }
 
 /* Give each section its own accent so the page isn't all-blue */
 .dashboard-content > .dashboard-section:nth-of-type(1) {
-  border-left: 4px solid var(--accent-gold, #ffbf65);
+  border-left: 4px solid var(--accent-gold, var(--app-accent-gold));
 }
 
 .dashboard-content > .dashboard-section:nth-of-type(2) {
-  border-left: 4px solid var(--accent-coral, #fd8973);
+  border-left: 4px solid var(--accent-coral, var(--app-accent-coral));
 }
 
 .section-header {
@@ -35,7 +35,7 @@
   align-items: center;
   margin-bottom: 2rem;
   padding-bottom: 1rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  border-bottom: 1px solid var(--app-border);
 }
 
 .section-header h1,
@@ -44,11 +44,11 @@
 }
 
 .section-header h1 {
-  color: var(--accent-gold, #ffbf65);
+  color: var(--accent-gold, var(--app-accent-gold));
 }
 
 .section-header h2 {
-  color: var(--accent-coral, #fd8973);
+  color: var(--accent-coral, var(--app-accent-coral));
 }
 
 .section-header h1 {
@@ -69,7 +69,7 @@
   cursor: pointer;
   font-weight: 600;
   transition: all 0.3s;
-  color: white;
+  color: var(--app-on-accent);
 }
 
 .edit-btn {
@@ -81,12 +81,12 @@
 }
 
 .new-job-btn {
-  background: var(--accent-gold, #ffbf65);
-  color: #13181b;
+  background: var(--accent-gold, var(--app-accent-gold));
+  color: var(--app-on-gold);
 }
 
 .new-job-btn:hover {
-  background: #f0a93f;
+  background: var(--app-accent-gold-hover);
 }
 
 .profile-form {
@@ -110,9 +110,9 @@
 .form-group textarea,
 .form-group select {
   padding: 0.75rem;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid var(--app-input-border);
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--app-input-bg);
   color: var(--text-primary, #ffffff);
   font-size: 1rem;
   font-family: inherit;
@@ -124,7 +124,7 @@
 .form-group select:focus {
   outline: none;
   border-color: var(--primary-color, #0066cc);
-  background: rgba(255, 255, 255, 0.1);
+  background: color-mix(in srgb, var(--app-primary) 10%, var(--app-input-bg));
 }
 
 .form-row {
@@ -151,22 +151,22 @@
 }
 
 .btn-primary {
-  background: var(--accent-coral, #fd8973);
-  color: white;
+  background: var(--accent-coral, var(--app-accent-coral));
+  color: var(--app-on-accent);
 }
 
 .btn-primary:hover {
-  background: #fb5f43;
+  background: var(--app-accent-coral-hover);
 }
 
 .btn-secondary {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--app-surface-soft);
   color: var(--text-primary, #ffffff);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid var(--app-border);
 }
 
 .btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: color-mix(in srgb, var(--app-primary) 12%, var(--app-surface-soft));
 }
 
 .profile-view {
@@ -201,9 +201,9 @@
 
 .profile-grid div {
   padding: 1rem;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--app-surface-soft);
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--app-border);
 }
 
 .profile-grid strong {
@@ -247,15 +247,15 @@
   justify-content: space-between;
   align-items: center;
   padding: 1rem;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--app-surface-soft);
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--app-border);
   transition: all 0.3s;
 }
 
 .job-item:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.2);
+  background: color-mix(in srgb, var(--app-primary) 10%, var(--app-surface-soft));
+  border-color: var(--app-border-strong);
 }
 
 .job-info {
@@ -274,7 +274,7 @@
 }
 
 .job-salary {
-  color: #f0a93f;
+  color: var(--app-accent-gold-hover);
   font-weight: 600;
   margin: 0.25rem 0;
 }

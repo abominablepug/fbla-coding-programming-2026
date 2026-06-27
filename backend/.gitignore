@@ -8,7 +8,6 @@ __pycache__/
 .vscode/
 logs/
 *.log
-migrations/
 instance/
 *.sqlite3
 app/static/profile_pictures/*

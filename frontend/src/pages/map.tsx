@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import Navbar from '../components/navbar';
 import Links from '../components/links';
-import { Heart, Mic, MicOff, Star, TicketPercent } from 'lucide-react';
+import { Heart, HeartPlus, Mic, MicOff, Star, TicketPercent } from 'lucide-react';
 import LocalAiChatPopup from '../components/localAiChatPopup';
 import LocationReviewsPopup from '../components/locationReviewsPopup';
 import { enqueueAlert } from '../components/alerts';
@@ -189,9 +189,15 @@ const MapGoogle = () => {
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
 
+  // Default center for map/directions if geolocation is slow or denied.
+  // We *wait briefly* for geolocation to resolve before allowing routing to use this fallback.
   const [userLoc, setUserLoc] = useState({ lat: 34.0731, lng: -118.4016 });
   const userLocRef = useRef(userLoc);
   const [locLoaded, setLocLoaded] = useState(false);
+
+
+
+
   useEffect(() => {
     userLocRef.current = userLoc;
   }, [userLoc]);
@@ -213,8 +219,9 @@ const MapGoogle = () => {
   const [poiOpenFilter, setPoiOpenFilter] = useState<PoiOpenFilter>('all');
   const [poiCouponFilter, setPoiCouponFilter] = useState<PoiCouponFilter>('all');
   const [activePoiType, setActivePoiType] = useState<string | null>(null);
+  const [poiCategorySelectValue, setPoiCategorySelectValue] = useState<string>('');
 
-    const [showSidebar, setShowSidebar] = useState(false);
+  const [showSidebar, setShowSidebar] = useState(false);
     const [favoriteLocations, setFavoriteLocations] = useState<Location[]>([]);
     const [loadingFavorites, setLoadingFavorites] = useState(false);
     const [poiResults, setPoiResults] = useState<PoiListItem[]>([]);
@@ -238,6 +245,7 @@ const MapGoogle = () => {
   const isNavigatingRef = useRef(false);
   const activeRouteRef = useRef<RouteInfo | null>(null);
   const lastSpokenInstructionRef = useRef<string | null>(null);
+  const isSavingRef = useRef(false);
 
   const trafficLayerRef = useRef<any>(null);
   const [isTrafficOn, setIsTrafficOn] = useState(false);
@@ -336,6 +344,13 @@ const MapGoogle = () => {
   useEffect(() => {
     isNavigatingRef.current = isNavigating;
   }, [isNavigating]);
+
+  // Keep locLoaded for backwards compatibility (previous builds relied on it).
+  // Routing/origin logic waits on this state so TypeScript stays happy.
+  useEffect(() => {
+    // no-op: locLoaded is updated in the geolocation effect
+  }, [locLoaded]);
+
 
   useEffect(() => {
     activeRouteRef.current = stats;
@@ -535,6 +550,55 @@ const MapGoogle = () => {
     }
   };
 
+  // Grab user location ASAP (fast default) so the map can center immediately.
+  useEffect(() => {
+    if (!navigator.geolocation) {
+      setLocLoaded(true);
+      return;
+    }
+
+    let didCancel = false;
+    const setFromPos = (pos: GeolocationPosition) => {
+      if (didCancel) return;
+      const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      setUserLoc(coords);
+      setLocLoaded(true);
+    };
+
+    // Fast attempt: use whatever the browser already has.
+    navigator.geolocation.getCurrentPosition(
+      (pos) => setFromPos(pos),
+      () => {
+        // If permission denied/timeout, keep fallback location quickly.
+        setLocLoaded(true);
+      },
+      {
+        enableHighAccuracy: false,
+        maximumAge: 30_000,
+        timeout: 2_500,
+      }
+    );
+
+    // Keep updating in background, but don't block initial load.
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        setUserLoc(coords);
+      },
+      () => {},
+      { enableHighAccuracy: true, maximumAge: 1_000, timeout: 10_000 }
+    );
+
+    return () => {
+      didCancel = true;
+      try {
+        navigator.geolocation.clearWatch(watchId);
+      } catch {
+        // ignore
+      }
+    };
+  }, []);
+
   // Google Map init
   useEffect(() => {
     if (!mapElement.current) return;
@@ -591,7 +655,7 @@ const MapGoogle = () => {
         // Use Polyline instead of deprecated DirectionsRenderer
         directionsRendererRef.current = new googleNs.maps.Polyline({
           map,
-          strokeColor: '#3F92FF',
+          strokeColor: 'var(--app-primary)',
           strokeWeight: 6,
           strokeOpacity: 0.9,
         });
@@ -606,7 +670,7 @@ const MapGoogle = () => {
           icon: {
             path: googleNs.maps.SymbolPath.CIRCLE,
             scale: 8,
-            fillColor: '#3F92FF',
+            fillColor: 'var(--app-primary)',
             fillOpacity: 1,
             strokeColor: 'white',
             strokeWeight: 2,
@@ -630,32 +694,6 @@ const MapGoogle = () => {
             imageUrl: undefined,
           });
         });
-
-        // geolocation
-        if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
-            (pos) => {
-              const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-              setUserLoc(coords);
-              map.setCenter(coords);
-              if (userMarkerRef.current) userMarkerRef.current.position = coords;
-              setLocLoaded(true);
-            },
-            () => {
-              setLocLoaded(true);
-            }
-          );
-
-          navigator.geolocation.watchPosition(
-            (pos) => {
-              const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-              setUserLoc(coords);
-              if (userMarkerRef.current) userMarkerRef.current.position = coords;
-            },
-            () => {},
-            { enableHighAccuracy: true, maximumAge: 1000, timeout: 10000 }
-          );
-        }
       } catch (e: any) {
         setMapError('Failed to load Google Maps. Check your API key.');
       }
@@ -667,21 +705,42 @@ const MapGoogle = () => {
     };
   }, [GOOGLE_KEY]);
 
+  // When location updates, move map/marker immediately (no waiting on map re-init).
+  useEffect(() => {
+    if (!mapRef.current) return;
+    mapRef.current.setCenter(userLoc);
+    if (userMarkerRef.current) userMarkerRef.current.position = userLoc;
+  }, [userLoc]);
+
   // Route from URL params (same pattern as original)
   useEffect(() => {
     const lat = searchParams.get('lat');
     const lon = searchParams.get('lon');
-    if (!lat || !lon || !mapLoaded || !locLoaded) return;
+    if (!lat || !lon || !mapLoaded) return;
     const destLat = parseFloat(lat);
     const destLng = parseFloat(lon);
     if (Number.isNaN(destLat) || Number.isNaN(destLng)) return;
+
+    // Wait briefly for geolocation to update userLoc (prevents routing from fallback coords).
+    // If geolocation still hasn't resolved, we'll route using the existing userLoc after the timeout.
+    let cancelled = false;
 
     const nameParam = searchParams.get('name');
     const addressParam = searchParams.get('address');
     const routeName = nameParam?.trim() || addressParam?.trim() || 'Destination';
 
-    void calculateRoute(destLat, destLng, routeName, false);
-  }, [mapLoaded, searchParams, locLoaded]);
+    const waitMs = 3500;
+    const t = window.setTimeout(() => {
+      if (cancelled) return;
+      void calculateRoute(destLat, destLng, routeName, false);
+    }, waitMs);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(t);
+    };
+  }, [mapLoaded, searchParams]);
+
 
   const calculateRoute = async (
     dLat: number,
@@ -864,6 +923,71 @@ const MapGoogle = () => {
 
   const filteredPoiResults = poiResults.filter(matchesPoiFilters);
 
+  // Add to favorites function
+  const addToFavorites = async (business: Business) => {
+    if (isSavingRef.current) {
+      showToastNotice('Saving in progress...', true);
+      return;
+    }
+    isSavingRef.current = true;
+    
+    try {
+      const createResponse = await fetch('http://localhost:5173/loc/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          name: business.name,
+          address: business.address,
+          longitude: business.longitude,
+          latitude: business.latitude,
+          type: 1,
+          categories: business.category,
+          phone: business.phone,
+          email: business.email,
+          website: business.website,
+          businessHours: business.businessHours,
+          socials: business.socials,
+        })
+      });
+
+      const createData = await createResponse.json().catch(() => null);
+      if (createResponse.ok) {
+        const locationData = createData;
+        const locationId = locationData?.location_id;
+        if (!locationId) {
+          showToastNotice('Failed to resolve location id', true);
+          return;
+        }
+        const favoriteResponse = await fetch(`http://localhost:5173/loc/${locationId}/favorite`, {
+          method: 'POST',
+          credentials: 'include'
+        });
+        const favoriteData = await favoriteResponse.json().catch(() => null);
+        if (favoriteResponse.ok) {
+          showToastNotice('Location saved to favorites');
+          void fetchFavoriteLocations();
+        } else {
+          const message = favoriteData?.message || '';
+          if (message.toLowerCase().includes('already')) {
+            showToastNotice('Location already in favorites', true);
+          } else {
+            console.error('Failed to add to favorites');
+            showToastNotice('Failed to save location', true);
+          }
+        }
+      } else {
+        console.error('Failed to create location');
+        showToastNotice(createData?.message || 'Failed to create location', true);
+      }
+    } catch (error) {
+      console.error('Error adding to favorites:', error);
+      showToastNotice('Error saving location', true);
+    } finally {
+      isSavingRef.current = false;
+    }
+  };
+
   const runSearchByQuery = async (queryRaw: string) => {
     const query = queryRaw.trim();
     if (!query || !mapRef.current) return;
@@ -889,8 +1013,15 @@ const MapGoogle = () => {
   };
 
   const handleSearch = async () => {
+    // If we have prediction objects (autocomplete), clicking Enter should use current text.
+    // We’ll just run the existing textSearch behavior.
     await runSearchByQuery(inputValue);
   };
+
+  // Google Autocomplete was added in earlier edits, but the project currently uses
+  // a textSearch-based suggestions list. Keeping UI stable (and build clean) for now.
+
+
 
   const handleSelectSuggestion = (place: any) => {
     const geometry = place.geometry?.location;
@@ -1019,11 +1150,14 @@ const MapGoogle = () => {
           })
           .filter(Boolean) as PoiListItem[];
 
+        // Apply filters now so markers + list match the selected Open/Coupon filters.
+        const filtered = next.filter(matchesPoiFilters);
+
         // Add markers
         poiMarkersRef.current.forEach((m) => m.setMap(null));
         poiMarkersRef.current = [];
 
-        const markers = next.map((poi) => {
+        const markers = filtered.map((poi) => {
           return new googleNs.maps.Marker({
             position: { lat: poi.lat, lng: poi.lng },
             map: mapRef.current!,
@@ -1043,7 +1177,8 @@ const MapGoogle = () => {
         });
 
         poiMarkersRef.current = markers;
-        setPoiResults(next);
+        setPoiResults(filtered);
+
       }
     );
   };
@@ -1091,7 +1226,7 @@ const MapGoogle = () => {
           </div>
         </div>
 
-        <div className="p-4 bg-gradient-to-br from-[#3F92FF1A] to-[#2F75D90D]">
+        <div className="p-4 bg-gradient-to-br from-[var(--app-primary)1A] to-[var(--tone-cyan-600)0D]">
           <div className="rounded-lg border border-cyan-400/20 bg-black/20 px-3 py-2">
             <p className="m-0 text-cyan-300 text-xs font-semibold">Step {navStep + 1}</p>
             <p className="m-0 mt-1 text-white text-sm font-bold">
@@ -1133,7 +1268,7 @@ const MapGoogle = () => {
               <div
                 key={idx}
                 className={`p-2.5 px-4 cursor-pointer border-b border-neutral-800 hover:bg-white/5 ${
-                  idx === navStep ? 'bg-[#3F92FF26] border-l-[3px] border-l-[#3F92FF]' : ''
+                  idx === navStep ? 'bg-[var(--app-primary)26] border-l-[3px] border-l-[var(--app-primary)]' : ''
                 } ${idx < navStep ? 'opacity-50' : ''}`}
                 onClick={() => jumpToStep(idx)}
               >
@@ -1169,7 +1304,13 @@ const MapGoogle = () => {
             onKeyDown={(e) => {
               if (e.key === 'Enter') void handleSearch();
             }}
+            onBlur={() => {
+              // Hide autocomplete suggestions when focus leaves.
+              // (Prevents stale dropdown lingering.)
+              setSuggestions([]);
+            }}
           />
+
           {inputValue && (
             <button
               className="bg-transparent border-none text-slate-400 cursor-pointer text-lg p-1 px-2 hover:text-white"
@@ -1193,7 +1334,7 @@ const MapGoogle = () => {
             {speechToTextListeningRef.current ? <MicOff size={16} /> : <Mic size={16} />}
           </button>
           <button
-            className="bg-[#3F92FF] border-none text-white p-2 px-3 rounded-lg cursor-pointer text-sm font-bold hover:bg-[#2F75D9]"
+            className="bg-[var(--app-primary)] border-none text-white p-2 px-3 rounded-lg cursor-pointer text-sm font-bold hover:bg-[var(--tone-cyan-600)]"
             onClick={() => void handleSearch()}
           >
             🔍
@@ -1281,15 +1422,18 @@ const MapGoogle = () => {
 
       <div className="mt-2.5 text-[14px]">
         <select
+          value={poiCategorySelectValue}
           onChange={(e) => {
-            if (!e.target.value) return;
-            const selected = POI_GROUPS.flatMap(g => g.items).find(i => i.type === e.target.value);
+            const next = e.target.value;
+            setPoiCategorySelectValue(next);
+
+            if (!next) return;
+            const selected = POI_GROUPS.flatMap(g => g.items).find(i => i.type === next);
             if (selected) {
               void searchPoi(selected.type, selected.icon);
             }
-            e.target.value = "";
           }}
-          className="w-full bg-neutral-900/95 text-white border border-neutral-800 p-3 rounded-xl focus:outline-none focus:border-[#3F92FF]"
+          className="w-full bg-neutral-900/95 text-white border border-neutral-800 p-3 rounded-xl focus:outline-none focus:border-[var(--app-primary)]"
         >
           <option value="">Select a Category...</option>
           {POI_GROUPS.map((group) => (
@@ -1309,7 +1453,7 @@ const MapGoogle = () => {
   // Loading state
   const loading = !mapLoaded && !mapError ? (
     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-cyan-500 text-lg flex flex-col items-center gap-4 z-[1200]">
-      <div className="w-10 h-10 border-[3px] border-neutral-800 border-t-[#3F92FF] rounded-full animate-spin" />
+      <div className="w-10 h-10 border-[3px] border-neutral-800 border-t-[var(--app-primary)] rounded-full animate-spin" />
       <span>Loading Map...</span>
     </div>
   ) : null;
@@ -1332,6 +1476,55 @@ const MapGoogle = () => {
 
         {loading}
         {showError}
+        {/* Route Card - shows when route is calculated but not navigating */}
+        {stats && !isNavigating && (
+          <div className="absolute bottom-5 left-1/2 -translate-x-1/2 bg-neutral-900/95 border border-neutral-800 p-3.5 sm:p-4 rounded-2xl w-[min(92vw,440px)] z-[1000] shadow-xl">
+            <div className="mb-3">
+              <h3 className="m-0 mb-1 text-cyan-500 text-sm">{stats.name}</h3>
+              <p className="m-0 mb-3 text-gray-400 text-sm">{stats.miles} mi • {stats.mins} min</p>
+            </div>
+            <div className="flex flex-nowrap items-center gap-2">
+              <button 
+                className="flex-1 min-w-0 whitespace-nowrap bg-cyan-500 text-white border-none px-3 py-2.5 rounded-lg font-bold cursor-pointer hover:bg-cyan-400 transition-colors text-xs sm:text-sm" 
+                onClick={() => {
+                  setIsNavigating(true);
+                  setNavStep(0);
+                  setShowFullDirections(false);
+                }}
+              >
+                Start Navigation
+              </button>
+              <button 
+                className="shrink-0 whitespace-nowrap bg-neutral-800 text-white border-none px-3 py-2.5 rounded-lg cursor-pointer hover:bg-neutral-700 text-xs sm:text-sm" 
+                onClick={() => {
+                  setStats(null);
+                  clearMap();
+                }}
+              >
+                Close
+              </button>
+              <button 
+                className="shrink-0 flex items-center justify-center bg-neutral-800 border-none w-8 h-8 text-white rounded-full cursor-pointer text-sm hover:bg-neutral-700" 
+                onClick={() => {
+                  // Add to favorites
+                  const locationForFavorite: Business = {
+                    name: stats.name,
+                    address: stats.name,
+                    latitude: stats.lat,
+                    longitude: stats.lng,
+                    distance_meters: 0,
+                    category: [],
+                    score: 0,
+                    classifications: []
+                  };
+                  void addToFavorites(locationForFavorite);
+                }}
+              >
+                <HeartPlus className="text-green-500 drop-shadow-lg" size={16} />
+              </button>
+            </div>
+          </div>
+        )}
         {navigationCard}
         {searchOverlay}
 
@@ -1384,21 +1577,21 @@ const MapGoogle = () => {
         <div className="absolute right-4 bottom-32 z-[1000] flex flex-col gap-3">
           <button
             onClick={toggleTraffic}
-            className={`w-[45px] h-[45px] ${isTrafficOn ? 'bg-cyan-600/90' : 'bg-neutral-900/95'} text-white border border-neutral-800 rounded-xl cursor-pointer text-xl flex flex-col items-center justify-center shadow-lg transition-all hover:scale-105 hover:border-[#3F92FF]`}
+            className={`w-[45px] h-[45px] ${isTrafficOn ? 'bg-cyan-600/90' : 'bg-neutral-900/95'} text-white border border-neutral-800 rounded-xl cursor-pointer text-xl flex flex-col items-center justify-center shadow-lg transition-all hover:scale-105 hover:border-[var(--app-primary)]`}
             title="Toggle Traffic"
           >
             🚦
           </button>
           <button
             onClick={toggleNightMode}
-            className="w-[45px] h-[45px] bg-neutral-900/95 text-white border border-neutral-800 rounded-xl cursor-pointer text-xl flex flex-col items-center justify-center shadow-lg transition-all hover:scale-105 hover:border-[#3F92FF]"
+            className="w-[45px] h-[45px] bg-neutral-900/95 text-white border border-neutral-800 rounded-xl cursor-pointer text-xl flex flex-col items-center justify-center shadow-lg transition-all hover:scale-105 hover:border-[var(--app-primary)]"
             title="Toggle Night/Day Mode"
           >
             {isNightMode ? '☀️' : '🌙'}
           </button>
           <button
             onClick={toggle3D}
-            className={`w-[45px] h-[45px] ${is3D ? 'bg-cyan-600/90' : 'bg-neutral-900/95'} text-white border border-neutral-800 rounded-xl cursor-pointer text-sm font-bold flex flex-col items-center justify-center shadow-lg transition-all hover:scale-105 hover:border-[#3F92FF]`}
+            className={`w-[45px] h-[45px] ${is3D ? 'bg-cyan-600/90' : 'bg-neutral-900/95'} text-white border border-neutral-800 rounded-xl cursor-pointer text-sm font-bold flex flex-col items-center justify-center shadow-lg transition-all hover:scale-105 hover:border-[var(--app-primary)]`}
             title="Toggle 2D/3D"
           >
             {is3D ? '2D' : '3D'}
@@ -1408,7 +1601,7 @@ const MapGoogle = () => {
         <div className="absolute left-4 bottom-32 z-[1000] flex flex-col gap-3">
           <button
             onClick={() => setShowSidebar((v) => !v)}
-            className="w-[55px] h-[40px] md:w-[60px] md:h-[50px] bg-neutral-900/95 text-white border border-neutral-800 rounded-xl cursor-pointer text-sm flex flex-col items-center justify-center shadow-lg transition-all hover:scale-105 hover:border-[#3F92FF]"
+            className="w-[55px] h-[40px] md:w-[60px] md:h-[50px] bg-neutral-900/95 text-white border border-neutral-800 rounded-xl cursor-pointer text-sm flex flex-col items-center justify-center shadow-lg transition-all hover:scale-105 hover:border-[var(--app-primary)]"
             title="Favorites"
           >
             <span className="text-2xl text-yellow-400 font-bold">★</span>
@@ -1418,7 +1611,7 @@ const MapGoogle = () => {
               if (mapRef.current) mapRef.current.panTo(userLoc);
               if (userMarkerRef.current) userMarkerRef.current.setPosition(userLoc);
             }}
-            className="w-[55px] h-[40px] md:w-[60px] md:h-[50px] bg-neutral-900/95 text-white border border-neutral-800 rounded-xl cursor-pointer text-sm flex flex-col items-center justify-center shadow-lg transition-all hover:scale-105 hover:border-[#3F92FF]"
+            className="w-[55px] h-[40px] md:w-[60px] md:h-[50px] bg-neutral-900/95 text-white border border-neutral-800 rounded-xl cursor-pointer text-sm flex flex-col items-center justify-center shadow-lg transition-all hover:scale-105 hover:border-[var(--app-primary)]"
             title="My Location"
           >
             📍

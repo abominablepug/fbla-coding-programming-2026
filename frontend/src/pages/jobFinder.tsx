@@ -295,8 +295,8 @@ const JobFinder = () => {
       <div className="z-10 pt-28 pb-40 min-h-screen flex flex-col items-center">
         {/* Skills bar */}
         <div className="relative z-40 w-full max-w-[1120px] px-4 mb-8">
-          <div className="rounded-2xl border border-[#FFBF65]/35 bg-neutral-900/55 p-4 shadow-lg backdrop-blur-sm">
-            <p className="text-[#FFBF65] text-sm font-semibold mb-3">
+          <div className="rounded-2xl border border-[var(--app-accent-gold)]/35 bg-neutral-900/55 p-4 shadow-lg backdrop-blur-sm">
+            <p className="text-[var(--app-accent-gold)] text-sm font-semibold mb-3">
               Your skills — jobs are ranked by how well they match. Edit and re-rank anytime.
             </p>
             <div className="flex gap-2 mb-3">
@@ -310,7 +310,7 @@ const JobFinder = () => {
               />
               <button
                 onClick={handleAddSkill}
-                className="px-4 py-2 bg-[#FFBF65] hover:bg-[#f0a93f] text-[#13181B] font-semibold rounded-lg flex items-center gap-1"
+                className="px-4 py-2 bg-[var(--app-accent-gold)] hover:bg-[var(--app-accent-gold-hover)] text-[var(--app-on-gold)] font-semibold rounded-lg flex items-center gap-1"
               >
                 <Plus size={18} /> Add
               </button>
@@ -335,8 +335,8 @@ const JobFinder = () => {
             </div>
 
             {/* Resume upload */}
-            <div className="mt-4 pt-4 border-t border-[#CCD5DA]/25 flex flex-wrap items-center gap-3">
-              <label className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg cursor-pointer text-white font-semibold ${uploadingResume ? 'bg-slate-600 cursor-wait' : 'bg-[#FD8973] hover:bg-[#fb5f43]'}`}>
+            <div className="mt-4 pt-4 border-t border-[var(--app-text-muted)]/25 flex flex-wrap items-center gap-3">
+              <label className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg cursor-pointer text-white font-semibold ${uploadingResume ? 'bg-slate-600 cursor-wait' : 'bg-[var(--app-accent-coral)] hover:bg-[var(--app-accent-coral-hover)]'}`}>
                 <Upload size={18} />
                 {uploadingResume ? 'Uploading...' : resumeName ? 'Replace Resume' : 'Upload Resume'}
                 <input
@@ -382,7 +382,7 @@ const JobFinder = () => {
                 <Card
                   title={currentJob.title || 'Untitled Role'}
                   cardClassName="w-[1040px] max-w-[97vw]"
-                  bgcolor="#003A6CFF"
+                  bgcolor="var(--app-surface-strong)"
                   titleClassName="text-white"
                 >
                   <div className="space-y-4">
@@ -453,7 +453,7 @@ const JobFinder = () => {
                 <Card
                   title="No Job Openings"
                   cardClassName="w-[1040px] max-w-[97vw]"
-                  bgcolor="#003A6CFF"
+                  bgcolor="var(--app-surface-strong)"
                   titleClassName="text-white"
                 >
                   <div className="py-6 text-center space-y-4">
@@ -464,7 +464,7 @@ const JobFinder = () => {
                     </p>
                     <button
                       onClick={handleApplySkills}
-                      className="px-5 py-2 bg-[#FD8973] hover:bg-[#fb5f43] text-white rounded-lg font-semibold"
+                      className="px-5 py-2 bg-[var(--app-accent-coral)] hover:bg-[var(--app-accent-coral-hover)] text-white rounded-lg font-semibold"
                     >
                       Reload Openings
                     </button>
@@ -502,7 +502,7 @@ const JobFinder = () => {
             className="cursor-pointer hover:scale-110 transition active:scale-150 focus:outline-none"
             aria-label="Apply"
           >
-            <HeartPlus size={110} className="text-[#2ecc71] drop-shadow-lg" />
+            <HeartPlus size={110} className="text-[var(--tone-green-400)] drop-shadow-lg" />
           </motion.button>
         </div>
       )}

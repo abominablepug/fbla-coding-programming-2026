@@ -428,7 +428,7 @@ const BusinessProfile = () => {
                   <p className="text-sm text-gray-300 mb-4">Create new events and manage job postings for your business.</p>
                   <button
                     onClick={() => navigate('/business/dashboard')}
-                    className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-400"
+                    className="inline-flex items-center justify-center gap-2 rounded-lg bg-cyan-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-cyan-400"
                   >
                     Manage Events
                   </button>

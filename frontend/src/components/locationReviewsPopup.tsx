@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Card from './card';
 import { resolveLocationId } from '../utils/locationResolver';
@@ -57,9 +57,9 @@ const LocationReviewsPopup = ({
   const loadCommunityReviews = async () => {
     setLoadingCommunity(true);
     setCommunityError('');
-    try {
-      let targetLocationId = resolvedLocationId && resolvedLocationId > 0 ? resolvedLocationId : null;
+    let targetLocationId = resolvedLocationId && resolvedLocationId > 0 ? resolvedLocationId : null;
 
+    try {
       if (!targetLocationId) {
         const resolvedId = await resolveLocationId({
           lid: location.lid,
