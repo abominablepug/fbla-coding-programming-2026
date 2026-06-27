@@ -10,12 +10,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@googlemaps/js-api-loader": "^1.16.8",
     "@react-google-maps/api": "^2.20.8",
     "@react-three/fiber": "^9.4.2",
     "@shadergradient/react": "^2.4.20",
     "@tailwindcss/vite": "^4.1.18",
-    "@tomtom-international/web-sdk-maps": "^6.25.0",
-    "@tomtom-international/web-sdk-services": "^6.25.0",
     "camera-controls": "^3.1.2",
     "framer-motion": "^12.23.26",
     "jspdf": "^4.2.1",

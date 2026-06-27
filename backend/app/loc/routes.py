@@ -19,6 +19,10 @@ def get_location_details(location_id):
         'latitude': location.latitude,
         'type': location.type,
         'categories': location.categories,
+        'phone': location.phone,
+        'email': location.email,
+        'website': location.website,
+        'businessHours': location.businessHours,
     }
 
     return jsonify(location_data), 200
@@ -37,6 +41,10 @@ def get_all_locations():
             'latitude': location.latitude,
             'type': location.type,
             'categories': location.categories,
+            'phone': location.phone,
+            'email': location.email,
+            'website': location.website,
+            'businessHours': location.businessHours,
         })
 
     return jsonify(locations_data), 200
@@ -50,8 +58,12 @@ def add_location():
     latitude = data.get('latitude')
     typeId = data.get('type')
     categories = data.get('categories')
+    phone = data.get('phone')
+    email = data.get('email')
+    website = data.get('website')
+    businessHours = data.get('businessHours')
 
-    new_location = Location(name=name, address=address, longitude=longitude, latitude=latitude, type=typeId, categories=categories)
+    new_location = Location(name=name, address=address, longitude=longitude, latitude=latitude, type=typeId, categories=categories, phone=phone, email=email, website=website, businessHours=businessHours)
     db.session.add(new_location)
     db.session.commit()
 
@@ -74,6 +86,10 @@ def get_favorite_locations():
             'latitude': location.latitude,
             'type': location.type,
             'categories': location.categories,
+            'phone': location.phone,
+            'email': location.email,
+            'website': location.website,
+            'businessHours': location.businessHours,
         })
     
     return jsonify(favorites_data), 200
@@ -178,6 +194,10 @@ def get_visited_locations():
                 'latitude': loc.latitude,
                 'type': loc.type,
                 'categories': loc.categories,
+                'phone': loc.phone,
+                'email': loc.email,
+                'website': loc.website,
+                'businessHours': loc.businessHours,
                 'visited_at': v.timestamp.isoformat()  # ISO 8601 format for frontend parsing
             })
     return jsonify(visited_data), 200

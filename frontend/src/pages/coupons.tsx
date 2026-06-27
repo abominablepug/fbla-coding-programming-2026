@@ -71,8 +71,8 @@ interface ReviewModalLocation {
 const AUTH_BASE_URL = import.meta.env.VITE_AUTH_BASE_URL || 'http://localhost:5173';
 const FOURSQUARE_API_KEY =
   import.meta.env.VITE_FOURSQUARE_API_KEY || import.meta.env.PUBLIC_FOURSQUARE_API_KEY;
-const TOMTOM_API_KEY =
-  import.meta.env.VITE_TOMTOM_API_KEY || import.meta.env.PUBLIC_TOMTOM_API_KEY || import.meta.env.TOMTOM_API_KEY;
+const GOOGLE_MAPS_API_KEY =
+  import.meta.env.VITE_GOOGLE_MAPS_API_KEY || import.meta.env.PUBLIC_GOOGLE_MAPS_API_KEY || import.meta.env.GOOGLE_MAPS_API_KEY;
 
 const normalizeCategory = (location: Location): string => {
   const first = location.categories?.[0]?.toLowerCase() || '';
@@ -275,11 +275,11 @@ const Coupons = () => {
     }
   };
 
-  const fetchNearbyTomTomLocations = async (
+  const fetchNearbyGoogleLocations = async (
     current: { lat: number; lng: number },
     limitPerQuery = 4
   ): Promise<Location[]> => {
-    if (!TOMTOM_API_KEY) return [];
+    if (!GOOGLE_MAPS_API_KEY) return [];
     const queries = ['restaurant', 'coffee', 'shopping center', 'park'];
 
     const grouped = await Promise.all(
@@ -287,7 +287,7 @@ const Coupons = () => {
         try {
           const res = await fetch(
             `https://api.tomtom.com/search/2/search/${encodeURIComponent(query)}.json?key=${encodeURIComponent(
-              TOMTOM_API_KEY
+              GOOGLE_MAPS_API_KEY
             )}&lat=${encodeURIComponent(String(current.lat))}&lon=${encodeURIComponent(
               String(current.lng)
             )}&radius=12000&limit=${limitPerQuery}&openingHours=nextSevenDays`
@@ -470,7 +470,7 @@ const Coupons = () => {
           });
 
           if (geoloc) {
-            nearby = await fetchNearbyTomTomLocations(geoloc, 4);
+            nearby = await fetchNearbyGoogleLocations(geoloc, 4);
           }
         } catch {
           nearby = [];

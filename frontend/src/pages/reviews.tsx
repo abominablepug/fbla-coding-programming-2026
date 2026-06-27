@@ -10,12 +10,12 @@ import LocalAiChatPopup from '../components/localAiChatPopup';
 import { POST as getAiChatResponse } from '../utils/aiChatResponse';
 import googleSampleReviews from '../data/googleSampleReviews.json';
 import {
-  fetchTomTomPoiDetailsForLocation,
+  fetchGooglePlaceDetails,
   formatBusinessHoursForDisplay,
   serializeBusinessHours,
   serializeSocials,
   type SocialLink,
-} from '../utils/tomtomPoiDetails';
+} from '../utils/googlePlaceDetails';
 
 interface Location {
   lid: number;
@@ -51,10 +51,10 @@ interface SampleGoogleReview {
   relative_time: string;
 }
 
-const TOMTOM_API_KEY =
-  import.meta.env.VITE_TOMTOM_API_KEY ||
-  import.meta.env.PUBLIC_TOMTOM_API_KEY ||
-  import.meta.env.TOMTOM_API_KEY;
+const GOOGLE_MAPS_API_KEY =
+  import.meta.env.VITE_GOOGLE_MAPS_API_KEY ||
+  import.meta.env.PUBLIC_GOOGLE_MAPS_API_KEY ||
+  import.meta.env.GOOGLE_MAPS_API_KEY;
 const AUTH_BASE_URL = import.meta.env.VITE_AUTH_BASE_URL || 'http://localhost:5173';
 
 const LocationDetailBlock = ({ loc }: { loc: Location }) => {
@@ -202,14 +202,14 @@ const ReviewsPage = () => {
   }, [searchParams]);
 
   const enrichWithTomTomDetails = async (locations: Location[]): Promise<Location[]> => {
-    if (!TOMTOM_API_KEY) return locations;
+    if (!GOOGLE_MAPS_API_KEY) return locations;
     return Promise.all(
       locations.map(async (loc) => {
-        const details = await fetchTomTomPoiDetailsForLocation(TOMTOM_API_KEY, {
+        const details = await fetchGooglePlaceDetails(GOOGLE_MAPS_API_KEY, {
           name: loc.name,
           address: loc.address,
-          latitude: loc.latitude,
-          longitude: loc.longitude,
+          lat: loc.latitude,
+          lng: loc.longitude,
         });
         return { ...loc, ...details };
       })

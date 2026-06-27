@@ -47,7 +47,7 @@ interface Location {
 
 
 const TinderPage = () => {
-    const TOMTOM_API_KEY = import.meta.env.VITE_TOMTOM_API_KEY;
+    const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
     const AUTH_BASE_URL = import.meta.env.VITE_AUTH_BASE_URL || 'http://localhost:5173';
     const [user, setUser] = useState<{ uid: string, username: string } | null>(null);
     const [businesses, setBusinesses] = useState<Business[]>([]);
@@ -63,6 +63,10 @@ const TinderPage = () => {
     const navigate = useNavigate();
     const [loadingFavorites, setLoadingFavorites] = useState(false);
     const [favoriteLocations, setFavoriteLocations] = useState<Location[]>([]);
+    const [swipedLocations, setSwipedLocations] = useState<string[]>(() => {
+        const saved = localStorage.getItem('swipedLocations');
+        return saved ? JSON.parse(saved) : [];
+    });
     const [edgeGlow, setEdgeGlow] = useState<"left" | "right" | null>(null);
     const handlePress = (side: "left" | "right") => {
         setEdgeGlow(side);
@@ -123,10 +127,13 @@ const TinderPage = () => {
 		}
 	}, [user]);
 
-    const buildStaticMapImage = (lng: number, lat: number) =>
-        TOMTOM_API_KEY
-            ? `https://api.tomtom.com/map/1/staticimage?key=${TOMTOM_API_KEY}&layer=basic&style=main&center=${lng},${lat}&zoom=16&width=420&height=260&format=png`
-            : '';
+    const getImageUrl = (imageUrl: any, lat: number, lng: number) => {
+        return imageUrl
+            ? imageUrl
+            : GOOGLE_MAPS_API_KEY
+            ? `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=16&size=420x260&key=${GOOGLE_MAPS_API_KEY}`
+            : 'https://via.placeholder.com/420x260/262626/8b5cf6?text=Map+Unavailable';
+    };
 
     const fetchBusinesses = async (coords: { lat: number; lng: number }) => {
         setError(null);
@@ -140,7 +147,8 @@ const TinderPage = () => {
                     latitude: coords.lat,
                     longitude: coords.lng,
                     radius_mi: 20,
-                    limit: 8
+                    limit: 8,
+                    ignore_names: swipedLocations
                 })
             });
             if (response.ok) {
@@ -161,18 +169,11 @@ const TinderPage = () => {
                                   )
                                   .filter((entry: string) => entry.trim().length > 0)
                             : [];
-                        let imageUrl = '';
-                        const name = result.name;
-                        const address = result.address;
-                        if (name && address) {
-                            imageUrl = (await getCommonsImage(`${name} ${address}`)) || '';
-                        }
-                        if (!imageUrl) {
-                            imageUrl = buildStaticMapImage(result.longitude, result.latitude);
-                        }
+                        let imageUrl = result.imageUrl || '';
+
                         return {
                             ...result,
-                            imageUrl,
+                            imageUrl: getImageUrl(imageUrl, result.latitude, result.longitude),
                             phone: (result as any)?.phone || (result as any)?.contact?.phone,
                             email: (result as any)?.email || (result as any)?.contact?.email,
                             website: (result as any)?.website || (result as any)?.url,
@@ -255,6 +256,10 @@ const TinderPage = () => {
                     latitude: business.latitude,
                     type: 1,
                     categories: business.category,
+                    phone: business.phone,
+                    email: business.email,
+                    website: business.website,
+                    businessHours: business.businessHours,
                 })
             });
 
@@ -292,6 +297,10 @@ const TinderPage = () => {
         const swipeKey = `${currentIndex}-${swipeDirection}`;
         if (processedSwipeRef.current === swipeKey) return;
         processedSwipeRef.current = swipeKey;
+        
+        const newSwiped = [...swipedLocations, currentBusiness.name];
+        setSwipedLocations(newSwiped);
+        localStorage.setItem('swipedLocations', JSON.stringify(newSwiped));
 
         if (swipeDirection === 'left') {
             await updatePreferences('dislike', { classifications: currentBusiness.classifications });
@@ -342,8 +351,8 @@ const TinderPage = () => {
         return splitStr.join(' '); 
     }
     const prettyUrl = (value: string): string => value.replace(/^https?:\/\//i, '').replace(/^www\./i, '');
-    const isStaticMapImage = (imageUrl?: string): boolean =>
-        typeof imageUrl === 'string' && imageUrl.includes('api.tomtom.com/map/1/staticimage');
+    const isMapFallback = (imageUrl: string | undefined) =>
+        typeof imageUrl === 'string' && imageUrl.includes('maps.googleapis.com/maps/api/staticmap');
     const getOtherDetailsLine = (business: Business): string => {
         const parts: string[] = [];
         if (business.website) parts.push(`Website: ${prettyUrl(business.website)}`);
@@ -539,7 +548,7 @@ const TinderPage = () => {
                                                         className="w-full h-full object-cover"
                                                         loading="lazy"
                                                     />
-                                                    {isStaticMapImage(currentBusiness.imageUrl) && (
+                                                    {isMapFallback(currentBusiness.imageUrl) && (
                                                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                                                             <MapPin size={30} strokeWidth={2.4} className="text-cyan-200 drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)]" />
                                                         </div>
@@ -630,7 +639,22 @@ const TinderPage = () => {
                                                 <p className="text-gray-400 text-sm">{loc.address}</p>
                                                 {renderFavoriteDetails(loc)}
                                             </div>
-                                            <div className="mt-2 flex justify-end">
+                                            <div className="mt-2 flex justify-end items-center">
+                                                <button
+                                                    onClick={async (e) => {
+                                                        e.stopPropagation();
+                                                        try {
+                                                            await fetch(`http://localhost:5173/loc/${loc.lid}/unfavorite`, { method: 'POST', credentials: 'include' });
+                                                            setFavoriteLocations(prev => prev.filter(l => l.lid !== loc.lid));
+                                                            enqueueAlert({ message: "Location removed from favorites.", textColor: "text-green-300" });
+                                                        } catch(e) {
+                                                            console.error(e);
+                                                        }
+                                                    }}
+                                                    className="rounded-md border border-red-500/50 bg-red-500/10 px-2.5 py-1.5 text-xs text-red-200 hover:bg-red-500/20 mr-2"
+                                                >
+                                                    Unfavorite
+                                                </button>
                                                 <LocationReviewsPopup
                                                     location={{ lid: loc.lid, name: loc.name, address: loc.address }}
                                                     buttonClassName="rounded-md border border-white/20 bg-white/5 px-2.5 py-1.5 text-xs text-gray-200 hover:bg-white/10"

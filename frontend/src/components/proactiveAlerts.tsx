@@ -80,10 +80,11 @@ const ProactiveAlerts = () => {
     };
 
     useEffect(() => {
-        // Request notification permission
-        if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
-            Notification.requestPermission();
-        }
+        // Requesting notification permission on mount is blocked by modern browsers.
+        // It must be tied to a user interaction.
+        // if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
+        //     Notification.requestPermission();
+        // }
 
         if ("geolocation" in navigator) {
             const watchId = navigator.geolocation.watchPosition(

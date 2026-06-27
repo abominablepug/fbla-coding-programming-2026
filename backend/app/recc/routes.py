@@ -9,47 +9,151 @@ import os
 import unicodedata
 import math
 
-# TomTom API key loaded from environment variables
-tomtom_api_key = os.getenv('TOMTOM_API_KEY')
+# TomTom API key loaded from environment variables (moved inside function for late binding)
+# google_maps_api_key = os.getenv('GOOGLE_MAPS_API_KEY')
 
-def fetch_tomtom_data(latitude, longitude, radius_mi=5, limit=100):
-    # Validate input coordinates
+def haversine_distance(lat1, lon1, lat2, lon2):
+    R = 6371000
+    phi_1 = math.radians(lat1)
+    phi_2 = math.radians(lat2)
+    delta_phi = math.radians(lat2 - lat1)
+    delta_lambda = math.radians(lon2 - lon1)
+    a = math.sin(delta_phi / 2.0) ** 2 + math.cos(phi_1) * math.cos(phi_2) * math.sin(delta_lambda / 2.0) ** 2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    return R * c
+
+def fetch_google_data(latitude, longitude, radius_mi=5, limit=20):
+    import concurrent.futures
+    import os
+    google_maps_api_key = os.getenv('GOOGLE_MAPS_API_KEY')
     if latitude is None or longitude is None:
         return []
     try:
-        lat = float(latitude)
-        lon = float(longitude)
+        center_lat = float(latitude)
+        center_lon = float(longitude)
     except (TypeError, ValueError):
         return []
 
-    # Convert miles to meters for API request
-    radius_meters = radius_mi * 1609.34
-    request_url = f"https://api.tomtom.com/search/2/nearbySearch/.json?key={tomtom_api_key}&lat={lat}&lon={lon}&radius={radius_meters}&limit={limit}"
-
-    # Make API request with timeout
-    try:
-        response = requests.get(request_url, timeout=8)
-    except requests.RequestException:
+    radius_meters = min(radius_mi * 1609.34, 50000.0)
+    
+    headers = {
+        'Content-Type': 'application/json',
+        'X-Goog-Api-Key': google_maps_api_key,
+        'X-Goog-FieldMask': 'places.name,places.id,places.displayName,places.formattedAddress,places.location,places.types,places.rating,places.userRatingCount,places.photos,places.nationalPhoneNumber,places.websiteUri,places.regularOpeningHours'
+    }
+    
+    type_chunks = [
+        ["restaurant"],
+        ["cafe", "bakery"],
+        ["store"],
+        ["clothing_store"],
+        ["bar"],
+        ["park"],
+        ["museum", "tourist_attraction"]
+    ]
+    
+    all_places = []
+    seen_places = set()
+    
+    def fetch_chunk(args):
+        chunk, rank_pref = args
+        payload = {
+            "includedTypes": chunk,
+            "maxResultCount": 20,
+            "locationRestriction": {
+                "circle": {
+                    "center": {
+                        "latitude": center_lat,
+                        "longitude": center_lon
+                    },
+                    "radius": radius_meters if rank_pref == "POPULARITY" else min(radius_meters, 8000.0)
+                }
+            }
+        }
+        if rank_pref:
+            payload["rankPreference"] = rank_pref
+            
+        try:
+            response = requests.post("https://places.googleapis.com/v1/places:searchNearby", headers=headers, json=payload, timeout=8)
+            if response.status_code == 200:
+                return response.json().get('places', [])
+        except requests.RequestException:
+            pass
         return []
-    if response.status_code != 200:
-        return []
 
-    # Transform API response to standardized format
-    results = response.json().get('results', [])
+    requests_to_make = []
+    for chunk in type_chunks:
+        requests_to_make.append((chunk, "POPULARITY"))
+        requests_to_make.append((chunk, "DISTANCE"))
+        
+    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+        results = executor.map(fetch_chunk, requests_to_make)
+        
+    for places in results:
+        for place in places:
+            place_id = place.get('name')
+            if place_id not in seen_places:
+                seen_places.add(place_id)
+                all_places.append(place)
+            
     recommendations = []
-    for result in results:
-        poi = result.get('poi', {})
-        position = result.get('position', {})
+    
+    # Chains to penalize
+    chains = ['mcdonald', 'starbucks', 'subway', 'taco bell', 'burger king', 'wendy', 'kfc', 'domino', 'pizza hut', 'dunkin', 'chipotle', 'walmart', 'target', 'costco', 'sams club', 'home depot', 'lowes', 'best buy', 'walgreens', 'cvs', 'kroger', 'safeway', 'publix', 'albertsons', 'whole foods']
+    
+    for place in all_places:
+        name = place.get('displayName', {}).get('text', '')
+        lat = place.get('location', {}).get('latitude')
+        lng = place.get('location', {}).get('longitude')
+        types = place.get('types', [])
+        rating = place.get('rating', 3.0)
+        user_ratings = place.get('userRatingCount', 0)
+        phone = place.get('nationalPhoneNumber')
+        website = place.get('websiteUri')
+        hours = place.get('regularOpeningHours', {}).get('weekdayDescriptions', [])
+        
+        # Calculate a base score using Google rating
+        # Rating is 1.0 to 5.0. We map it to a score multiplier.
+        score = rating * 1.5 
+        
+        # Prefer local places by penalizing chains and boosting independents
+        name_lower = name.lower()
+        is_chain = any(chain in name_lower for chain in chains)
+        if is_chain:
+            score -= 5.0 # Heavy penalty for chains
+        else:
+            score += 3.0 # Big boost for local/independent businesses
+            
+        # Additional boost for places with a reasonable amount of reviews (established but local)
+        if 50 < user_ratings < 1000 and not is_chain:
+            score += 1.0
+            
+        # Get first photo if available
+        photos = place.get('photos', [])
+        image_url = None
+        if photos:
+            photo_reference = photos[0].get('name')
+            if photo_reference:
+                image_url = f"https://places.googleapis.com/v1/{photo_reference}/media?key={google_maps_api_key}&maxHeightPx=400&maxWidthPx=400"
+                
+        dist = haversine_distance(lat, lng, center_lat, center_lon) if lat and lng else 0
         recommendations.append({
-            'name': poi.get('name'),
-            'address': result.get('address', {}).get('freeformAddress'),
-            'latitude': position.get('lat'),
-            'longitude': position.get('lon'),
-            'distance_meters': result.get('dist'),
-            'category': poi.get('categories', []),
-            'score': result.get('score'),
-            'classifications': poi.get('classifications', [])  # Used for vector mapping
+            'name': name,
+            'address': place.get('formattedAddress', ''),
+            'latitude': lat,
+            'longitude': lng,
+            'distance_meters': dist,
+            'category': types,
+            'score': max(0.1, score), # Ensure score is positive
+            'classifications': types,
+            'imageUrl': image_url,
+            'rating': rating,
+            'userRatingCount': user_ratings,
+            'phone': phone,
+            'website': website,
+            'businessHours': hours
         })
+        
     return recommendations
 
 def get_location_vector(tomtom_poi):
@@ -68,11 +172,18 @@ def get_location_vector(tomtom_poi):
 
     # Process each classification and map to our categories
     for item in classifications:
-        names = item.get('names', [])
-        for name_obj in names:
-            # Normalize category name for lookup
-            raw_name = name_obj.get('name', '').strip().upper()
+        raw_names = []
+        if isinstance(item, str):
+            # Google Maps returns a flat list of strings for types
+            raw_names.append(item.strip().replace('_', ' ').upper())
+        elif isinstance(item, dict):
+            # TomTom returns a nested structure
+            names = item.get('names', [])
+            for name_obj in names:
+                if isinstance(name_obj, dict):
+                    raw_names.append(name_obj.get('name', '').strip().upper())
 
+        for raw_name in raw_names:
             if raw_name in CATEGORY_MAPPING:
                 mapped_val = CATEGORY_MAPPING[raw_name]
 
@@ -85,8 +196,6 @@ def get_location_vector(tomtom_poi):
                     if mapped_val in vector:
                         vector[mapped_val] = 1.0
             else:
-                # Log unmapped categories for debugging
-                print(f"Missed: {raw_name}")
                 pass
 
     return vector
@@ -104,6 +213,10 @@ def calculate_relevance(user_prefs, location_vector):
     for key in all_keys:
         user = user_prefs.get(key, 0.0)
         location = location_vector.get(key, 0.0)
+
+        # Ignore non-numeric preferences (like 'theme_mode')
+        if not isinstance(user, (int, float)) or not isinstance(location, (int, float)):
+            continue
 
         dot_product += user * location
         magnitude_user += user ** 2
@@ -128,7 +241,7 @@ def rank_locations(user_profile, locations):
     popularity_weight = 0.1   # General popularity as tiebreaker
     decay_constant = 1.5      # Distance decay rate (miles)
 
-    user_vector = user_profile.preferences
+    user_vector = user_profile.preferences or {}
 
     for place in locations:
         # Calculate relevance from cosine similarity
@@ -155,7 +268,8 @@ def rank_locations(user_profile, locations):
             'distance_meters': place.get('distance_meters'),
             'category': place.get('category'),
             'score': final_score,
-            'classifications': place.get('classifications')
+            'classifications': place.get('classifications'),
+            'imageUrl': place.get('imageUrl')
         })
 
     # Sort by score descending (best matches first)
@@ -222,7 +336,7 @@ def get_nearby_recommendations():
     radius = data.get('radius_mi', 5)
     limit = data.get('limit', 100)
 
-    reccs = fetch_tomtom_data(latitude, longitude, radius, limit)
+    reccs = fetch_google_data(latitude, longitude, radius, limit)
 
     return jsonify({
         'recommendations': reccs or [],
@@ -239,9 +353,13 @@ def get_ranked_recommendations():
     longitude = data.get('longitude')
     radius = data.get('radius_mi', 5)
     limit = data.get('limit', 100)
+    ignore_names = data.get('ignore_names', [])
 
-    # Fetch nearby POIs from TomTom
-    reccs = fetch_tomtom_data(latitude, longitude, radius, limit)
+    # Fetch nearby POIs from Google
+    reccs = fetch_google_data(latitude, longitude, radius, limit)
+
+    if ignore_names:
+        reccs = [r for r in reccs if r.get('name') not in ignore_names]
 
     # Rank based on current user's preferences
     ranked_locations = rank_locations(current_user, reccs or [])
@@ -281,7 +399,7 @@ def get_ranked_recommendations():
 @recc_bp.route('/test/nearby', methods=['GET'])
 def test_recommendation():
     # Use Santa Cruz, CA coordinates for testing
-    reccs = fetch_tomtom_data(36.98844, -121.97483, 5, 100)
+    reccs = fetch_google_data(36.98844, -121.97483, 5, 100)
 
     if reccs is None:
         return jsonify({'message': 'Test failed: API error'}), 500
@@ -291,7 +409,7 @@ def test_recommendation():
 
 @recc_bp.route('/test/location_vector', methods=['GET'])
 def test_location_vector():
-    data = fetch_tomtom_data(36.98844, -121.97483, 5, 100)
+    data = fetch_google_data(36.98844, -121.97483, 5, 100)
     
     # Handle both dict response (old format) and list response (current)
     reccs = data.get('results', []) if isinstance(data, dict) else data
@@ -322,7 +440,7 @@ def test_relevance():
         "business_industrial": 0.0, "religion_community": 0.5
     }
 
-    data = fetch_tomtom_data(36.98844, -121.97483, 5, 100)
+    data = fetch_google_data(36.98844, -121.97483, 5, 100)
 
     reccs = data.get('results', []) if isinstance(data, dict) else data
 
@@ -353,7 +471,7 @@ def test_rank_locations():
         "business_industrial": 0.0, "religion_community": 0.5
     }
 
-    data = fetch_tomtom_data(36.98844, -121.97483, 5, 100)
+    data = fetch_google_data(36.98844, -121.97483, 5, 100)
 
     reccs = data.get('results', []) if isinstance(data, dict) else data
 

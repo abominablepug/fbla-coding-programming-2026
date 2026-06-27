@@ -86,10 +86,10 @@ interface ReportOptions {
   summary: boolean;
 }
 
-const TOMTOM_API_KEY =
-  import.meta.env.VITE_TOMTOM_API_KEY ||
-  import.meta.env.PUBLIC_TOMTOM_API_KEY ||
-  import.meta.env.TOMTOM_API_KEY;
+const GOOGLE_MAPS_API_KEY =
+  import.meta.env.VITE_GOOGLE_MAPS_API_KEY ||
+  import.meta.env.PUBLIC_GOOGLE_MAPS_API_KEY ||
+  import.meta.env.GOOGLE_MAPS_API_KEY;
 
 const defaultReportOptions: ReportOptions = {
   favorites: true,
@@ -181,11 +181,11 @@ const getSavedCoupons = (uid?: number): SavedCouponMeta[] => {
 };
 
 const fetchDirectionsSummary = async (from?: Location, to?: Location) => {
-  if (!TOMTOM_API_KEY || !from || !to) return null;
+  if (!GOOGLE_MAPS_API_KEY || !from || !to) return null;
   const url = new URL(
     `https://api.tomtom.com/routing/1/calculateRoute/${from.latitude},${from.longitude}:${to.latitude},${to.longitude}/json`
   );
-  url.searchParams.set('key', TOMTOM_API_KEY);
+  url.searchParams.set('key', GOOGLE_MAPS_API_KEY);
   url.searchParams.set('instructionsType', 'tagged');
 
   try {

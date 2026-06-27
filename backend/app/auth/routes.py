@@ -359,3 +359,26 @@ def get_profile_report_data():
         'reviews': reviews,
         'preferences': current_user.preferences or {},
     }), 200
+
+@auth_bp.route('/profile/settings', methods=['GET'])
+@login_required
+def get_profile_settings():
+    return jsonify({
+        'theme_mode': _get_theme_mode(current_user)
+    }), 200
+
+@auth_bp.route('/profile/theme', methods=['POST'])
+@login_required
+def save_profile_theme():
+    payload = request.get_json(silent=True) or request.form
+    theme_mode = payload.get('theme_mode')
+    if theme_mode not in ('dark', 'light'):
+        return jsonify({'message': 'Theme mode must be dark or light.'}), 400
+
+    preferences = dict(current_user.preferences or {})
+    preferences['theme_mode'] = theme_mode
+    current_user.preferences = preferences
+    db.session.commit()
+
+    return jsonify({'message': 'Theme preference saved.', 'theme_mode': theme_mode}), 200
+

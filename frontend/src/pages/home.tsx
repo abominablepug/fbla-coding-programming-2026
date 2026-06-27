@@ -133,7 +133,7 @@ const Home = () => {
 						</div>
 						<div className="order-1 md:order-2 space-y-6">
 							<p className="text-lg text-neutral-300 leading-relaxed">
-								Visualize your opportunities with our map integration powered by <span className="text-purple-400 font-bold">TomTom API</span>, including nearby POIs, navigation, and location-level context.
+								Visualize your opportunities with our map integration powered by <span className="text-purple-400 font-bold">Google Maps API</span>, including nearby POIs, navigation, and location-level context.
 							</p>
 							<p className="text-sm text-neutral-400 leading-relaxed">
 								Built-in filters help users narrow the map view by real-world criteria, making search results faster to act on.
@@ -219,7 +219,7 @@ const Home = () => {
 							</div>
 							<h3 className="text-xl font-bold text-white mb-3">Maps & Data</h3>
 							<p className="text-neutral-400 leading-relaxed">
-								Integrated <span className="text-cyan-400">TomTom API</span> for world-class mapping, geocoding, and traffic data visualization.
+								Integrated <span className="text-cyan-400">Google Maps API</span> for world-class mapping, geocoding, and traffic data visualization.
 							</p>
 						</div>
 					</div>

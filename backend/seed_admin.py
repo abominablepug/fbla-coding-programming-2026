@@ -21,7 +21,6 @@ def seed_admin():
             db.session.commit()
             print("Admin user 'user' with password 'password' created successfully.")
         else:
-            # Upgrade existing user to admin if necessary
             if admin_user.user_type != 'admin':
                 admin_user.user_type = 'admin'
                 db.session.commit()

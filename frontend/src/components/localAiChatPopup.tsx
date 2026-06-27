@@ -28,10 +28,10 @@ interface LocalAiChatPopupProps {
   activeSelectionLabel?: string;
 }
 
-const TOMTOM_API_KEY =
-  import.meta.env.VITE_TOMTOM_API_KEY ||
-  import.meta.env.PUBLIC_TOMTOM_API_KEY ||
-  import.meta.env.TOMTOM_API_KEY;
+const GOOGLE_MAPS_API_KEY =
+  import.meta.env.VITE_GOOGLE_MAPS_API_KEY ||
+  import.meta.env.PUBLIC_GOOGLE_MAPS_API_KEY ||
+  import.meta.env.GOOGLE_MAPS_API_KEY;
 const AI_API_KEY =
   import.meta.env.PUBLIC_AI_API_KEY ||
   import.meta.env.VITE_AI_API_KEY ||
@@ -52,7 +52,7 @@ const LocalAiChatPopup = ({
   const [chatInput, setChatInput] = useState('');
   const [chatLoading, setChatLoading] = useState(false);
   const [routingTarget, setRoutingTarget] = useState<string | null>(null);
-  const [latestTomTomPlaces, setLatestTomTomPlaces] = useState<LocalPlace[]>([]);
+  const [latestGooglePlaces, setLatestGooglePlaces] = useState<LocalPlace[]>([]);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
     {
       role: 'assistant',
@@ -94,12 +94,12 @@ const LocalAiChatPopup = ({
   };
 
   const getLocalRecommendations = async (rawMessage: string): Promise<string | null> => {
-    if (!TOMTOM_API_KEY || !effectiveLocation) return null;
+    if (!GOOGLE_MAPS_API_KEY || !effectiveLocation) return null;
     const query = inferLocalSearchQuery(rawMessage);
     try {
       const res = await fetch(
         `https://api.tomtom.com/search/2/search/${encodeURIComponent(query)}.json?key=${encodeURIComponent(
-          TOMTOM_API_KEY
+          GOOGLE_MAPS_API_KEY
         )}&lat=${encodeURIComponent(String(effectiveLocation.lat))}&lon=${encodeURIComponent(
           String(effectiveLocation.lng)
         )}&radius=16093&limit=5&openingHours=nextSevenDays`
@@ -125,13 +125,13 @@ const LocalAiChatPopup = ({
     }
   };
 
-  const fetchTomTomPlaces = async (rawMessage: string, limit = 8): Promise<LocalPlace[]> => {
-    if (!TOMTOM_API_KEY || !effectiveLocation) return [];
+  const fetchGooglePlaces = async (rawMessage: string, limit = 8): Promise<LocalPlace[]> => {
+    if (!GOOGLE_MAPS_API_KEY || !effectiveLocation) return [];
     const query = inferLocalSearchQuery(rawMessage);
     try {
       const res = await fetch(
         `https://api.tomtom.com/search/2/search/${encodeURIComponent(query)}.json?key=${encodeURIComponent(
-          TOMTOM_API_KEY
+          GOOGLE_MAPS_API_KEY
         )}&lat=${encodeURIComponent(String(effectiveLocation.lat))}&lon=${encodeURIComponent(
           String(effectiveLocation.lng)
         )}&radius=16093&limit=${Math.max(1, Math.min(20, limit))}&openingHours=nextSevenDays`
@@ -151,7 +151,7 @@ const LocalAiChatPopup = ({
         }))
         .slice(0, limit);
     } catch (error) {
-      console.error('TomTom live place fetch failed:', error);
+      console.error('Google live place fetch failed:', error);
       return [];
     }
   };
@@ -164,6 +164,7 @@ const LocalAiChatPopup = ({
         });
         if (!response.ok) return;
         const data = await response.json();
+      
         const nextVisited: LocalPlace[] = Array.isArray(data)
           ? data.map((loc: any) => ({
               name: loc?.name || 'Unknown',
@@ -236,7 +237,7 @@ const LocalAiChatPopup = ({
     [favoriteLocations, effectiveVisitedLocations, likedLocations, selectedPois]
   );
   const allRouteablePlaces = useMemo(() => {
-    const merged = [...allKnownPlaces, ...latestTomTomPlaces];
+    const merged = [...allKnownPlaces, ...latestGooglePlaces];
     const seen = new Set<string>();
     return merged.filter((place) => {
       const key = `${(place.name || '').trim().toLowerCase()}|${(place.address || '').trim().toLowerCase()}|${place.latitude}|${place.longitude}`;
@@ -244,7 +245,7 @@ const LocalAiChatPopup = ({
       seen.add(key);
       return true;
     });
-  }, [allKnownPlaces, latestTomTomPlaces]);
+  }, [allKnownPlaces, latestGooglePlaces]);
 
   const summarizePlaces = (title: string, places: LocalPlace[]) => {
     const summary = places
@@ -319,7 +320,7 @@ const LocalAiChatPopup = ({
       .join('\n')}\n\nAsk for nearest, farthest, or route options and I can guide you.`;
   };
 
-  const buildLocalContext = (liveTomTomPlaces: LocalPlace[] = []) => {
+  const buildLocalContext = (liveGooglePlaces: LocalPlace[] = []) => {
     const currentLocLine =
       effectiveLocation && Number.isFinite(effectiveLocation.lat) && Number.isFinite(effectiveLocation.lng)
         ? `Current user location: [${effectiveLocation.lat}, ${effectiveLocation.lng}].`
@@ -334,11 +335,11 @@ const LocalAiChatPopup = ({
       summarizePlaces('Newly liked locations', likedLocations),
       summarizePlaces('Selected POIs', selectedPois),
       summarizePlaces('All known map/popup locations', allKnownPlaces),
-      summarizePlaces('Live TomTom places nearby (primary)', liveTomTomPlaces),
+      summarizePlaces('Live Google places nearby (primary)', liveGooglePlaces),
       `Current highlighted selection: ${activeSelectionLabel || 'None'}.`,
       nearestAndFarthestSummary(),
       'You must answer only about local locations, routes, navigation, POIs, and local business recommendations.',
-      'Treat Live TomTom places nearby (primary) as the main source for recommendations when available.',
+      'Treat Live Google places nearby (primary) as the main source for recommendations when available.',
       'Prioritize places in the user vicinity. Prefer options within roughly 10 miles of current location when possible.',
       'Never ask the user for their location and never ask them to confirm their location.',
       'Use provided current location, selected POIs, and known map/popup locations directly.',
@@ -442,10 +443,10 @@ const LocalAiChatPopup = ({
     const q = query.trim();
     if (!q) return;
     if (routeToKnownPlace(q)) return;
-    if (!TOMTOM_API_KEY) {
+    if (!GOOGLE_MAPS_API_KEY) {
       setChatMessages((prev) => [
         ...prev,
-        { role: 'assistant', content: 'Routing needs VITE_TOMTOM_API_KEY for new location lookups.' },
+        { role: 'assistant', content: 'Routing needs VITE_GOOGLE_MAPS_API_KEY for new location lookups.' },
       ]);
       return;
     }
@@ -457,7 +458,7 @@ const LocalAiChatPopup = ({
           : '';
       const res = await fetch(
         `https://api.tomtom.com/search/2/search/${encodeURIComponent(q)}.json?key=${encodeURIComponent(
-          TOMTOM_API_KEY
+          GOOGLE_MAPS_API_KEY
         )}&limit=5&typeahead=true${latBias}`
       );
       const data = await res.json();
@@ -534,12 +535,12 @@ const LocalAiChatPopup = ({
     const message = chatInput.trim();
     if (!message || chatLoading) return;
     if (!AI_API_KEY) {
-      const liveTomTomPlaces = await fetchTomTomPlaces(message, 8);
-      setLatestTomTomPlaces(liveTomTomPlaces);
+      const liveGooglePlaces = await fetchGooglePlaces(message, 8);
+      setLatestGooglePlaces(liveGooglePlaces);
       const localReply = await getLocalRecommendations(message);
       setChatMessages((prev) => [
         ...prev,
-        { role: 'assistant', content: localReply || buildFallbackResponse(message, liveTomTomPlaces) },
+        { role: 'assistant', content: localReply || buildFallbackResponse(message, liveGooglePlaces) },
       ]);
       setChatInput('');
       return;
@@ -549,11 +550,11 @@ const LocalAiChatPopup = ({
     setChatMessages(nextMessages);
     setChatInput('');
     setChatLoading(true);
-    let liveTomTomPlacesForTurn: LocalPlace[] = [];
+    let liveGooglePlacesForTurn: LocalPlace[] = [];
 
     try {
-      liveTomTomPlacesForTurn = await fetchTomTomPlaces(message, 8);
-      setLatestTomTomPlaces(liveTomTomPlacesForTurn);
+      liveGooglePlacesForTurn = await fetchGooglePlaces(message, 8);
+      setLatestGooglePlaces(liveGooglePlacesForTurn);
 
       if (isLocalDiscoveryIntent(message)) {
         const localReply = await getLocalRecommendations(message);
@@ -564,7 +565,7 @@ const LocalAiChatPopup = ({
       }
 
       const aiMessages = [
-        { role: 'user', content: `Context:\n${buildLocalContext(liveTomTomPlacesForTurn)}` },
+        { role: 'user', content: `Context:\n${buildLocalContext(liveGooglePlacesForTurn)}` },
         ...nextMessages.map((m) => ({
           role: m.role,
           content: m.content,
@@ -579,6 +580,7 @@ const LocalAiChatPopup = ({
 
       const response = await getAiChatResponse(request);
       const data = await response.json();
+      
       if (!response.ok) {
         const status = response.status;
         const detail = data?.error?.message || data?.error || data?.message || '';
@@ -602,7 +604,7 @@ const LocalAiChatPopup = ({
           content:
             (error instanceof Error ? error.message : 'AI error.') +
             '\n\n' +
-            (localReply || buildFallbackResponse(message, liveTomTomPlacesForTurn)),
+            (localReply || buildFallbackResponse(message, liveGooglePlacesForTurn)),
         },
       ]);
     } finally {

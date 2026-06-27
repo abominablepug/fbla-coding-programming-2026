@@ -103,6 +103,10 @@ class Location(db.Model):
     # Location classification
     type = db.Column(db.Integer, nullable=False)  # Type identifier
     categories = db.Column(db.JSON, nullable=True)  # Category tags from API
+    phone = db.Column(db.String(50), nullable=True)
+    email = db.Column(db.String(150), nullable=True)
+    website = db.Column(db.String(255), nullable=True)
+    businessHours = db.Column(db.JSON, nullable=True)
 
     # Relationship: Reviews for this location
     reviews = db.relationship('Review', back_populates='location', lazy=True)

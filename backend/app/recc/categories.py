@@ -631,5 +631,16 @@ CATEGORY_MAPPING = {
     "IMPORTANT TOURIST ATTRACTION": ["arts_and_culture", "activities"],
     "FOOD DRINKS: GROCERS": "food",
     "ELECTRIC VEHICLE STATION": "transportation_utilities",
-    "TRAVEL AGENTS": "proffesional_services"
+    "TRAVEL AGENTS": "proffesional_services",
+    "CAFE": "food",
+    "STORE": "shopping",
+    "CLOTHING STORE": "shopping",
+    "FOOD": "food",
+    "POINT OF INTEREST": "activities",
+    "ESTABLISHMENT": "business_industrial",
+    "AMUSEMENT CENTER": ["activities", "family_friendly"],
+    "GROCERY OR SUPERMARKET": "shopping",
+    "PLACE OF WORSHIP": "religion_community",
+    "HEALTH": "proffesional_services",
+    "LODGING": "lodging_residential"
 }

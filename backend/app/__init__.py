@@ -7,9 +7,13 @@ from app.extensions import db, bcrypt
 import os
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
-load_dotenv()
-
+# Load environment variables from .env file (either in backend or root)
+basedir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+env_path = os.path.join(os.path.dirname(basedir), '.env')
+if os.path.exists(env_path):
+    load_dotenv(env_path)
+else:
+    load_dotenv()
 
 def create_app():
     app = Flask(__name__)

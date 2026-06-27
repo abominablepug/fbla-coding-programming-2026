@@ -8,12 +8,12 @@ import Body from '../components/body';
 import { enqueueAlert } from '../components/alerts';
 import LocalAiChatPopup from '../components/localAiChatPopup';
 import {
-	fetchTomTomPoiDetailsForLocation,
+	fetchGooglePlaceDetails,
 	formatBusinessHoursForDisplay,
 	serializeBusinessHours,
 	serializeSocials,
 	type SocialLink,
-} from '../utils/tomtomPoiDetails';
+} from '../utils/googlePlaceDetails';
 import { getSampleGoogleReviewsForLocation } from '../utils/googleReviews';
 import { resolveLocationId } from '../utils/locationResolver';
 
@@ -172,9 +172,9 @@ const APP_ONBOARDING_STEPS: OnboardingStep[] = [
 ];
 
 const API_KEY =
-	import.meta.env.VITE_TOMTOM_API_KEY ||
-	import.meta.env.PUBLIC_TOMTOM_API_KEY ||
-	import.meta.env.TOMTOM_API_KEY;
+	import.meta.env.VITE_GOOGLE_MAPS_API_KEY ||
+	import.meta.env.PUBLIC_GOOGLE_MAPS_API_KEY ||
+	import.meta.env.GOOGLE_MAPS_API_KEY;
 const AUTH_BASE_URL = import.meta.env.VITE_AUTH_BASE_URL || 'http://localhost:5173';
 const LocationDetailBlock = ({ loc }: { loc: Location }) => {
 	const formattedHours = formatBusinessHoursForDisplay(loc.businessHours, 2);
@@ -293,11 +293,11 @@ const Dashboard = () => {
 				} else {
 					const enriched = await Promise.all(
 						data.map(async (loc: Location) => {
-							const details = await fetchTomTomPoiDetailsForLocation(API_KEY, {
+							const details = await fetchGooglePlaceDetails(API_KEY, {
 								name: loc.name,
 								address: loc.address,
-								latitude: loc.latitude,
-								longitude: loc.longitude
+								lat: loc.latitude,
+								lng: loc.longitude
 							});
 							return { ...loc, ...details };
 						})
@@ -328,11 +328,11 @@ const Dashboard = () => {
 				if (API_KEY) {
 					visitedWithDetails = await Promise.all(
 						data.map(async (loc) => {
-							const details = await fetchTomTomPoiDetailsForLocation(API_KEY, {
+							const details = await fetchGooglePlaceDetails(API_KEY, {
 								name: loc.name,
 								address: loc.address,
-								latitude: loc.latitude,
-								longitude: loc.longitude
+								lat: loc.latitude,
+								lng: loc.longitude
 							});
 							return { ...loc, ...details };
 						})
@@ -388,8 +388,8 @@ const Dashboard = () => {
 				body: JSON.stringify({
 					name: loc.name,
 					address: loc.address,
-					longitude: loc.longitude,
-					latitude: loc.latitude,
+					lng: loc.longitude,
+					lat: loc.latitude,
 					type: 1,
 					categories: loc.categories || [],
 				}),
