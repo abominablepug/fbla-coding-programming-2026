@@ -346,13 +346,13 @@ const BusinessDashboard = () => {
 
   return (
     <Body>
-      <Navbar />
+      <Navbar page="Business Dashboard"/>
       <div className="business-dashboard-container">
         <div className="dashboard-content">
           {/* Business Profile Section */}
           <div className="dashboard-section">
             <div className="section-header">
-              <h1>Business Profile</h1>
+              <h1 className="text-cyan-500">Business Profile</h1>
               {!editing && (
                 <button
                   className="action-btn edit-btn"

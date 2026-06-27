@@ -268,7 +268,7 @@ const Dashboard = () => {
 	const [loadingVisited, setLoadingVisited] = useState(false);
 	const [visitedLocations, setVisitedLocations] = useState<Location[]>([]);
 	const [visitedHistory, setVisitedHistory] = useState<Location[]>([]);
-	const imageSrc = `http://localhost:5173/static/profile_pictures/${profilePic}`;
+	const imageSrc = `${AUTH_BASE_URL}/static/profile_pictures/${profilePic || 'default_profile_picture.png'}`;
 	const [popup,setPopup] = useState(false);
 	const [showFavoritesSidebar, setShowFavoritesSidebar] = useState(false);
 	const [savedCouponKeys, setSavedCouponKeys] = useState<string[]>([]);
@@ -443,7 +443,11 @@ const Dashboard = () => {
 			if (response.ok) {
 				const data = await response.json();
 				setProfilePic(data.profile_picture);
+				setUser((prev) =>
+					prev ? { ...prev, profile_picture: data.profile_picture } as any : prev
+				);
 				setOpenForm(false);
+				setPopup(false);
 				enqueueAlert({ message: "Profile picture updated.", textColor: "text-green-300" });
 			} else {
 				console.error('Failed to upload profile picture');
@@ -1140,8 +1144,7 @@ const Dashboard = () => {
 								<div className="max-w-md w-full align-items-center justify-items-center">
 									<img  className="block aspect-square h-40 w-40 overflow-hidden rounded-full border-4 border-cyan-600 object-cover object-center shadow-w-auto mb-4 align-center" src={imageSrc} alt="Profile" />
 									{!openForm&&(<div className="items-center align-items-center justify-center">
-										<button className="mt-4 px-4 py-2 bg-[var(--app-accent-coral)] text-white font-semibold rounded-lg hover:bg-[var(--app-accent-coral-hover)] transition-colors inline-block mr-3" onClick={() => {setOpenForm(true); setPfpChange(false);}}>Change Password</button>
-										<button className="mt-4 px-4 py-2 bg-[var(--app-accent-gold)] text-[var(--app-on-gold)] font-semibold rounded-lg hover:bg-[var(--app-accent-gold-hover)] transition-colors inline-block" onClick={() => {setOpenForm(true); setPfpChange(true);}}>Change Profile Picture</button>
+										<button className="mt-4 px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-400 transition-colors inline-block" onClick={() => {setOpenForm(true); setPfpChange(true);}}>Change Profile Picture</button>
 									</div>)}
 									{openForm &&(
 										<div className={`flex flex-col items-center justify-center gap-4 mt-4 w-full`}>

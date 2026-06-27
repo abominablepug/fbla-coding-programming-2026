@@ -1,4 +1,4 @@
-import {Link} from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import React from 'react';
 
 interface LinkProps {
@@ -11,29 +11,53 @@ interface LinkProps {
     onClick?: React.MouseEventHandler<HTMLAnchorElement>;
 }
 
-const Links: React.FC<LinkProps> = ({ title, children, link = "", className = "", linkClassName = "", titleClassName = "", onClick}) => {
-    return (
-        <div className={`relative z-10 flex justify-center ${className}`}>
-            <Link
-                to={link.startsWith('/') ? link : `/${link}`}
-                onClick={onClick}
-                style={{ fontFamily: 'var(--font-link)' }}
-                className={`${linkClassName} flex shrink-0 items-center gap-0.5 pointer-events-auto rounded-full border-cyan-300/45 bg-teal-700 px-2 py-1 text-[8px] text-white shadow-md transition-all duration-200 hover:bg-cyan-500 sm:px-2.5 sm:py-1.5 sm:text-[11px] lg:hover:scale-[1.04]`}
+const Links: React.FC<LinkProps> = ({
+  title,
+  children,
+  link = "",
+  className = "",
+  linkClassName = "",
+  titleClassName = "",
+  onClick,
+}) => {
+  const location = useLocation();
+
+  const targetPath = link
+    ? link.startsWith('/') ? link : `/${link}`
+    : '';
+
+  // In business pages we don't apply "hide current route" behavior.
+  const isBusinessSide = location.pathname.includes('/business');
+
+  if (!isBusinessSide && targetPath && targetPath === location.pathname) {
+    return null;
+  }
+
+  return (
+    <div className={`relative z-10 flex justify-center ${className}`}>
+      <Link
+        to={targetPath}
+        onClick={onClick}
+        style={{ fontFamily: 'var(--font-link)' }}
+        className={`${linkClassName} flex shrink-0 items-center gap-0.5 pointer-events-auto rounded-full border-cyan-300/45 bg-teal-700 px-2 py-1 text-[8px] text-white shadow-md transition-all duration-200 hover:bg-cyan-500 sm:px-2.5 sm:py-1.5 sm:text-[11px] lg:hover:scale-[1.04]`}
+      >
+        {title ? (
+          typeof title === 'string' ? (
+            <span
+              style={{ fontFamily: 'var(--font-heading)' }}
+              className={`text-sm font-normal text-white ${titleClassName}`}
             >
-                        {title ? (
-                            typeof title === 'string' ? (
-                            <span style={{ fontFamily: 'var(--font-heading)' }} className={`text-sm font-normal text-white ${titleClassName}`}>
-                                {title}
-                            </span>
-                        ) : (
-                            <div className={titleClassName}>
-                                {title}
-                            </div>
-                        )
-                        ) : children}
-            </Link>
-        </div>
-    );
-}
+              {title}
+            </span>
+          ) : (
+            <div className={titleClassName}>{title}</div>
+          )
+        ) : (
+          children
+        )}
+      </Link>
+    </div>
+  );
+};
 
 export default Links;

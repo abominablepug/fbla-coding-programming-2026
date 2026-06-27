@@ -57,8 +57,11 @@ const Navbar: React.FC<NavBarProps> = ({ page, children, className = ""}) => {
         if (appPages.has(location.pathname)) return '/dashboard';
         return isAuthenticated ? '/dashboard' : '/';
     }, [isAuthenticated, location.pathname]);
-    const showHomeShortcut = isAuthenticated && !location.pathname.startsWith('/dashboard');
-
+    const showHomeShortcut = isAuthenticated && !location.pathname.startsWith('/dashboard') && !location.pathname.includes('/business');
+    const businessSide = isAuthenticated && !location.pathname.includes('/business');
+    const notBusinessDashboard = isAuthenticated && location.pathname.includes('/business') && !location.pathname.includes('/dashboard');
+    const notBusinessProfile= isAuthenticated && location.pathname.includes('/business') && !location.pathname.includes('/profile');
+    const notProfile= isAuthenticated && !location.pathname.includes('/profile') && !location.pathname.includes('/business');
     const profileImageSrc = profilePicture ? `${authBaseUrl}/static/profile_pictures/${profilePicture}` : '';
 
     return (
@@ -89,9 +92,21 @@ const Navbar: React.FC<NavBarProps> = ({ page, children, className = ""}) => {
                         </span>
                     </div>
                     <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
+                        {businessSide && (
                         <div className="flex max-w-[64vw] items-center gap-1.5 pr-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden sm:max-w-[70vw] sm:gap-2">
                             {children}
                         </div>
+                        )}
+                        {notBusinessDashboard && (
+                            <Link
+                                to="/business/dashboard"
+                                className="pointer-events-auto inline-flex shrink-0 items-center justify-center rounded-md border border-cyan-200/18 bg-cyan-50/6 p-1.5 text-cyan-50 shadow-md shadow-black/20 transition-all duration-200 hover:border-cyan-200/36 hover:bg-cyan-50/10"
+                                aria-label="Home"
+                                title="Home"
+                            >
+                                <House size={16} />
+                            </Link>
+                        )}
                         {showHomeShortcut && (
                             <Link
                                 to="/dashboard"
@@ -102,8 +117,24 @@ const Navbar: React.FC<NavBarProps> = ({ page, children, className = ""}) => {
                                 <House size={16} />
                             </Link>
                         )}
+                        {notBusinessProfile && (<Link
+                            to="/business/profile"
+                            className="pointer-events-auto inline-flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-md border border-cyan-200/20 bg-cyan-50/6 text-cyan-50 shadow-md shadow-black/20 transition-all duration-200 hover:border-cyan-200/40 hover:bg-cyan-50/10"
+                            aria-label="Open profile settings"
+                            title="Profile settings"
+                        >
+                            {profileImageSrc ? (
+                                <img
+                                    src={profileImageSrc}
+                                    alt={`${username} profile`}
+                                    className="h-full w-full object-cover"
+                                />
+                            ) : (
+                                <UserRound size={16} />
+                            )}
+                        </Link>)}
 
-                        <Link
+                        {notProfile && (<Link
                             to="/profile"
                             className="pointer-events-auto inline-flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-md border border-cyan-200/20 bg-cyan-50/6 text-cyan-50 shadow-md shadow-black/20 transition-all duration-200 hover:border-cyan-200/40 hover:bg-cyan-50/10"
                             aria-label="Open profile settings"
@@ -118,7 +149,7 @@ const Navbar: React.FC<NavBarProps> = ({ page, children, className = ""}) => {
                             ) : (
                                 <UserRound size={16} />
                             )}
-                        </Link>
+                        </Link>)}
 
                     </div>
                 </nav>

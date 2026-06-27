@@ -21,13 +21,6 @@
 }
 
 /* Give each section its own accent so the page isn't all-blue */
-.dashboard-content > .dashboard-section:nth-of-type(1) {
-  border-left: 4px solid var(--accent-gold, var(--app-accent-gold));
-}
-
-.dashboard-content > .dashboard-section:nth-of-type(2) {
-  border-left: 4px solid var(--accent-coral, var(--app-accent-coral));
-}
 
 .section-header {
   display: flex;
@@ -43,13 +36,6 @@
   margin: 0;
 }
 
-.section-header h1 {
-  color: var(--accent-gold, var(--app-accent-gold));
-}
-
-.section-header h2 {
-  color: var(--accent-coral, var(--app-accent-coral));
-}
 
 .section-header h1 {
   font-size: 1.8rem;
@@ -69,24 +55,24 @@
   cursor: pointer;
   font-weight: 600;
   transition: all 0.3s;
-  color: var(--app-on-accent);
 }
 
 .edit-btn {
-  background: var(--primary-color, #0066cc);
+  background: #0891b2; /* cyan-600 */
+  color: white;
 }
 
 .edit-btn:hover {
-  background: var(--primary-dark, #0052a3);
+  background: #0e7490; /* cyan-700 */
 }
 
 .new-job-btn {
-  background: var(--accent-gold, var(--app-accent-gold));
-  color: var(--app-on-gold);
+  background: #0891b2; /* cyan-600 */
+  color: white;
 }
 
 .new-job-btn:hover {
-  background: var(--app-accent-gold-hover);
+  background: #0e7490; /* cyan-700 */
 }
 
 .profile-form {
@@ -208,12 +194,12 @@
 
 .profile-grid strong {
   display: block;
-  color: var(--primary-color, #0066cc);
+  color: var(--accent-cyan, var(--app-accent-cyan, #22d3ee));
   margin-bottom: 0.5rem;
 }
 
 .profile-grid a {
-  color: var(--primary-color, #0066cc);
+  color: var(--accent-cyan, var(--app-accent-cyan, #22d3ee));
   text-decoration: none;
 }
 
@@ -274,7 +260,7 @@
 }
 
 .job-salary {
-  color: var(--app-accent-gold-hover);
+  color: var(--accent-cyan, var(--app-accent-cyan, #22d3ee));
   font-weight: 600;
   margin: 0.25rem 0;
 }

@@ -30,7 +30,6 @@ interface ProfileUser {
 const BusinessProfile = () => {
   const navigate = useNavigate();
   const [openForm, setOpenForm] = useState(false);
-  const [, setProfilePic] = useState<string>();
   const [pfpChange, setPfpChange] = useState(false);
   const [password, setPassword] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
@@ -62,19 +61,19 @@ const BusinessProfile = () => {
     let cancelled = false;
     const loadProfile = async () => {
       try {
-        const [settingsRes, jobsRes, eventsRes, adsRes] = await Promise.all([
-          fetch(`${AUTH_BASE_URL}/auth/profile/settings`, { credentials: 'include' }),
+        const [dashboardRes, jobsRes, eventsRes, adsRes] = await Promise.all([
+          fetch(`${AUTH_BASE_URL}/auth/dashboard`, { credentials: 'include' }),
           fetch(`${AUTH_BASE_URL}/jobs/business/jobs`, { credentials: 'include' }),
           fetch(`${AUTH_BASE_URL}/events/business`, { credentials: 'include' }),
           fetch(`${AUTH_BASE_URL}/ads/business`, { credentials: 'include' })
         ]);
-        
-        if (!settingsRes.ok) {
+
+        if (!dashboardRes.ok) {
           navigate('/login');
           return;
         }
-        const settings = await settingsRes.json();
-        
+        const dashboardData = await dashboardRes.json();
+
         let jCount = 0, eCount = 0, aCount = 0;
         if (jobsRes.ok) {
           const d = await jobsRes.json();
@@ -90,12 +89,12 @@ const BusinessProfile = () => {
         }
 
         if (cancelled) return;
-        setUser(settings);
+        setUser(dashboardData);
         setJobsCount(jCount);
         setEventsCount(eCount);
         setAdsCount(aCount);
-        setThemeMode(settings.theme_mode || 'dark');
-        applyThemeMode(settings.theme_mode || 'dark');
+        setThemeMode(dashboardData.theme_mode || 'dark');
+        applyThemeMode(dashboardData.theme_mode || 'dark');
       } catch {
         if (!cancelled) navigate('/login');
       }
@@ -116,7 +115,9 @@ const BusinessProfile = () => {
 			});
 			if (response.ok) {
 				const data = await response.json();
-				setProfilePic(data.profile_picture);
+				setUser((prev) =>
+					prev ? { ...prev, profile_picture: data.profile_picture } : prev
+				);
 				setOpenForm(false);
 				enqueueAlert({ message: "Profile picture updated.", textColor: "text-green-300" });
 			} else {
@@ -308,7 +309,6 @@ const BusinessProfile = () => {
                   <div className="max-w-md w-full align-items-center justify-items-center">
                     <img  className="block aspect-square h-40 w-40 overflow-hidden rounded-full border-4 border-cyan-600 object-cover object-center shadow-w-auto mb-4 align-center" src={profileImage} alt="Profile" />
                     {!openForm&&(<div className="items-center align-items-center justify-center">
-                      <button className="mt-4 px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-400 transition-colors inline-block mr-3" onClick={() => {setOpenForm(true); setPfpChange(false);}}>Change Password</button>
                       <button className="mt-4 px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-400 transition-colors inline-block" onClick={() => {setOpenForm(true); setPfpChange(true);}}>Change Profile Picture</button>
                     </div>)}
                     {openForm &&(

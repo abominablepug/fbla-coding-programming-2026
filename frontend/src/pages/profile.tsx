@@ -219,7 +219,6 @@ const fetchDirectionsSummary = async (from?: Location, to?: Location) => {
 const Profile = () => {
   const navigate = useNavigate();
   const [openForm, setOpenForm] = useState(false);
-	const [, setProfilePic] = useState<string>();
 	const [pfpChange, setPfpChange] = useState(false);
 	const [password, setPassword] = useState('');
 	const [currentPassword, setCurrentPassword] = useState('');
@@ -256,22 +255,31 @@ const Profile = () => {
     let cancelled = false;
     const loadProfile = async () => {
       try {
-        const [settingsRes, reportRes] = await Promise.all([
-          fetch(`${AUTH_BASE_URL}/auth/profile/settings`, { credentials: 'include' }),
+        const [dashboardRes, reportRes] = await Promise.all([
+          fetch(`${AUTH_BASE_URL}/auth/dashboard`, { credentials: 'include' }),
           fetch(`${AUTH_BASE_URL}/auth/profile/report_data`, { credentials: 'include' }),
         ]);
-        if (!settingsRes.ok || !reportRes.ok) {
+
+        if (!dashboardRes.ok || !reportRes.ok) {
           navigate('/login');
           return;
         }
-        const settings = await settingsRes.json();
-        const data = await reportRes.json();
+
+        const dashboardData = await dashboardRes.json();
+        const reportDataJson = await reportRes.json();
+
         if (cancelled) return;
-        setUser(settings);
-        setReportData(data);
-        setThemeMode(settings.theme_mode || 'dark');
-        applyThemeMode(settings.theme_mode || 'dark');
-        setSavedCoupons(getSavedCoupons(Number(settings.uid)));
+
+        setUser(dashboardData);
+        setReportData(reportDataJson);
+
+        const nextThemeMode =
+          dashboardData?.theme_mode || reportDataJson?.generated_for?.theme_mode || 'dark';
+
+        setThemeMode(nextThemeMode);
+        applyThemeMode(nextThemeMode);
+
+        setSavedCoupons(getSavedCoupons(Number(dashboardData.uid)));
       } catch {
         if (!cancelled) navigate('/login');
       }
@@ -288,7 +296,8 @@ const Profile = () => {
   const reviews = reportData?.reviews || [];
   const allLocations = useMemo(() => dedupeLocations([...favorites, ...visited]), [favorites, visited]);
   const aiSuggestions = useMemo(() => buildAiSuggestions(favorites, visited), [favorites, visited]);
-  const profileImage = `${AUTH_BASE_URL}/static/profile_pictures/${user?.profile_picture || 'default_profile_picture.png'}`;
+  const [pfpCacheBuster, setPfpCacheBuster] = useState<number>(() => Date.now());
+  const profileImage = `${AUTH_BASE_URL}/static/profile_pictures/${user?.profile_picture || 'default_profile_picture.png'}?t=${pfpCacheBuster}`;
   const selectedFrom = allLocations.find((loc) => loc.lid === routeFromId) || visited[0] || favorites[0];
   const selectedTo = allLocations.find((loc) => loc.lid === routeToId) || favorites[0] || visited[1] || visited[0];
 
@@ -304,9 +313,17 @@ const Profile = () => {
 				body: formData,
 				credentials: 'include'
 			});
+
 			if (response.ok) {
-				const data = await response.json();
-				setProfilePic(data.profile_picture);
+				// Force UI refresh from server truth (and bust image cache)
+				setPfpCacheBuster(Date.now());
+
+				const dashboardRes = await fetch(`${AUTH_BASE_URL}/auth/dashboard`, { credentials: 'include' });
+				if (dashboardRes.ok) {
+					const dashboardData = await dashboardRes.json();
+					setUser(dashboardData);
+				}
+
 				setOpenForm(false);
 				enqueueAlert({ message: "Profile picture updated.", textColor: "text-green-300" });
 			} else {
@@ -729,7 +746,6 @@ const Profile = () => {
                   <div className="max-w-md w-full align-items-center justify-items-center">
                     <img  className="block aspect-square h-40 w-40 overflow-hidden rounded-full border-4 border-cyan-600 object-cover object-center shadow-w-auto mb-4 align-center" src={profileImage} alt="Profile" />
                     {!openForm&&(<div className="items-center align-items-center justify-center">
-                      <button className="mt-4 px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-400 transition-colors inline-block mr-3" onClick={() => {setOpenForm(true); setPfpChange(false);}}>Change Password</button>
                       <button className="mt-4 px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-400 transition-colors inline-block" onClick={() => {setOpenForm(true); setPfpChange(true);}}>Change Profile Picture</button>
                     </div>)}
                     {openForm &&(
