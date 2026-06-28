@@ -33,7 +33,18 @@ const AdBanner = () => {
 
   const getMediaUrl = (url: string) => {
     if (!url) return '';
-    return url.startsWith('/') ? `${AUTH_BASE_URL}${url}` : url;
+
+    // Already absolute
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+
+    // Backend may return "/static/ads/..." (with leading slash)
+    if (url.startsWith('/')) return `${AUTH_BASE_URL}${url}`;
+
+    // Backend may return "static/ads/..." (no leading slash)
+    if (url.startsWith('static/')) return `${AUTH_BASE_URL}/${url}`;
+
+    // Fallback: treat as relative path
+    return `${AUTH_BASE_URL}/${url}`;
   };
 
   return (

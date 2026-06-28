@@ -346,13 +346,13 @@ const BusinessDashboard = () => {
 
   return (
     <Body>
-      <Navbar />
+      <Navbar page="Business Dashboard"/>
       <div className="business-dashboard-container">
         <div className="dashboard-content">
           {/* Business Profile Section */}
           <div className="dashboard-section">
             <div className="section-header">
-              <h1>Business Profile</h1>
+              <h1 className="text-cyan-500">Business Profile</h1>
               {!editing && (
                 <button
                   className="action-btn edit-btn"
@@ -621,7 +621,7 @@ const BusinessDashboard = () => {
                     <div className="job-info">
                       <p>Type: {ad.media_type}</p>
                       <span className={`status-badge ${ad.status}`}>{ad.status}</span>
-                      {ad.target_url && <a href={ad.target_url} target="_blank" rel="noopener noreferrer" style={{fontSize: '0.8em', color: '#4da6ff'}}>Link</a>}
+                      {ad.target_url && <a href={ad.target_url} target="_blank" rel="noopener noreferrer" style={{fontSize: '0.8em', color: 'var(--app-primary)'}}>Link</a>}
                     </div>
                     <div className="job-actions">
                       <button className="action-btn delete-btn" onClick={() => handleDeleteAd(ad.id)}>×</button>

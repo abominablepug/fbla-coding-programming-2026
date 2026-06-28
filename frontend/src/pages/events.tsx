@@ -40,7 +40,7 @@ const EventsBoard = () => {
     return (
       <Body>
         <Navbar page="Live Events" />
-        <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="">
           <div className="text-xl text-neutral-400">Loading events...</div>
         </div>
       </Body>
@@ -52,7 +52,7 @@ const EventsBoard = () => {
       <Navbar page="Live Events" />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mt-20">
         <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-600 mb-4" style={{ fontFamily: 'var(--font-heading)' }}>
+          <h1 className="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-teal-500 mb-4" style={{ fontFamily: 'var(--font-heading)' }}>
             Live Events & Flash Sales
           </h1>
           <p className="text-lg text-neutral-400 max-w-2xl mx-auto">
@@ -73,7 +73,7 @@ const EventsBoard = () => {
               const endDate = new Date(event.end_time);
               
               return (
-                <div key={event.id} className="group relative overflow-hidden rounded-2xl bg-neutral-900 border border-neutral-800 hover:border-purple-500/50 transition-all duration-300 shadow-lg hover:shadow-purple-500/20 flex flex-col">
+                <div key={event.id} className="group relative overflow-hidden rounded-2xl bg-neutral-900 border border-neutral-800 hover:border-teal-400/50 transition-all duration-300 shadow-lg hover:shadow-teal-500/20 flex flex-col">
                   {event.image_url ? (
                     <div className="h-48 overflow-hidden">
                       <img 
@@ -89,7 +89,7 @@ const EventsBoard = () => {
                   )}
                   
                   <div className="p-6 flex-grow flex flex-col">
-                    <div className="text-sm font-semibold text-purple-400 mb-2 uppercase tracking-wider">
+                    <div className="text-sm font-semibold text-teal-300 mb-2 uppercase tracking-wider">
                       {event.business_name}
                     </div>
                     <h3 className="text-xl font-bold text-white mb-3 line-clamp-2">

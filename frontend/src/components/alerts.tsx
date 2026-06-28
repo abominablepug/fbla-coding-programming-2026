@@ -55,7 +55,8 @@ const Alerts = () => {
         id,
         duration: 2500,
         textColor: 'text-white',
-        bgColor: 'bg-neutral-900/85',
+        // Darker overlay in light mode so it doesn't look too washed out
+        bgColor: 'bg-neutral-800/85',
         width: 'w-80',
         height: 'h-auto',
         persistent: false,
@@ -111,7 +112,7 @@ const Alerts = () => {
               rounded-xl
               flex items-center gap-3 p-4
               ${item.bgColor}
-              ${item.textColor}
+              ${item.textColor === 'text-green-300' ? 'text-green-500' : item.textColor}
               ${item.width}
               ${item.height}
             `}

@@ -58,6 +58,7 @@ const LocationReviewsPopup = ({
     setLoadingCommunity(true);
     setCommunityError('');
     let targetLocationId = resolvedLocationId && resolvedLocationId > 0 ? resolvedLocationId : null;
+
     try {
       if (!targetLocationId) {
         const resolvedId = await resolveLocationId({

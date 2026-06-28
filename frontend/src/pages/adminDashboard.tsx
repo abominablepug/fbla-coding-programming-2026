@@ -148,7 +148,7 @@ const AdminDashboard = () => {
                       <div>
                         <h3>Business: {ad.business_name}</h3>
                         <p>Type: {ad.media_type}</p>
-                        {ad.target_url && <a href={ad.target_url} target="_blank" rel="noopener noreferrer" style={{ color: '#4da6ff', fontSize: '0.9em' }}>{ad.target_url}</a>}
+                        {ad.target_url && <a href={ad.target_url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--app-primary)', fontSize: '0.9em' }}>{ad.target_url}</a>}
                         <p style={{ fontSize: '0.8em', color: '#888' }}>Submitted: {new Date(ad.created_at).toLocaleString()}</p>
                       </div>
                     </div>

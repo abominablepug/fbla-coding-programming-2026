@@ -26,7 +26,7 @@ const Home = () => {
                 <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_50%_20%,rgba(103,232,249,0.16),transparent_42%),linear-gradient(135deg,rgba(15,23,42,0.78),rgba(8,47,73,0.34),rgba(49,46,129,0.28))]" />
 				<motion.div initial={{ opacity: 0.5, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease: "easeOut" }} >
 					<div className="mb-6 flex items-center justify-center gap-0.5 md:gap-1">
-						<h1 className="shrink-0 leading-none text-6xl md:text-9xl font-extrabold bg-gradient-to-r from-cyan-100 via-teal-300 to-purple-400 bg-clip-text text-transparent tracking-tighter drop-shadow-[0_0_36px_rgba(103,232,249,0.24)] light:drop-shadow-[0_4px_18px_rgba(8,47,73,0.20)]">
+						<h1 className="shrink-0 leading-none text-6xl md:text-9xl font-extrabold bg-gradient-to-r from-cyan-200 via-teal-300 to-purple-400 bg-clip-text text-transparent tracking-tighter drop-shadow-[0_0_36px_rgba(103,232,249,0.24)] light:drop-shadow-[0_4px_18px_rgba(8,47,73,0.20)]">
 							LuminX
 						</h1>
 						<div className="inline-flex h-16 w-16 shrink-0 items-center justify-center self-center md:h-32 md:w-32">
@@ -125,7 +125,7 @@ const Home = () => {
 					transition={{ duration: 0.8, delay: 0.2 }}
 					className="w-full flex justify-center"
 				>
-				<Card className="max-w-6xl" cardClassName="hover:shadow-purple-500/20 hover:shadow-2xl hover:scale-102 transition-all duration-500" title="Interactive Mapping" titleClassName="text-purple-400">
+				<Card className="max-w-6xl" cardClassName="hover:shadow-teal-500/20 hover:shadow-2xl hover:scale-102 transition-all duration-500" title="Interactive Mapping" titleClassName="text-teal-300">
 					<div className="grid md:grid-cols-2 gap-12 items-center">
 						<div className="order-2 md:order-1 relative h-80 bg-neutral-900 rounded-2xl border border-white/10 overflow-hidden shadow-2xl">
 							<div className="absolute flex flex-col items-center justify-center bg-neutral-800/50 text-center">
@@ -134,7 +134,7 @@ const Home = () => {
 						</div>
 						<div className="order-1 md:order-2 space-y-6">
 							<p className="text-lg text-neutral-300 leading-relaxed">
-								Visualize your opportunities with our map integration powered by <span className="text-purple-400 font-bold">Google Maps API</span>, including nearby POIs, navigation, and location-level context.
+								Visualize your opportunities with our map integration powered by <span className="text-teal-300 font-bold">Google Maps API</span>, including nearby POIs, navigation, and location-level context.
 							</p>
 							<p className="text-sm text-neutral-400 leading-relaxed">
 								Built-in filters help users narrow the map view by real-world criteria, making search results faster to act on.
@@ -205,12 +205,12 @@ const Home = () => {
 						</div>
 
 						<div className="bg-neutral-800/30 p-8 rounded-3xl border border-white/5 hover:bg-neutral-800/50 transition-all duration-300 group">
-							<div className="w-12 h-12 bg-purple-500/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-								<Database className="w-6 h-6 text-purple-400" />
+							<div className="w-12 h-12 bg-teal-500/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+								<Database className="w-6 h-6 text-teal-300" />
 							</div>
 							<h3 className="text-xl font-bold text-white mb-3">Backend</h3>
 							<p className="text-neutral-400 leading-relaxed">
-								Robust <span className="text-purple-300">Python Flask</span> server handling API requests, authentication, and data management.
+								Robust <span className="text-teal-200">Python Flask</span> server handling API requests, authentication, and data management.
 							</p>
 						</div>
 

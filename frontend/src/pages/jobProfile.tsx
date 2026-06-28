@@ -118,12 +118,12 @@ const JobProfile = () => {
     <Body>
       <Navbar />
       <div className="relative z-10 max-w-2xl mx-auto p-6 pt-28">
-        <div className="bg-slate-800 rounded-lg p-6 border border-slate-700 border-l-4 border-l-[#FFBF65]">
+        <div className="bg-slate-800 rounded-lg p-6 border border-slate-700 border-l-4 border-l-[var(--app-accent-gold)]">
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-2xl font-bold text-white">Your Job Profile</h1>
             {!editing && (
               <button
-                className="px-4 py-2 bg-[#FD8973] hover:bg-[#fb5f43] text-white rounded-lg font-semibold"
+                className="px-4 py-2 bg-[var(--app-accent-coral)] hover:bg-[var(--app-accent-coral-hover)] text-white rounded-lg font-semibold"
                 onClick={() => setEditing(true)}
               >
                 Edit Profile
@@ -168,8 +168,8 @@ const JobProfile = () => {
 
               <div>
                 <h2 className="text-lg font-semibold text-white mb-3">Resume</h2>
-                <label className="block border-2 border-dashed border-slate-600 rounded-lg p-6 text-center cursor-pointer hover:border-[#FD8973]">
-                  <Upload size={24} className="mx-auto mb-2 text-[#FFBF65]" />
+                <label className="block border-2 border-dashed border-slate-600 rounded-lg p-6 text-center cursor-pointer hover:border-[var(--app-accent-coral)]">
+                  <Upload size={24} className="mx-auto mb-2 text-[var(--app-accent-gold)]" />
                   <span className="text-slate-300">Click to upload resume</span>
                   <input
                     type="file"
@@ -183,7 +183,7 @@ const JobProfile = () => {
               <div className="flex gap-3">
                 <button
                   onClick={handleSaveProfile}
-                  className="flex-1 px-4 py-2 bg-[#FFBF65] hover:bg-[#f0a93f] text-[#13181B] font-semibold rounded-lg"
+                  className="flex-1 px-4 py-2 bg-[var(--app-accent-gold)] hover:bg-[var(--app-accent-gold-hover)] text-[var(--app-on-gold)] font-semibold rounded-lg"
                 >
                   Save Profile
                 </button>

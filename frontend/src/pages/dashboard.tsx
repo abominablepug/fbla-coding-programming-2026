@@ -262,6 +262,8 @@ const Dashboard = () => {
 	const [loadingVisited, setLoadingVisited] = useState(false);
 	const [visitedLocations, setVisitedLocations] = useState<Location[]>([]);
 	const [visitedHistory, setVisitedHistory] = useState<Location[]>([]);
+	const imageSrc = `${AUTH_BASE_URL}/static/profile_pictures/${profilePic || 'default_profile_picture.png'}`;
+	const [popup,setPopup] = useState(false);
 	const [showFavoritesSidebar, setShowFavoritesSidebar] = useState(false);
 	const [savedCouponKeys, setSavedCouponKeys] = useState<string[]>([]);
 	const [savedCouponMeta, setSavedCouponMeta] = useState<Record<string, SavedCouponMeta>>({});
@@ -425,6 +427,31 @@ const Dashboard = () => {
 		}
 	};
 
+	const handleFileChange = async (formData: FormData) => {
+		try {
+			const response = await fetch(`${AUTH_BASE_URL}/auth/change_picture`, {
+				method: 'POST',
+				body: formData,
+				credentials: 'include'
+			});
+			if (response.ok) {
+				const data = await response.json();
+				setProfilePic(data.profile_picture);
+				setUser((prev) =>
+					prev ? { ...prev, profile_picture: data.profile_picture } as any : prev
+				);
+				setOpenForm(false);
+				setPopup(false);
+				enqueueAlert({ message: "Profile picture updated.", textColor: "text-green-300" });
+			} else {
+				console.error('Failed to upload profile picture');
+				enqueueAlert({ message: "Failed to update profile picture.", textColor: "text-red-300" });
+			}
+		} catch (error) {
+			console.error('Error uploading profile picture:', error);
+			enqueueAlert({ message: "Error uploading profile picture.", textColor: "text-red-300" });
+		}
+	};
 
 
 
@@ -975,7 +1002,30 @@ const Dashboard = () => {
 			</Navbar>
 			<div className="relative grid gap-11 pt-28">
 				<div className="text-cyan-500/80" >
-
+						{popup && (
+							<div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 overscroll">
+								<Card title={(
+									<div className="grid grid-cols-2">
+									<h1 className={`text-2xl font-bold text-cyan-500 line-clamp-2`}>
+										Account Details
+									</h1>
+									<button className="ml-42 px-3 py-1 w-fit rounded-full text-white hover:bg-neutral-900 transition-colors" onClick={() => {setPopup(false); setOpenForm(false);}}>X</button>
+									</div>
+								)} cardClassName='w-lg'>
+								<div className="max-w-md w-full align-items-center justify-items-center">
+									<img  className="block aspect-square h-40 w-40 overflow-hidden rounded-full border-4 border-cyan-600 object-cover object-center shadow-w-auto mb-4 align-center" src={imageSrc} alt="Profile" />
+									{!openForm&&(<div className="items-center align-items-center justify-center">
+										<button className="mt-4 px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-400 transition-colors inline-block" onClick={() => {setOpenForm(true); setPfpChange(true);}}>Change Profile Picture</button>
+									</div>)}
+									{openForm &&(
+										<div className={`flex flex-col items-center justify-center gap-4 mt-4 w-full`}>
+											{content}
+										</div>)
+									}
+								</div>
+								</Card>
+							</div>
+						)}
 						{showOnboarding && (
 							<div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[1900] px-4">
 								<Card
@@ -1053,39 +1103,39 @@ const Dashboard = () => {
 						</div>
 				</div> 
 				<div className="mx-auto w-[95%] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
-					<div className="rounded-lg border border-sky-300/25 bg-cyan-500/12 shadow-[inset_0_1px_12px_rgba(8,145,178,0.06)] px-3 py-2 text-center">
-						<p className="text-[10px] uppercase tracking-[0.08em] text-[#FD8973]/85">Locations Favorited</p>
-						<p className="text-lg font-semibold text-[#FD8973]">{favoriteLocations.length}</p>
+					<div className="rounded-lg border border-cyan-400/25 bg-neutral-900/75 px-3 py-2 text-center">
+						<p className="text-[10px] uppercase tracking-[0.08em] text-cyan-200/75">Locations Favorited</p>
+						<p className="text-lg font-semibold text-cyan-300">{favoriteLocations.length}</p>
 					</div>
-					<div className="rounded-lg border border-sky-300/25 bg-cyan-500/12 shadow-[inset_0_1px_12px_rgba(8,145,178,0.06)] px-3 py-2 text-center">
-						<p className="text-[10px] uppercase tracking-[0.08em] text-[#FFBF65]/85">Locations Visited</p>
-						<p className="text-lg font-semibold text-[#FFBF65]">{visitedLocations.length}</p>
+					<div className="rounded-lg border border-cyan-400/25 bg-neutral-900/75 px-3 py-2 text-center">
+						<p className="text-[10px] uppercase tracking-[0.08em] text-cyan-200/75">Locations Visited</p>
+						<p className="text-lg font-semibold text-cyan-300">{visitedLocations.length}</p>
 					</div>
-					<div className="rounded-lg border border-sky-300/25 bg-cyan-500/12 shadow-[inset_0_1px_12px_rgba(8,145,178,0.06)] px-3 py-2 text-center">
-						<p className="text-[10px] uppercase tracking-[0.08em] text-[#CCD5DA]/85">Saved Coupons</p>
-						<p className="text-lg font-semibold text-[#CCD5DA]">{savedCouponKeys.length}</p>
+					<div className="rounded-lg border border-cyan-400/25 bg-neutral-900/75 px-3 py-2 text-center">
+						<p className="text-[10px] uppercase tracking-[0.08em] text-cyan-200/75">Saved Coupons</p>
+						<p className="text-lg font-semibold text-cyan-300">{savedCouponKeys.length}</p>
 					</div>
-					<div className="rounded-lg border border-sky-300/25 bg-cyan-500/12 shadow-[inset_0_1px_12px_rgba(8,145,178,0.06)] px-3 py-2 text-center">
+					<div className="rounded-lg border border-cyan-400/25 bg-neutral-900/75 px-3 py-2 text-center">
 						<p className="text-[10px] uppercase tracking-[0.08em] text-cyan-200/75">Distance Travelled</p>
 						<p className="text-lg font-semibold text-cyan-300">{totalDistanceMiles.toFixed(1)} mi</p>
 					</div>
 				</div>
-					<div className="mx-auto w-[95%] flex flex-wrap items-center justify-center gap-2">
+				<div className="mx-auto w-[95%] flex flex-wrap items-center justify-center gap-2">
 						<button
 							onClick={() => scrollToSection(favoriteSectionRef)}
-							className="rounded-full border border-[#FD8973]/50 bg-[#FD8973]/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-[#FD8973] hover:bg-[#FD8973]/25 transition-colors"
+							className="rounded-full border border-cyan-400/40 bg-cyan-500/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-cyan-200 hover:bg-cyan-500/25 transition-colors"
 						>
 							Favorite Locations
 						</button>
 						<button
 							onClick={() => scrollToSection(savedCouponsSectionRef)}
-							className="rounded-full border border-[#FFBF65]/50 bg-[#FFBF65]/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-[#FFBF65] hover:bg-[#FFBF65]/25 transition-colors"
+							className="rounded-full border border-cyan-400/40 bg-cyan-500/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-cyan-200 hover:bg-cyan-500/25 transition-colors"
 						>
 							Saved Coupons
 						</button>
 						<button
 							onClick={() => scrollToSection(recentSectionRef)}
-							className="rounded-full border border-[#CCD5DA]/50 bg-[#CCD5DA]/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-[#CCD5DA] hover:bg-[#CCD5DA]/25 transition-colors"
+							className="rounded-full border border-cyan-400/40 bg-cyan-500/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-cyan-200 hover:bg-cyan-500/25 transition-colors"
 						>
 							Recently Visited
 						</button>
@@ -1103,11 +1153,11 @@ const Dashboard = () => {
 						<div ref={favoriteSectionRef} className="h-full">
 						<Card
 							title={(
-								<div className="flex items-center justify-between gap-3 text-3xl font-bold text-[#FD8973] line-clamp-2">
+								<div className="flex items-center justify-between gap-3 text-3xl font-bold text-cyan-500  line-clamp-2">
 									<span>Favorite Locations:</span>
 									<button
 										onClick={() => setShowFavoritesSidebar((prev) => !prev)}
-										className="rounded-full border border-[#FD8973]/50 bg-[#FD8973]/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#FD8973] hover:bg-[#FD8973]/25 transition-colors"
+										className="rounded-full border border-cyan-500/50 bg-cyan-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-cyan-500 hover:bg-cyan-500/25 transition-colors"
 									>
 										{showFavoritesSidebar ? 'Hide Sidebar' : 'View All Favorites'}
 									</button>
@@ -1150,11 +1200,11 @@ const Dashboard = () => {
 						<div ref={savedCouponsSectionRef} className="h-full">
 						<Card
 							title={(
-								<div className="flex items-center justify-between gap-3 text-3xl font-bold text-[#FFBF65] line-clamp-2">
+								<div className="flex items-center justify-between gap-3 text-3xl font-bold text-cyan-500 line-clamp-2">
 									<span>Saved Coupons:</span>
 									<button
 										onClick={() => navigate('/discount', { state: { from: 'dashboard' } })}
-										className="rounded-full border border-[#FFBF65]/50 bg-[#FFBF65]/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#FFBF65] hover:bg-[#FFBF65]/25 transition-colors"
+										className="rounded-full border border-cyan-500/50 bg-cyan-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-cyan-500 hover:bg-cyan-500/25 transition-colors"
 									>
 										Go to Coupons
 									</button>
@@ -1194,7 +1244,7 @@ const Dashboard = () => {
 					</div>
 
 					<div ref={recentSectionRef} className="w-full">
-						<Card title='Recently Visited:' titleClassName='!text-[#CCD5DA]' cardClassName='w-full ease-in-out hover:shadow-cyan-500/20 hover:shadow-2xl hover:scale-102 transition-all duration-500'>
+						<Card title='Recently Visited:' titleClassName='!text-[var(--app-text-muted)]' cardClassName='w-full ease-in-out hover:shadow-cyan-500/20 hover:shadow-2xl hover:scale-102 transition-all duration-500'>
 							<div className="flex max-h-[640px] flex-col gap-3 overflow-y-auto pr-1">
 								{loadingVisited ? (
 									<p className="text-gray-400 text-center py-4">Loading visited locations...</p>
@@ -1266,7 +1316,7 @@ const Dashboard = () => {
 													{circularAiSuggestedLocations.map((item, idx) => (
 													<div
 														key={`ai-location-${item.loc.lid}-${idx}`}
-														className="relative w-full flex-none snap-center h-[286px] rounded-xl border border-indigo-400/20 bg-indigo-500/10 p-4 pt-10 flex flex-col justify-between"
+														className="relative w-full flex-none snap-center h-[286px] rounded-xl border border-cyan-400/25 bg-cyan-500/10 p-4 pt-10 flex flex-col justify-between"
 													>
 													<button
 														onClick={() => handleFavoriteVisitedLocation(item.loc)}
@@ -1289,13 +1339,13 @@ const Dashboard = () => {
 															<div className="mt-3 flex flex-wrap items-center gap-2">
 														<button
 															onClick={() => navigate(buildMapRouteUrl(item.loc))}
-															className="rounded-md border border-indigo-400/20 bg-indigo-500/20 px-3 py-1.5 text-xs text-indigo-200 hover:bg-indigo-500/30"
+															className="rounded-md border border-cyan-400/25 bg-cyan-500/20 px-3 py-1.5 text-xs text-cyan-100 hover:bg-cyan-500/30"
 														>
 															Open Location
 														</button>
 															<button
 																onClick={() => void openAiLocationReviews(item.loc)}
-																className="rounded-md border border-indigo-400/20 bg-indigo-500/20 px-3 py-1.5 text-xs text-indigo-200 hover:bg-indigo-500/30"
+																className="rounded-md border border-cyan-400/25 bg-cyan-500/20 px-3 py-1.5 text-xs text-cyan-100 hover:bg-cyan-500/30"
 															>
 																Reviews
 															</button>
@@ -1335,7 +1385,7 @@ const Dashboard = () => {
 												{circularAiSuggestedCoupons.map((coupon, idx) => (
 														<div
 															key={`ai-coupon-${coupon.location.lid}-${idx}`}
-															className="relative w-full flex-none snap-center h-[286px] rounded-xl border border-indigo-400/20 bg-indigo-500/10 p-4 flex flex-col justify-between"
+															className="relative w-full flex-none snap-center h-[286px] rounded-xl border border-cyan-400/25 bg-cyan-500/10 p-4 flex flex-col justify-between"
 														>
 													<div className="flex items-center justify-between gap-2">
 														<p className="text-base font-semibold text-emerald-100 line-clamp-1">{coupon.title}</p>
@@ -1363,13 +1413,13 @@ const Dashboard = () => {
 													<div className="mt-3 flex flex-wrap items-center gap-2">
 															<button
 																onClick={() => navigate('/discount', { state: { from: 'dashboard', locationId: coupon.location.lid } })}
-																className="rounded-md border border-indigo-400/20 bg-indigo-500/20 px-3 py-1.5 text-xs text-indigo-200 hover:bg-indigo-500/30"
+																className="rounded-md border border-cyan-400/25 bg-cyan-500/20 px-3 py-1.5 text-xs text-cyan-100 hover:bg-cyan-500/30"
 															>
 																View Coupon
 															</button>
 															<button
 																onClick={() => navigate(buildMapRouteUrl(coupon.location))}
-																className="rounded-md border border-indigo-400/20 bg-indigo-500/20 px-3 py-1.5 text-xs text-indigo-200 hover:bg-indigo-500/30"
+																className="rounded-md border border-cyan-400/25 bg-cyan-500/20 px-3 py-1.5 text-xs text-cyan-100 hover:bg-cyan-500/30"
 															>
 																Open in Map
 														</button>
