@@ -260,7 +260,7 @@ const JobFinder = () => {
     <Body className="overscroll-none">
       <Navbar page="Job Findr">
         <Links link="/jobs/profile">
-          My Profile <UserRound size={18} />
+          Job Profile <UserRound size={18} />
         </Links>
       </Navbar>
 
@@ -295,8 +295,8 @@ const JobFinder = () => {
       <div className="z-10 pt-28 pb-40 min-h-screen flex flex-col items-center">
         {/* Skills bar */}
         <div className="relative z-40 w-full max-w-[1120px] px-4 mb-8">
-          <div className="rounded-2xl border border-[var(--app-accent-gold)]/35 bg-neutral-900/55 p-4 shadow-lg backdrop-blur-sm">
-            <p className="text-[var(--app-accent-gold)] text-sm font-semibold mb-3">
+          <div className="rounded-lg border border-cyan-200/16 bg-neutral-950/78 p-4 shadow-2xl shadow-black/25 backdrop-blur-xl">
+            <p className="text-cyan-200 text-sm font-semibold mb-3">
               Your skills — jobs are ranked by how well they match. Edit and re-rank anytime.
             </p>
             <div className="flex gap-2 mb-3">
@@ -310,13 +310,13 @@ const JobFinder = () => {
               />
               <button
                 onClick={handleAddSkill}
-                className="px-4 py-2 bg-[var(--app-accent-gold)] hover:bg-[var(--app-accent-gold-hover)] text-[var(--app-on-gold)] font-semibold rounded-lg flex items-center gap-1"
+                className="rounded-lg bg-cyan-500 px-4 py-2 text-white font-semibold shadow-lg hover:bg-cyan-400 transition-colors flex items-center gap-1"
               >
                 <Plus size={18} /> Add
               </button>
               <button
                 onClick={handleApplySkills}
-                className="px-4 py-2 bg-blue-500 hover:bg-blue-400 text-white rounded-lg font-semibold"
+                className="rounded-lg bg-white/10 px-4 py-2 text-white font-semibold shadow-lg hover:bg-white/20 transition-colors border border-white/20"
               >
                 Re-rank
               </button>
@@ -324,7 +324,7 @@ const JobFinder = () => {
             <div className="flex flex-wrap gap-2">
               {skills.length > 0 ? (
                 skills.map((skill) => (
-                  <div key={skill} className="bg-cyan-500/90 text-white px-3 py-1 rounded-full flex items-center gap-2 text-sm">
+                  <div key={skill} className="bg-cyan-500/20 border border-cyan-500/50 text-cyan-50 px-3 py-1 rounded-full flex items-center gap-2 text-sm">
                     {skill}
                     <button onClick={() => handleRemoveSkill(skill)} aria-label={`Remove ${skill}`}>
                       <X size={14} />
@@ -335,8 +335,8 @@ const JobFinder = () => {
             </div>
 
             {/* Resume upload */}
-            <div className="mt-4 pt-4 border-t border-[var(--app-text-muted)]/25 flex flex-wrap items-center gap-3">
-              <label className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg cursor-pointer text-white font-semibold ${uploadingResume ? 'bg-slate-600 cursor-wait' : 'bg-[var(--app-accent-coral)] hover:bg-[var(--app-accent-coral-hover)]'}`}>
+            <div className="mt-4 pt-4 border-t border-white/10 flex flex-wrap items-center gap-3">
+              <label className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg cursor-pointer text-white font-semibold shadow-lg transition-colors ${uploadingResume ? 'bg-slate-600 cursor-wait' : 'bg-cyan-500 hover:bg-cyan-400'}`}>
                 <Upload size={18} />
                 {uploadingResume ? 'Uploading...' : resumeName ? 'Replace Resume' : 'Upload Resume'}
                 <input
@@ -464,7 +464,7 @@ const JobFinder = () => {
                     </p>
                     <button
                       onClick={handleApplySkills}
-                      className="px-5 py-2 bg-[var(--app-accent-coral)] hover:bg-[var(--app-accent-coral-hover)] text-white rounded-lg font-semibold"
+                      className="rounded-lg bg-cyan-500 px-5 py-2 text-white font-semibold shadow-lg hover:bg-cyan-400 transition-colors"
                     >
                       Reload Openings
                     </button>

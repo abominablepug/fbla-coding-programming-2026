@@ -118,12 +118,12 @@ const JobProfile = () => {
     <Body>
       <Navbar />
       <div className="relative z-10 max-w-2xl mx-auto p-6 pt-28">
-        <div className="bg-slate-800 rounded-lg p-6 border border-slate-700 border-l-4 border-l-[var(--app-accent-gold)]">
+        <div className="rounded-lg border border-cyan-200/16 bg-neutral-950/78 p-6 backdrop-blur-xl shadow-2xl shadow-black/25">
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-2xl font-bold text-white">Your Job Profile</h1>
             {!editing && (
               <button
-                className="px-4 py-2 bg-[var(--app-accent-coral)] hover:bg-[var(--app-accent-coral-hover)] text-white rounded-lg font-semibold"
+                className="rounded-full border border-cyan-300/45 bg-cyan-500 px-4 py-2 text-sm font-medium text-white shadow-lg hover:bg-cyan-400 transition-colors"
                 onClick={() => setEditing(true)}
               >
                 Edit Profile
@@ -142,11 +142,11 @@ const JobProfile = () => {
                     onChange={(e) => setNewSkill(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && handleAddSkill()}
                     placeholder="Add a skill"
-                    className="flex-1 px-3 py-2 bg-slate-700 text-white rounded-lg border border-slate-600"
+                    className="flex-1 rounded-lg bg-white/10 border border-white/20 px-3 py-2 text-slate-300 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400 transition-all"
                   />
                   <button
                     onClick={handleAddSkill}
-                    className="px-4 py-2 bg-cyan-500 hover:bg-cyan-600 text-white rounded-lg"
+                    className="rounded-lg bg-cyan-500 px-4 py-2 text-white shadow-lg hover:bg-cyan-400 transition-colors"
                   >
                     <Plus size={20} />
                   </button>
@@ -155,7 +155,7 @@ const JobProfile = () => {
                   {skills.map((skill) => (
                     <div
                       key={skill}
-                      className="bg-cyan-500 text-white px-3 py-1 rounded-full flex items-center gap-2"
+                      className="bg-cyan-500/20 border border-cyan-500/50 text-cyan-50 px-3 py-1 rounded-full flex items-center gap-2"
                     >
                       {skill}
                       <button onClick={() => handleRemoveSkill(skill)}>
@@ -168,8 +168,8 @@ const JobProfile = () => {
 
               <div>
                 <h2 className="text-lg font-semibold text-white mb-3">Resume</h2>
-                <label className="block border-2 border-dashed border-slate-600 rounded-lg p-6 text-center cursor-pointer hover:border-[var(--app-accent-coral)]">
-                  <Upload size={24} className="mx-auto mb-2 text-[var(--app-accent-gold)]" />
+                <label className="block border-2 border-dashed border-white/20 bg-white/5 rounded-lg p-6 text-center cursor-pointer hover:border-cyan-400 transition-colors">
+                  <Upload size={24} className="mx-auto mb-2 text-cyan-400" />
                   <span className="text-slate-300">Click to upload resume</span>
                   <input
                     type="file"
@@ -183,7 +183,7 @@ const JobProfile = () => {
               <div className="flex gap-3">
                 <button
                   onClick={handleSaveProfile}
-                  className="flex-1 px-4 py-2 bg-[var(--app-accent-gold)] hover:bg-[var(--app-accent-gold-hover)] text-[var(--app-on-gold)] font-semibold rounded-lg"
+                  className="flex-1 rounded-lg bg-cyan-500 px-4 py-2 text-white font-semibold shadow-lg hover:bg-cyan-400 transition-colors"
                 >
                   Save Profile
                 </button>
@@ -192,7 +192,7 @@ const JobProfile = () => {
                     setEditing(false);
                     fetchProfile();
                   }}
-                  className="flex-1 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg"
+                  className="flex-1 rounded-lg bg-white/10 px-4 py-2 text-white font-semibold shadow-lg hover:bg-white/20 transition-colors border border-white/20"
                 >
                   Cancel
                 </button>
@@ -207,14 +207,14 @@ const JobProfile = () => {
                     {skills.map((skill) => (
                       <div
                         key={skill}
-                        className="bg-cyan-500 text-white px-3 py-1 rounded-full"
+                        className="bg-cyan-500/20 border border-cyan-500/50 text-cyan-50 px-3 py-1 rounded-full"
                       >
                         {skill}
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-slate-400">No skills added yet</p>
+                  <p className="text-gray-400">No skills added yet</p>
                 )}
               </div>
 

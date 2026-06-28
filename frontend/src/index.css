@@ -76,13 +76,13 @@
   --tone-neutral-200: #a1b5c9;
   --tone-neutral-100: #ccddec;
   --tone-neutral-50: #f4f8fb;
-  --tone-cyan-100: #d6faf1;
-  --tone-cyan-200: #aff4e5;
-  --tone-cyan-300: #86e7d5;
-  --tone-cyan-400: #55b5a6;
-  --tone-cyan-500: #316356;
-  --tone-cyan-600: #294a4c;
-  --tone-cyan-700: #20463e;
+  --tone-cyan-100: #ccfbf1;
+  --tone-cyan-200: #99f6e4;
+  --tone-cyan-300: #5eead4;
+  --tone-cyan-400: #2dd4bf;
+  --tone-cyan-500: #14b8a6;
+  --tone-cyan-600: #0d9488;
+  --tone-cyan-700: #0f766e;
   --tone-sky-300: #c4b5fd;
   --tone-sky-400: #a78bfa;
   --tone-sky-500: #8b5cf6;
@@ -170,13 +170,13 @@
   --tone-neutral-100: #3a5061;
   --tone-neutral-50: #09101e;
 
-  --tone-cyan-100: #0f4d5c;
-  --tone-cyan-200: #0d5f6f;
-  --tone-cyan-300: #07596b;
-  --tone-cyan-400: #07596b;
-  --tone-cyan-500: #064f60;
-  --tone-cyan-600: #083f4d;
-  --tone-cyan-700: #082f3a;
+  --tone-cyan-100: #167a91;
+  --tone-cyan-200: #148ea8;
+  --tone-cyan-300: #0f9fbf;
+  --tone-cyan-400: #0f9fbf;
+  --tone-cyan-500: #0d8ca8;
+  --tone-cyan-600: #106f85;
+  --tone-cyan-700: #0e5666;
 
   --tone-sky-300: #155e75;
   --tone-sky-400: #075985;
