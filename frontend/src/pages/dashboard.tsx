@@ -256,13 +256,7 @@ const CompactLocationMeta = ({ loc }: { loc: Location }) => {
 const Dashboard = () => {
 	const [user, setUser] = useState<{ uid: string, username: string } | null>(null);
 	const navigate = useNavigate();
-	const [openForm, setOpenForm] = useState(false);
-	const [profilePic, setProfilePic] = useState<string>();
-	const [pfpChange, setPfpChange] = useState(false);
-	const [password, setPassword] = useState('');
-	const [currentPassword, setCurrentPassword] = useState('');
-	const [pwSubmitError, setPwSubmitError] = useState('');
-	const [confirmPassword, setConfirmPassword] = useState('');
+
 	const [favoriteLocations, setFavoriteLocations] = useState<Location[]>([]);
 	const [loadingFavorites, setLoadingFavorites] = useState(false);
 	const [loadingVisited, setLoadingVisited] = useState(false);
@@ -459,125 +453,7 @@ const Dashboard = () => {
 		}
 	};
 
-	const handlePwChange = async (formData: FormData) => {
-		try {
-			setPwSubmitError('');
-			if (!password || !confirmPassword) {
-				setPwSubmitError('Please fill in all fields.');
-				enqueueAlert({ message: "Fill in all password fields.", textColor: "text-red-300" });
-				return;
-			}
-			const response = await fetch(`${AUTH_BASE_URL}/auth/change_password`, {
-				method: 'POST',
-				body: formData,
-				credentials: 'include'
-			});
-			if (response.ok) {
-				setOpenForm(false);
-				setPassword('');
-				setConfirmPassword('');
-				setCurrentPassword('');
-				setPwSubmitError('');
-				enqueueAlert({ message: "Password changed successfully.", textColor: "text-green-300" });
-			}else {
-				const errorData = await response.json();
-				if (errorData.message === 'Current password is incorrect') {
-					setPwSubmitError('Current password is incorrect');
-					enqueueAlert({ message: "Current password is incorrect.", textColor: "text-red-300" });
-				} else {
-					console.error('Failed to change password. Try again.');
-					setPassword('');
-					setConfirmPassword('');
-					setCurrentPassword('');
-					enqueueAlert({ message: "Failed to change password.", textColor: "text-red-300" });
-				}}
-		} catch (error) {
-			console.error('Error changing password:', error);
-			enqueueAlert({ message: "Error changing password.", textColor: "text-red-300" });
-		}
-	};
 
-	const isPasswordValid = password.length >= 8 && /\d/.test(password) && /[a-zA-Z]/.test(password);
-	const doPasswordsMatch = password === confirmPassword;
-	let content;
-
-	if (pfpChange) {
-		content = (
-		<div className="flex flex-col items-center gap-4 max-w-fit">
-			<form className="flex flex-col items-center gap-4" onSubmit={(e) => {
-			e.preventDefault();
-			const formData = new FormData(e.currentTarget);
-			handleFileChange(formData);
-			}}>
-				<input className="mt-1 w-full rounded-lg bg-white/10 border border-white/20 p-3 text-slate-300 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400 transition-all" type="file" accept='image/png' id="image" name="image"/>
-				<div className="flex justify-center gap-2">
-					<button className="px-3 py-1 rounded-full bg-cyan-500 text-white max-w-fit text-md transition-all hover:bg-cyan-400 shadow-lg" type="submit">
-						Upload New Picture
-					</button>
-					<button className="px-3 py-1 rounded-full bg-cyan-500 text-white max-w-fit text-md transition-all hover:bg-cyan-400 shadow-lg" onClick={() => {setOpenForm(false); setPwSubmitError('');}}>Close X</button>
-				</div>
-			</form>
-		</div>);
-	}else{
-		content = (
-		<div className="flex flex-col items-center gap-4 max-w-fit">
-			<form className="flex flex-col items-center gap-4" onSubmit={(e) => {
-			   e.preventDefault();
-			   const formData = new FormData(e.currentTarget);
-			   handlePwChange(formData);
-		   	}}>
-				<div>
-				<label className="block text-sm font-medium text-white-400">Current Password</label>
-				<input
-					type="password"
-					className="mt-1 w-fit rounded-lg bg-white/10 border border-white/20 p-3 text-slate-300 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400 transition-all"
-					placeholder="••••••••"
-					value={currentPassword}
-					name = "current_password"
-					onChange={(e) => setCurrentPassword(e.target.value)}
-				/>
-				</div>
-				<div>
-				<label className="block text-sm font-medium text-white-400">New Password</label>
-				<input
-					type="password"
-					className="mt-1 w-fit rounded-lg bg-white/10 border border-white/20 p-3 text-slate-300 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400 transition-all"
-					placeholder="••••••••"
-					value={password}
-					name = "new_password"
-					onChange={(e) => setPassword(e.target.value)}
-				/>
-				{password && (
-					<p className={`text-xs mt-1 ${isPasswordValid ? 'text-green-400' : 'text-red-400'}`}>
-						{isPasswordValid ? 'Strong password' : 'Password must be at least 8 characters long and contain both letters and numbers.'}
-					</p>
-				)}
-				</div>
-				<div>
-					<label className="block text-sm font-medium text-white-400">Confirm Password</label>
-					<input
-						type="password"
-						className="mt-1 w-full rounded-lg bg-white/10 border border-white/20 p-3 text-slate-300 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400 transition-all"
-						placeholder="••••••••"
-						value={confirmPassword}
-						onChange={(e) => setConfirmPassword(e.target.value)}
-					/>
-					{confirmPassword && (
-						<p className={`text-xs mt-1 ${doPasswordsMatch ? 'text-green-400' : 'text-red-400'}`}>
-							{doPasswordsMatch ? 'Passwords match' : 'Passwords do not match'}
-						</p>
-					)}
-				</div>
-				{pwSubmitError && <p className="text-red-400 text-sm text-center">{pwSubmitError}</p>}
-			   <div className="flex justify-center gap-2">
-				   <button className="px-3 py-1 rounded-full bg-cyan-500 text-white max-w-fit text-md transition-all hover:bg-cyan-400 shadow-lg" type="submit">
-					   Change Password
-				   </button>
-				   <button className="px-3 py-1 rounded-full bg-cyan-500 text-white max-w-fit text-md transition-all hover:bg-cyan-400 shadow-lg" onClick={() => {setOpenForm(false); setPwSubmitError('');}}>Close X</button>
-			   </div>
-			</form>
-		</div>);
-	}
 
 	useEffect(() => {
 		const fetchProfile = async () => {
@@ -588,7 +464,6 @@ const Dashboard = () => {
 				if (response.ok) {
 					const data = await response.json();
 					setUser(data);
-					setProfilePic(data.profile_picture);
 					try {
 						const storageKey = `bizmatch_saved_coupons_${Number(data.uid)}`;
 						const raw = window.localStorage.getItem(storageKey);
@@ -679,10 +554,6 @@ const Dashboard = () => {
 			navigate('/');
 		}
 	};
-
-	const handlePopup = () => {
-		setPopup(true);
-	}
 
 	const finishOnboarding = () => {
 		if (!user) {
@@ -1227,7 +1098,6 @@ const Dashboard = () => {
 								</button>
 							</div>
 							<div className="grid grid-cols-1 gap-y-3 place-items-center text-center pt-1">
-							<img onClick={handlePopup} className="block aspect-square h-32 w-32 overflow-hidden rounded-full border-4 border-cyan-600 object-cover object-center shadow-w-auto hover:border-cyan-700 transition-transform" src={imageSrc} alt="Profile" />
 							<p className="text-gray-200 text-3xl tracking-wider">Welcome back {user.username}</p>
 							</div>
 						</div>

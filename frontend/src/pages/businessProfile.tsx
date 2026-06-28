@@ -286,7 +286,7 @@ const BusinessProfile = () => {
   };
 
   if (!user) {
-    return <div className="min-h-screen bg-neutral-900 text-white flex items-center justify-center">Loading profile...</div>;
+    return <div className="min-h-screen text-white flex items-center justify-center">Loading profile...</div>;
   }
 
   const profileImage = `${AUTH_BASE_URL}/static/profile_pictures/${user?.profile_picture || 'default_profile_picture.png'}`;

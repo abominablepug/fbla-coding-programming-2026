@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import {motion, useScroll, useTransform} from "framer-motion";
+import {motion} from "framer-motion";
 import { Link, useLocation } from 'react-router-dom';
 import { House, UserRound } from 'lucide-react';
 import luminxLogo from '../assets/luminx-logo.png';
@@ -15,7 +15,6 @@ interface NavBarProps {
 
 // Top navigation bar with scroll animation and auth-aware shortcuts.
 const Navbar: React.FC<NavBarProps> = ({ page, children, className = ""}) => {
-    const { scrollY } = useScroll();
     const location = useLocation();
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [profilePicture, setProfilePicture] = useState<string | null>(null);
