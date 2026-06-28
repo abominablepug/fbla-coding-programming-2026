@@ -94,15 +94,15 @@ const Register = () => {
 	};
 
 	return (
-		<Body className="flex flex-col items-center justify-center">
+		<Body>
 
 			<Navbar page="Register">
 				<Links link="/">
 					Back →
 				</Links>
 			</Navbar>
-
-			<Card className="max-w-2xl w-full mt-15 z-10" cardClassName="w-full" title="Register" titleClassName='text-cyan-500'>
+            <div className="flex flex-col items-center justify-center min-h-screen px-4 pt-20 pb-10 w-full">
+			<Card className="max-w-md md:max-w-2xl w-full z-10" cardClassName="w-full" title="Register" titleClassName='text-cyan-500'>
 				<form className="space-y-6" onSubmit={handleRegister}>
 					<div>
 						<label className="block text-sm font-medium text-white-400">Username:</label>
@@ -195,6 +195,7 @@ const Register = () => {
 					</button>
 				</form>
 			</Card>
+            </div>
 		</Body>
 	);
 };

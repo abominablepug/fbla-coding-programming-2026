@@ -8,6 +8,7 @@ import Register from "./pages/register";
 import Dashboard from "./pages/dashboard";
 import TinderPage from "./pages/tinder";
 import Coupons from "./pages/coupons";
+import AdBanner from "./components/adBanner";
 import Alerts from "./components/alerts";
 import ProactiveAlerts from "./components/proactiveAlerts";
 import ReviewsPage from "./pages/reviews";
@@ -37,6 +38,7 @@ function App() {
 			<Alerts />
 			<ProactiveAlerts />
 			<ThemeToggle />
+			<AdBanner />
 			<Routes>
 				<Route path="/login" element={<Login />} />
 				<Route path="/register" element={<Register />} />

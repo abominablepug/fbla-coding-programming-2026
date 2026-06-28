@@ -255,6 +255,9 @@ const CompactLocationMeta = ({ loc }: { loc: Location }) => {
 
 const Dashboard = () => {
 	const [user, setUser] = useState<{ uid: string, username: string } | null>(null);
+	const [profilePic, setProfilePic] = useState<string | null>(null);
+	const [openForm, setOpenForm] = useState(false);
+	const [, setPfpChange] = useState(false);
 	const navigate = useNavigate();
 
 	const [favoriteLocations, setFavoriteLocations] = useState<Location[]>([]);
@@ -1019,7 +1022,13 @@ const Dashboard = () => {
 									</div>)}
 									{openForm &&(
 										<div className={`flex flex-col items-center justify-center gap-4 mt-4 w-full`}>
-											{content}
+											<input type="file" accept="image/*" className="text-white bg-neutral-800 p-2 rounded" onChange={(e) => {
+												if (e.target.files && e.target.files[0]) {
+													const formData = new FormData();
+													formData.append('profile_picture', e.target.files[0]);
+													handleFileChange(formData);
+												}
+											}} />
 										</div>)
 									}
 								</div>

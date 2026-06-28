@@ -23,14 +23,14 @@ const Login = () => {
 	const navigate = useNavigate();
 
 	return (
-		<Body className="flex flex-col items-center justify-center">
+		<Body>
 			<Navbar page="Login">
                 <Links link="/">
                     Back →
                 </Links>
             </Navbar>
-
-			<Card className="max-w-2xl w-full mt-15 z-10" cardClassName="w-full" title="Login" titleClassName='text-cyan-500'>
+            <div className="flex flex-col items-center justify-center min-h-screen px-4 pt-20 pb-10 w-full">
+			<Card className="max-w-md md:max-w-2xl w-full z-10" cardClassName="w-full" title="Login" titleClassName='text-cyan-500'>
 				<form className="space-y-6"
 					onSubmit={async (e) => {
 						e.preventDefault();
@@ -129,6 +129,7 @@ const Login = () => {
 					</div>
 				</form>
 			</Card>
+            </div>
 			{showForgotPassword && (
 				<div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 px-4">
 					<Card
