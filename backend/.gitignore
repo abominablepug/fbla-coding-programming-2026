@@ -11,4 +11,6 @@ logs/
 instance/
 *.sqlite3
 app/static/profile_pictures/*
+app/static/ads/*
 !app/static/profile_pictures/default_profile_picture.png
+migrations/*
