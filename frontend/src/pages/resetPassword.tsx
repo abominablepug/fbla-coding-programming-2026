@@ -70,12 +70,12 @@ const ResetPassword = () => {
   }, [AUTH_BASE_URL, token]);
 
   return (
-    <Body className="flex flex-col items-center justify-center">
+    <Body>
       <Navbar page="Reset Password">
         <Links link="/login">Back To Login →</Links>
       </Navbar>
-
-      <Card className="max-w-2xl w-full mt-15 z-10" cardClassName="w-full" title="Reset Password" titleClassName="text-cyan-500">
+      <div className="flex flex-col items-center justify-center min-h-screen px-4 pt-20 pb-10 w-full">
+      <Card className="max-w-md md:max-w-2xl w-full z-10" cardClassName="w-full" title="Reset Password" titleClassName="text-cyan-500">
         {isValidating ? (
           <p className="text-gray-300">Validating reset link...</p>
         ) : tokenError ? (
@@ -90,7 +90,7 @@ const ResetPassword = () => {
           </div>
         ) : (
           <form
-            className="space-y-4"
+            className="space-y-6"
             onSubmit={async (e) => {
               e.preventDefault();
               setSubmitError('');
@@ -181,6 +181,7 @@ const ResetPassword = () => {
           </form>
         )}
       </Card>
+      </div>
     </Body>
   );
 };
