@@ -190,8 +190,9 @@ const MapGoogle = () => {
   const [mapError, setMapError] = useState<string | null>(null);
 
   // Default center for map/directions if geolocation is slow or denied.
+  // Henry B. Gonzalez Convention Center, 900 E. Market St, San Antonio, TX.
   // We *wait briefly* for geolocation to resolve before allowing routing to use this fallback.
-  const [userLoc, setUserLoc] = useState({ lat: 34.0731, lng: -118.4016 });
+  const [userLoc, setUserLoc] = useState({ lat: 29.4205, lng: -98.4795 });
   const userLocRef = useRef(userLoc);
   const [locLoaded, setLocLoaded] = useState(false);
 

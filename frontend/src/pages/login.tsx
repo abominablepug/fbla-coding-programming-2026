@@ -1,10 +1,17 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Card from '../components/card';
 import Links from '../components/links';
 import Navbar from '../components/navbar';
 import {useNavigate } from 'react-router-dom';
 import Body from '../components/body';
 import HCaptchaWidget from '../components/hcaptchaWidget';
+
+// Map a user's account type to the page they should land on after auth.
+const homeForUserType = (userType?: string) => {
+	if (userType === 'admin') return '/admin';
+	if (userType === 'business') return '/business/dashboard';
+	return '/dashboard';
+};
 
 const Login = () => {
 	const AUTH_BASE_URL = (import.meta.env.VITE_AUTH_BASE_URL || import.meta.env.PUBLIC_AUTH_BASE_URL || 'http://localhost:5173').trim();
@@ -21,6 +28,25 @@ const Login = () => {
 	const [forgotSuccess, setForgotSuccess] = useState('');
 	const [isForgotSubmitting, setIsForgotSubmitting] = useState(false);
 	const navigate = useNavigate();
+
+	// Already-authenticated users shouldn't see the login page; send them home.
+	useEffect(() => {
+		let cancelled = false;
+		(async () => {
+			try {
+				const res = await fetch(`${AUTH_BASE_URL}/auth/dashboard`, { credentials: 'include' });
+				if (res.ok && !cancelled) {
+					const data = await res.json().catch(() => ({} as any));
+					navigate(homeForUserType(data?.user_type), { replace: true });
+				}
+			} catch {
+				/* not logged in — stay on the login page */
+			}
+		})();
+		return () => {
+			cancelled = true;
+		};
+	}, [AUTH_BASE_URL, navigate]);
 
 	return (
 		<Body>
@@ -60,7 +86,7 @@ const Login = () => {
 									});
 									if (userRes.ok) {
 										const userData = await userRes.json();
-										navigate(userData.user_type === 'business' ? '/business/dashboard' : '/dashboard');
+										navigate(homeForUserType(userData?.user_type));
 									} else {
 										navigate('/dashboard');
 									}

@@ -56,7 +56,8 @@ const TinderPage = () => {
     const [, setSwipeCount] = useState(0);
     const [error, setError] = useState<string | null>(null);
     const [likedLocations, setLikedLocations] = useState<Business[]>([]);
-    const [userLoc, setUserLoc] = useState<{ lat: number; lng: number }>({ lat: 34.0731, lng: -118.4016 });
+    // Fallback: Henry B. Gonzalez Convention Center, 900 E. Market St, San Antonio, TX.
+    const [userLoc, setUserLoc] = useState<{ lat: number; lng: number }>({ lat: 29.4205, lng: -98.4795 });
     const [showSidebar, setShowSidebar] = useState(false);
     const isSavingRef = useRef(false);
     const processedSwipeRef = useRef<string | null>(null);
@@ -205,12 +206,12 @@ const TinderPage = () => {
                 (error) => {
                     console.warn('Geolocation denied, using fallback', error.message);
                     setError(`Location error: ${error.message}. Using default.`);
-                    handleLocation(34.0731, -118.4016);
+                    handleLocation(29.4205, -98.4795);
                 },
-                { timeout: 10000 } 
+                { timeout: 10000 }
             );
         } else {
-            handleLocation(34.0731, -118.4016);
+            handleLocation(29.4205, -98.4795);
         }
     }, []); 
 

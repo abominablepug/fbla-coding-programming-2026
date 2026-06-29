@@ -1,10 +1,17 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Card from '../components/card';
 import Links from '../components/links';
 import Navbar from '../components/navbar';
 import {useNavigate } from 'react-router-dom';
 import Body from '../components/body';
 import HCaptchaWidget from '../components/hcaptchaWidget';
+
+// Map a user's account type to the page they should land on after auth.
+const homeForUserType = (userType?: string) => {
+	if (userType === 'admin') return '/admin';
+	if (userType === 'business') return '/business/dashboard';
+	return '/dashboard';
+};
 
 const Register = () => {
 	const AUTH_BASE_URL = (import.meta.env.VITE_AUTH_BASE_URL || import.meta.env.PUBLIC_AUTH_BASE_URL || 'http://localhost:5173').trim();
@@ -19,6 +26,25 @@ const Register = () => {
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 	const navigate = useNavigate();
+
+	// Already-authenticated users shouldn't see the register page; send them home.
+	useEffect(() => {
+		let cancelled = false;
+		(async () => {
+			try {
+				const res = await fetch(`${AUTH_BASE_URL}/auth/dashboard`, { credentials: 'include' });
+				if (res.ok && !cancelled) {
+					const data = await res.json().catch(() => ({} as any));
+					navigate(homeForUserType(data?.user_type), { replace: true });
+				}
+			} catch {
+				/* not logged in — stay on the register page */
+			}
+		})();
+		return () => {
+			cancelled = true;
+		};
+	}, [AUTH_BASE_URL, navigate]);
 
 	const isPasswordValid = password.length >= 8 && /\d/.test(password) && /[a-zA-Z]/.test(password);
 	const doPasswordsMatch = password === confirmPassword;
@@ -62,7 +88,7 @@ const Register = () => {
 			const data = isJson ? await response.json().catch(() => ({} as any)) : null;
 
 			if (response.ok) {
-				navigate(userType === 'business' ? '/business/dashboard' : '/dashboard');
+				navigate(homeForUserType(userType));
 				return;
 			}
 

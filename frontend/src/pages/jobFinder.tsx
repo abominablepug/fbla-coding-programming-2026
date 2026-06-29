@@ -44,7 +44,8 @@ const JobFinder = () => {
   const [edgeGlow, setEdgeGlow] = useState<'left' | 'right' | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [userLoc, setUserLoc] = useState<{ lat: number; lng: number }>({ lat: 34.0731, lng: -118.4016 });
+  // Fallback: Henry B. Gonzalez Convention Center, 900 E. Market St, San Antonio, TX.
+  const [userLoc, setUserLoc] = useState<{ lat: number; lng: number }>({ lat: 29.4205, lng: -98.4795 });
 
   const [skills, setSkills] = useState<string[]>([]);
   const [newSkill, setNewSkill] = useState('');
@@ -85,11 +86,11 @@ const JobFinder = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => handleLocation(pos.coords.latitude, pos.coords.longitude),
-        () => handleLocation(34.0731, -118.4016),
+        () => handleLocation(29.4205, -98.4795),
         { timeout: 10000 }
       );
     } else {
-      handleLocation(34.0731, -118.4016);
+      handleLocation(29.4205, -98.4795);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
