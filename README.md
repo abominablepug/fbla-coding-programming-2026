@@ -56,6 +56,22 @@ LuminX is a full-stack web application that helps users discover local businesse
 - Login with session management
 - Password reset via email
 - Profile picture upload
+- Captcha protection (hCaptcha & Slider)
+
+### Business & Admin Portals
+- **Business Dashboard**: Manage jobs, events, coupons, and ads.
+- **Admin Dashboard**: Oversee platform activities and approve ads.
+- Certified local business badge for verified businesses.
+
+### Jobs & Hiring
+- Job board for discovering local opportunities.
+- Business job manager for posting and tracking applications.
+- User profiles with resume and skills for quick applications.
+
+### Local Events & Promotions
+- Discover nearby flash sales, live music, and trivia nights.
+- Businesses can schedule and promote time-sensitive events.
+- Advertisement banners to highlight local businesses.
 
 ---
 
@@ -95,20 +111,37 @@ LuminX is a full-stack web application that helps users discover local businesse
 ├── frontend/                 # React + TypeScript frontend
 │   ├── src/
 │   │   ├── components/       # Reusable UI components
+│   │   │   ├── ThemeToggle.tsx
+│   │   │   ├── adBanner.tsx
 │   │   │   ├── alerts.tsx
+│   │   │   ├── body.tsx
 │   │   │   ├── card.tsx
+│   │   │   ├── hcaptchaWidget.tsx
+│   │   │   ├── links.tsx
 │   │   │   ├── localAiChatPopup.tsx
 │   │   │   ├── locationReviewsPopup.tsx
-│   │   │   └── navbar.tsx
+│   │   │   ├── navbar.tsx
+│   │   │   ├── proactiveAlerts.tsx
+│   │   │   └── sliderCaptcha.tsx
 │   │   ├── pages/            # Page components
+│   │   │   ├── adminDashboard.tsx
+│   │   │   ├── businessDashboard.tsx
+│   │   │   ├── businessJobManager.tsx
+│   │   │   ├── businessProfile.tsx
+│   │   │   ├── coupons.tsx
+│   │   │   ├── dashboard.tsx
+│   │   │   ├── events.tsx
 │   │   │   ├── home.tsx      # Landing page
+│   │   │   ├── jobFinder.tsx
+│   │   │   ├── jobProfile.tsx
+│   │   │   ├── loading.tsx
 │   │   │   ├── login.tsx     # Authentication
-│   │   │   ├── register.tsx
-│   │   │   ├── dashboard.tsx # User dashboard
 │   │   │   ├── map.tsx       # Interactive map
-│   │   │   ├── tinder.tsx    # Findr swipe interface
+│   │   │   ├── profile.tsx
+│   │   │   ├── register.tsx
+│   │   │   ├── resetPassword.tsx
 │   │   │   ├── reviews.tsx   # Reviews page
-│   │   │   └── coupons.tsx   # Coupons page
+│   │   │   └── tinder.tsx    # Findr swipe interface
 │   │   └── utils/            # Utility functions
 │   │       ├── aiChatResponse.ts
 │   │       ├── googleReviews.ts
@@ -121,11 +154,15 @@ LuminX is a full-stack web application that helps users discover local businesse
 │   │   ├── __init__.py       # App factory
 │   │   ├── models.py         # Database models
 │   │   ├── extensions.py     # Flask extensions
+│   │   ├── admin/            # Admin dashboard routes
+│   │   ├── ads/              # Advertisements routes
 │   │   ├── auth/             # Authentication routes
+│   │   ├── coupons/          # Coupon management routes
+│   │   ├── events/           # Events routing
+│   │   ├── jobs/             # Jobs & hiring routes
 │   │   ├── loc/              # Location management routes
 │   │   ├── rate/             # Rating/review routes
 │   │   └── recc/             # Recommendation routes
-│   │       └── categories.py # TomTom category mapping
 │   ├── migrations/           # Alembic migrations
 │   ├── instance/             # SQLite database
 │   └── pyproject.toml        # Python dependencies
@@ -172,6 +209,13 @@ LuminX is a full-stack web application that helps users discover local businesse
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/nearby` | Get personalized nearby recommendations |
+
+### Additional Modules
+- `/admin` - Administrative actions and ad approvals
+- `/ads` - Ad banner fetching and creation
+- `/coupons` - Coupon generation and management
+- `/events` - Local event discovery and posting
+- `/jobs` - Job board, applications, and business job management
 
 ---
 
@@ -262,6 +306,20 @@ cd backend && poetry run python run.py
 - Star rating (1-5)
 - Optional text content
 - Linked to user and location
+
+### Business
+- Business profile linked to a user.
+- Manages jobs, ads, coupons, and events.
+
+### Jobs & Profiles
+- `JobPosting`: Details of jobs offered by businesses.
+- `UserProfile`: Candidate skills and resume details.
+- `JobApplication`: User applications to jobs.
+
+### Promotions & Ads
+- `Advertisement`: Promotional banners with approval status.
+- `Coupon`: Discount codes and deals from businesses.
+- `Event`: Time-sensitive local events.
 
 ---
 
