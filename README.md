@@ -326,3 +326,7 @@ cd backend && poetry run python run.py
 ## License
 
 ISC License
+
+## Team repository links
+
+This is Eli Nahoum's (`abominablepug`) companion repository for the FBLA project. Sahya Patel's project repository is [here](https://github.com/Patels711/fbla-coding-programming-2026), linking the two team copies together.
